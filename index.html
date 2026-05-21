@@ -3,529 +3,1034 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quick Dashboard</title>
+  <title>On Point Group Operations Management</title>
   <style>
     * {
       box-sizing: border-box;
       font-family: Arial, Helvetica, sans-serif;
     }
 
-    body {
-      margin: 0;
-      background: #eef2f7;
-      color: #111827;
+    :root {
+      --qb-blue: #0b66f0;
+      --qb-purple: #7651a6;
+      --qb-border: #d8d8df;
+      --qb-bg: #f5f5f7;
+      --qb-sidebar: #f3f3f5;
+      --qb-text: #1f1f29;
+      --qb-muted: #666673;
+      --qb-card: #ffffff;
     }
 
-    .app {
+    body {
+      margin: 0;
+      background: var(--qb-bg);
+      color: var(--qb-text);
+    }
+
+    .top-shell {
+      height: 58px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--qb-border);
       display: flex;
-      min-height: 100vh;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px 0 0;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      height: 100%;
+    }
+
+    .waffle {
+      width: 34px;
+      display: grid;
+      grid-template-columns: repeat(3, 5px);
+      grid-auto-rows: 5px;
+      gap: 3px;
+      justify-content: center;
+      margin-right: 10px;
+    }
+
+    .waffle span {
+      background: #4e4e58;
+      border-radius: 1px;
+    }
+
+    .qb-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 220px;
+      height: 58px;
+      border-right: 1px solid var(--qb-border);
+      padding-left: 8px;
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .mark {
+      width: 22px;
+      height: 22px;
+      position: relative;
+    }
+
+    .mark span {
+      position: absolute;
+      width: 9px;
+      height: 9px;
+      background: #208a73;
+    }
+
+    .mark span:nth-child(1) { left: 0; top: 6px; }
+    .mark span:nth-child(2) { left: 10px; top: 0; }
+    .mark span:nth-child(3) { left: 10px; top: 12px; background: #f05a35; }
+
+    .app-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-left: 22px;
+      font-size: 23px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .app-icon {
+      background: var(--qb-purple);
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 19px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 24px;
+      color: #4d4d59;
+    }
+
+    .top-action-box {
+      border: 1px solid var(--qb-border);
+      width: 48px;
+      height: 44px;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      cursor: pointer;
+    }
+
+    .profile-circle {
+      background: #efeff0;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #111;
+    }
+
+    .layout {
+      display: flex;
+      min-height: calc(100vh - 58px);
     }
 
     .sidebar {
-      width: 260px;
-      background: #111827;
-      color: #fff;
-      padding: 24px 18px;
+      width: 390px;
+      background: var(--qb-sidebar);
+      border-right: 1px solid var(--qb-border);
+      min-height: calc(100vh - 58px);
       position: fixed;
-      top: 0;
+      top: 58px;
       bottom: 0;
-      left: 0;
+      overflow-y: auto;
     }
 
-    .brand {
-      font-size: 24px;
-      font-weight: 800;
-      margin-bottom: 28px;
+    .side-main {
+      border-bottom: 1px solid var(--qb-border);
+      padding-bottom: 14px;
     }
 
-    .nav-link {
-      display: block;
-      padding: 13px 14px;
-      color: #d1d5db;
+    .side-link {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      font-size: 22px;
+      color: #171720;
       text-decoration: none;
-      border-radius: 10px;
-      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .side-link.active {
+      background: #e8e8ec;
+      font-weight: 700;
+      border-top-right-radius: 12px;
+      border-bottom-right-radius: 12px;
+    }
+
+    .side-icon {
+      width: 18px;
+      text-align: center;
+      font-size: 22px;
+    }
+
+    .tables-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 28px 8px 0;
+      color: #50505d;
+      font-weight: 700;
+      font-size: 20px;
+    }
+
+    .table-link {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 10px 16px 10px 0;
+      font-size: 21px;
+      text-decoration: none;
+      color: #20202a;
+      cursor: pointer;
+    }
+
+    .table-link .tbl-icon {
+      width: 35px;
+      height: 29px;
+      border-radius: 6px;
+      background: #dfdfe4;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #c9c9d0;
+      font-size: 16px;
+    }
+
+    .content {
+      margin-left: 390px;
+      width: calc(100% - 390px);
+      min-height: calc(100vh - 58px);
+    }
+
+    .crumb-bar {
+      height: 74px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--qb-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      box-shadow: 0 2px 7px rgba(0,0,0,0.12);
+      position: sticky;
+      top: 58px;
+      z-index: 10;
+    }
+
+    .crumb-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 21px;
+      font-weight: 700;
+    }
+
+    .round-collapse {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: -42px;
+      cursor: pointer;
+    }
+
+    .gear {
+      font-size: 23px;
+      color: #52525f;
+      margin-right: 8px;
+    }
+
+    .chev {
+      color: #90909a;
+      font-size: 25px;
+    }
+
+    .crumb-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: #50505d;
+      font-size: 24px;
+    }
+
+    .delete-sample {
+      padding: 12px 25px;
+      border: 1px solid #c4c4cc;
+      border-radius: 999px;
+      background: white;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .live-pill {
+      padding: 9px 14px;
+      border-radius: 999px;
+      border: 1px solid #c4c4cc;
+      font-weight: 800;
+      font-size: 13px;
+      background: #fff;
+      color: #555;
+    }
+
+    .live-pill.live {
+      color: #0f7a35;
+      background: #e8f8ed;
+      border-color: #87d69d;
+    }
+
+    .live-pill.offline {
+      color: #9b1c1c;
+      background: #fff0f0;
+      border-color: #ef9a9a;
+    }
+
+    .dashboard-area {
+      padding: 54px 14px 24px 12px;
+      background: #f7f7f8;
+    }
+
+    .tabs {
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 18px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .tab {
+      border: 1px solid #d3d3d9;
+      background: #e9e9ed;
+      color: #565663;
+      padding: 13px 20px;
+      font-size: 21px;
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+      box-shadow: inset 0 2px 2px rgba(255,255,255,0.8);
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: white;
+      color: #14141f;
+      border-top: 5px solid #095ff0;
+      padding-top: 9px;
+      border-bottom-color: white;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: minmax(520px, 1.15fr) minmax(420px, 0.95fr);
+      gap: 14px;
+    }
+
+    .qb-card {
+      background: white;
+      border: 1px solid #dcdce2;
+      border-radius: 9px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.18);
+      padding: 24px;
+      min-height: 575px;
+    }
+
+    .qb-card h2 {
+      margin: 0 0 12px;
+      font-size: 30px;
+      font-weight: 500;
+    }
+
+    .sub {
+      color: #656572;
+      font-size: 22px;
+      margin-bottom: 24px;
+    }
+
+    .pie-wrap {
+      height: 420px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pie {
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: conic-gradient(#76afe5 0 36%, #a385d8 36% 51%, #ff4146 51% 62%, #0b63ee 62% 92%, #8082df 92% 100%);
+      position: relative;
+    }
+
+    .pie:after {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      border-radius: 50%;
+      background: repeating-conic-gradient(from 0deg, transparent 0deg 35.5deg, rgba(255,255,255,0.85) 35.5deg 36.2deg);
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .bar-chart {
+      height: 420px;
+      display: grid;
+      grid-template-columns: 65px 1fr;
+      align-items: end;
+      padding-top: 10px;
+    }
+
+    .y-axis {
+      height: 380px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-right: 16px;
+      color: #656572;
+      font-size: 18px;
+    }
+
+    .bars-area {
+      height: 380px;
+      border-left: 1px solid #ededf0;
+      border-bottom: 1px solid #ededf0;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      gap: 34px;
+      padding: 0 20px;
+    }
+
+    .gridline {
+      position: absolute;
+      left: 0;
+      right: 0;
+      border-top: 1px solid #ededf0;
+    }
+
+    .gridline.g1 { bottom: 25%; }
+    .gridline.g2 { bottom: 50%; }
+    .gridline.g3 { bottom: 75%; }
+
+    .bar {
+      width: 70px;
+      background: #0b63ee;
+      z-index: 2;
+    }
+
+    .bar.small {
+      height: 3px;
+    }
+
+    .axis-title {
+      text-align: center;
+      color: #656572;
+      font-size: 21px;
+      font-weight: 700;
+      margin-top: 16px;
+    }
+
+    .tickets-panel {
+      background: white;
+      border: 1px solid #dcdce2;
+      border-radius: 9px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.18);
+      padding: 22px;
+      margin-top: 14px;
+    }
+
+    .tickets-panel h2 {
+      margin: 0 0 16px;
+      font-size: 28px;
       font-weight: 600;
     }
 
-    .nav-link:hover,
-    .nav-link.active {
-      background: #2563eb;
-      color: #fff;
-    }
-
-    .main {
-      margin-left: 260px;
-      width: calc(100% - 260px);
-      padding: 24px;
-    }
-
-    .topbar {
-      background: #fff;
-      border-radius: 18px;
-      padding: 22px;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-      margin-bottom: 24px;
+    .task-toolbar {
       display: flex;
       justify-content: space-between;
-      gap: 16px;
       align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
       flex-wrap: wrap;
     }
 
-    .topbar h1 {
-      margin: 0;
-      font-size: 28px;
-    }
-
-    .topbar p {
-      margin: 6px 0 0;
-      color: #6b7280;
-    }
-
-    .refresh-btn,
-    .primary-btn,
-    .small-btn {
+    .create-task-btn {
+      background: #0b66f0;
+      color: white;
       border: 0;
-      background: #2563eb;
-      color: #fff;
-      padding: 12px 18px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: 700;
-    }
-
-    .small-btn {
-      padding: 8px 10px;
       border-radius: 8px;
-      font-size: 12px;
+      padding: 12px 18px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 15px;
     }
 
-    .refresh-btn:hover,
-    .primary-btn:hover,
-    .small-btn:hover {
-      background: #1d4ed8;
+    .create-task-btn:hover {
+      background: #084fb9;
     }
 
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 18px;
-      margin-bottom: 24px;
-    }
-
-    .metric-card {
-      background: #fff;
-      border-radius: 18px;
-      padding: 22px;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-      border-left: 6px solid #2563eb;
-    }
-
-    .metric-card.orange {
-      border-left-color: #f97316;
-    }
-
-    .metric-card.green {
-      border-left-color: #16a34a;
-    }
-
-    .metric-card.red {
-      border-left-color: #dc2626;
-    }
-
-    .metric-label {
-      color: #6b7280;
-      font-size: 14px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .metric-value {
-      margin-top: 10px;
-      font-size: 38px;
-      font-weight: 900;
-    }
-
-    .panel {
-      background: #fff;
-      border-radius: 18px;
-      padding: 22px;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-      margin-bottom: 24px;
-    }
-
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: center;
-      flex-wrap: wrap;
+    .task-form {
+      display: none;
+      background: #fbfbfc;
+      border: 1px solid #d9d9df;
+      border-radius: 10px;
+      padding: 16px;
       margin-bottom: 16px;
     }
 
-    .panel-header h2 {
-      margin: 0;
+    .task-form.open {
+      display: block;
     }
 
     .form-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 14px;
-      margin-bottom: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
     }
 
     label {
       display: block;
       font-size: 13px;
-      font-weight: 800;
-      margin-bottom: 6px;
-      color: #374151;
+      font-weight: 700;
+      color: #50505d;
+      margin-bottom: 5px;
     }
 
-    input,
-    select,
-    textarea {
+    input, select, textarea {
       width: 100%;
-      border: 1px solid #d1d5db;
-      border-radius: 12px;
-      padding: 12px;
+      border: 1px solid #cfcfd7;
+      border-radius: 7px;
+      padding: 10px;
       font-size: 14px;
-      background: #fff;
+      background: white;
     }
 
     textarea {
-      min-height: 80px;
+      min-height: 70px;
       resize: vertical;
     }
 
-    .table-wrap {
-      overflow-x: auto;
-      border-radius: 14px;
-      border: 1px solid #e5e7eb;
+    .save-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+      flex-wrap: wrap;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 900px;
-    }
-
-    th {
-      background: #111827;
+    .save-task-btn {
+      background: #168a45;
       color: white;
-      text-align: left;
-      padding: 13px;
-      font-size: 13px;
-      white-space: nowrap;
-    }
-
-    td {
-      padding: 12px 13px;
-      border-bottom: 1px solid #e5e7eb;
-      font-size: 14px;
-      vertical-align: top;
-    }
-
-    tr:hover td {
-      background: #f9fafb;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 5px 9px;
-      border-radius: 999px;
-      font-size: 12px;
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 20px;
       font-weight: 800;
-      background: #e5e7eb;
+      cursor: pointer;
     }
 
-    .badge.open {
-      background: #dbeafe;
-      color: #1d4ed8;
-    }
-
-    .badge.closed {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .badge.overdue {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .badge.progress {
-      background: #fef3c7;
-      color: #92400e;
+    .cancel-btn {
+      background: white;
+      border: 1px solid #bdbdc7;
+      border-radius: 8px;
+      padding: 11px 18px;
+      font-weight: 700;
+      cursor: pointer;
     }
 
     .message {
       display: none;
-      margin-top: 12px;
-      padding: 12px;
-      border-radius: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
       font-weight: 700;
+      font-size: 14px;
     }
 
-    .success {
+    .message.success {
+      display: inline-block;
       background: #dcfce7;
       color: #166534;
     }
 
-    .error {
+    .message.error {
+      display: inline-block;
       background: #fee2e2;
       color: #991b1b;
     }
 
-    .info {
+    .message.info {
+      display: inline-block;
       background: #dbeafe;
       color: #1d4ed8;
     }
 
-    .module-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
+    .data-table-wrap {
+      overflow-x: auto;
+      border: 1px solid #dddddf;
+      border-radius: 8px;
     }
 
-    .module-card {
-      border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 18px;
-      background: #f9fafb;
-    }
-
-    .module-card h3 {
-      margin: 0 0 8px;
-    }
-
-    .module-card p {
-      margin: 0;
-      color: #6b7280;
+    table {
+      width: 100%;
+      min-width: 1050px;
+      border-collapse: collapse;
       font-size: 14px;
-      line-height: 1.5;
     }
 
-    @media (max-width: 900px) {
-      .app {
+    th {
+      background: #f1f1f4;
+      color: #30303a;
+      text-align: left;
+      padding: 11px;
+      border-bottom: 1px solid #d8d8df;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 10px 11px;
+      border-bottom: 1px solid #ececf0;
+      vertical-align: top;
+    }
+
+    tr:hover td {
+      background: #fafafa;
+    }
+
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 999px;
+      display: inline-block;
+      font-weight: 800;
+      font-size: 12px;
+      background: #e9e9ed;
+    }
+
+    .status-open { background: #dbeafe; color: #1d4ed8; }
+    .status-progress { background: #fef3c7; color: #92400e; }
+    .status-closed { background: #dcfce7; color: #166534; }
+    .status-overdue { background: #fee2e2; color: #991b1b; }
+
+    .module-placeholder {
+      background: white;
+      border: 1px solid #dcdce2;
+      border-radius: 9px;
+      padding: 28px;
+      min-height: 420px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.18);
+    }
+
+    .module-placeholder h2 {
+      margin-top: 0;
+      font-size: 30px;
+      font-weight: 500;
+    }
+
+    @media (max-width: 1200px) {
+      .sidebar {
+        width: 300px;
+      }
+
+      .content {
+        margin-left: 300px;
+        width: calc(100% - 300px);
+      }
+
+      .qb-logo {
+        width: 190px;
+      }
+
+      .chart-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 800px) {
+      .top-shell {
+        height: auto;
+        flex-wrap: wrap;
+        padding: 8px;
+      }
+
+      .qb-logo {
+        width: auto;
+        border-right: 0;
+        font-size: 24px;
+      }
+
+      .app-title {
+        padding-left: 0;
+        font-size: 18px;
+      }
+
+      .top-actions {
+        gap: 8px;
+        font-size: 18px;
+      }
+
+      .layout {
         display: block;
       }
 
       .sidebar {
         position: relative;
         width: 100%;
-        height: auto;
+        top: 0;
+        min-height: auto;
+        max-height: 360px;
       }
 
-      .main {
+      .content {
         margin-left: 0;
         width: 100%;
-        padding: 16px;
+      }
+
+      .crumb-bar {
+        top: 0;
+        height: auto;
+        min-height: 65px;
+        flex-wrap: wrap;
+      }
+
+      .round-collapse {
+        display: none;
+      }
+
+      .dashboard-area {
+        padding: 20px 10px;
+      }
+
+      .qb-card {
+        min-height: auto;
+      }
+
+      .pie {
+        width: 260px;
+        height: 260px;
+      }
+
+      .pie-wrap {
+        height: 310px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="app">
+  <header class="top-shell">
+    <div class="top-left">
+      <div class="waffle" aria-hidden="true">
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </div>
+      <div class="qb-logo">
+        <div class="mark"><span></span><span></span><span></span></div>
+        quickbase
+      </div>
+      <div class="app-title"><span class="app-icon">♚</span> On Point Group Operations Management</div>
+    </div>
+    <div class="top-actions">
+      <div class="top-action-box" onclick="showTaskForm()">+</div>
+      <div class="top-action-box" onclick="loadAllData()">⌕</div>
+      <span>☆</span>
+      <span>♟</span>
+      <span>?</span>
+      <div class="profile-circle">TM</div>
+      <div class="top-action-box">✦</div>
+    </div>
+  </header>
+
+  <div class="layout">
     <aside class="sidebar">
-      <div class="brand">Quick</div>
-      <a class="nav-link active" href="#dashboard">Dashboard</a>
-      <a class="nav-link" href="#tasks">Tasks</a>
-      <a class="nav-link" href="#modules">Modules</a>
-      <a class="nav-link" href="#users">Users</a>
-      <a class="nav-link" href="#vehicles">Vehicles</a>
+      <div class="side-main">
+        <a class="side-link active" onclick="showView('summary')"><span class="side-icon">⌂</span> App home</a>
+        <a class="side-link" onclick="showView('users')"><span class="side-icon">♙</span> Users</a>
+        <a class="side-link"><span class="side-icon">⚙</span> App settings</a>
+      </div>
+
+      <div class="tables-head">
+        <span>Tables</span>
+        <span>＋ &nbsp;⌕</span>
+      </div>
+
+      <a class="table-link" onclick="showView('departments')"><span class="tbl-icon">▣</span>Departments</a>
+      <a class="table-link" onclick="showView('employees')"><span class="tbl-icon">▦</span>Employees</a>
+      <a class="table-link" onclick="showView('tickets')"><span class="tbl-icon">▤</span>Tickets</a>
+      <a class="table-link" onclick="showView('kpis')"><span class="tbl-icon">□</span>KPIs</a>
+      <a class="table-link" onclick="showView('bsc')"><span class="tbl-icon">□</span>BSC</a>
+      <a class="table-link" onclick="showView('sla')"><span class="tbl-icon">□</span>SLA</a>
+      <a class="table-link" onclick="showView('dashboards')"><span class="tbl-icon">□</span>Dashboards</a>
+      <a class="table-link" onclick="showView('divisions')"><span class="tbl-icon">□</span>Divisions</a>
+      <a class="table-link" onclick="showView('categories')"><span class="tbl-icon">▤</span>Categories</a>
+      <a class="table-link" onclick="showView('slaRules')"><span class="tbl-icon">□</span>SLA Rules</a>
+      <a class="table-link" onclick="showView('projects')"><span class="tbl-icon">□</span>Projects / Clients</a>
     </aside>
 
-    <main class="main">
-      <section class="topbar" id="dashboard">
-        <div>
-          <h1>Operations Dashboard</h1>
-          <p>Google Sheets powered QuickBase-style management dashboard.</p>
+    <main class="content">
+      <div class="crumb-bar">
+        <div class="crumb-left">
+          <span class="round-collapse">‹</span>
+          <span class="gear">⚙</span>
+          <span>On Point Group Operation...</span>
+          <span class="chev">›</span>
+          <span>Default dashboard</span>
         </div>
-        <button class="refresh-btn" onclick="loadAllData()">Refresh Data</button>
-      </section>
+        <div class="crumb-actions">
+          <span id="liveStatus" class="live-pill offline">Checking Sheet...</span>
+          <button class="delete-sample" onclick="showTaskForm()">Create Task</button>
+          <span>▣</span>
+          <span>⌯</span>
+          <span>▢</span>
+          <span>⌜</span>
+        </div>
+      </div>
 
-      <section class="cards">
-        <div class="metric-card">
-          <div class="metric-label">Total Tasks</div>
-          <div class="metric-value" id="totalTasks">0</div>
-        </div>
-        <div class="metric-card orange">
-          <div class="metric-label">Open Tasks</div>
-          <div class="metric-value" id="openTasks">0</div>
-        </div>
-        <div class="metric-card green">
-          <div class="metric-label">Closed Tasks</div>
-          <div class="metric-value" id="closedTasks">0</div>
-        </div>
-        <div class="metric-card red">
-          <div class="metric-label">Overdue Tasks</div>
-          <div class="metric-value" id="overdueTasks">0</div>
-        </div>
-      </section>
-
-      <section class="panel" id="tasks">
-        <div class="panel-header">
-          <h2>Tasks</h2>
-          <button class="primary-btn" onclick="saveTask()">Create Task</button>
+      <section class="dashboard-area">
+        <div class="tabs">
+          <button class="tab active" onclick="showView('summary')">Summary</button>
+          <button class="tab" onclick="showView('bsc')">BSC</button>
+          <button class="tab" onclick="showView('departments')">Departments</button>
+          <button class="tab" onclick="showView('tickets')">Tickets</button>
+          <button class="tab" onclick="showView('kpis')">KPIs</button>
+          <button class="tab" onclick="showView('sla')">SLA</button>
+          <button class="tab" onclick="showView('dashboards')">Dashboards</button>
+          <button class="tab" onclick="showView('employees')">Employees</button>
         </div>
 
-        <div class="form-grid">
-          <div>
-            <label>Task Name</label>
-            <input id="taskName" placeholder="Enter task name">
+        <div id="summary" class="view active">
+          <div class="chart-grid">
+            <div class="qb-card">
+              <h2>Tickets - Tickets by Priority</h2>
+              <div class="sub">Shows the number of tickets by priority</div>
+              <div class="pie-wrap">
+                <div class="pie"></div>
+              </div>
+            </div>
+
+            <div class="qb-card">
+              <h2>Tickets - Tickets Assigned by Department</h2>
+              <div class="sub">Shows the number of tickets assigned to each department</div>
+              <div class="bar-chart">
+                <div class="y-axis">
+                  <span>200</span>
+                  <span>150</span>
+                  <span>100</span>
+                  <span>50</span>
+                  <span>0</span>
+                </div>
+                <div>
+                  <div class="bars-area">
+                    <div class="gridline g1"></div>
+                    <div class="gridline g2"></div>
+                    <div class="gridline g3"></div>
+                    <div class="bar" id="deptBarMain" style="height: 62%;"></div>
+                    <div class="bar small"></div>
+                    <div class="bar small"></div>
+                    <div class="bar small"></div>
+                  </div>
+                  <div class="axis-title">Related Assigned To</div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label>Assigned To</label>
-            <input id="assignedTo" placeholder="Person responsible">
-          </div>
+          <div class="tickets-panel">
+            <div class="task-toolbar">
+              <h2>Tasks / Tickets</h2>
+              <button class="create-task-btn" onclick="showTaskForm()">+ Create Task</button>
+            </div>
 
-          <div>
-            <label>Priority</label>
-            <select id="priority">
-              <option>Low</option>
-              <option selected>Medium</option>
-              <option>High</option>
-              <option>Critical</option>
-            </select>
-          </div>
+            <div id="taskForm" class="task-form">
+              <div class="form-grid">
+                <div>
+                  <label>Task / Ticket Name *</label>
+                  <input id="taskName" placeholder="Enter task name">
+                </div>
+                <div>
+                  <label>Assigned To</label>
+                  <input id="assignedTo" placeholder="Person responsible">
+                </div>
+                <div>
+                  <label>Priority</label>
+                  <select id="priority">
+                    <option>Low</option>
+                    <option selected>Medium</option>
+                    <option>High</option>
+                    <option>Critical</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Status</label>
+                  <select id="status">
+                    <option selected>Open</option>
+                    <option>In Progress</option>
+                    <option>Pending</option>
+                    <option>Closed</option>
+                    <option>Overdue</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Department</label>
+                  <select id="department">
+                    <option value="">Select department</option>
+                    <option>Admin</option>
+                    <option>Business Development</option>
+                    <option>Finance & IT</option>
+                    <option>Fleet</option>
+                    <option>HR</option>
+                    <option>Operations</option>
+                    <option>Procurement</option>
+                    <option>Sales</option>
+                    <option>SHEQ</option>
+                    <option>Tendering</option>
+                    <option>Warehouse</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Due Date</label>
+                  <input id="dueDate" type="date">
+                </div>
+                <div>
+                  <label>Attachment Link</label>
+                  <input id="attachmentLink" placeholder="Paste Drive link if any">
+                </div>
+              </div>
+              <div style="margin-top:12px;">
+                <label>Description</label>
+                <textarea id="description" placeholder="Task details"></textarea>
+              </div>
+              <div style="margin-top:12px;">
+                <label>Comments</label>
+                <textarea id="comments" placeholder="Comments"></textarea>
+              </div>
+              <div class="save-row">
+                <button id="saveTaskBtn" class="save-task-btn" onclick="saveTask()">Save Task to Google Sheet</button>
+                <button class="cancel-btn" onclick="hideTaskForm()">Cancel</button>
+                <span id="message" class="message"></span>
+              </div>
+            </div>
 
-          <div>
-            <label>Status</label>
-            <select id="status">
-              <option selected>Open</option>
-              <option>In Progress</option>
-              <option>Pending</option>
-              <option>Closed</option>
-              <option>Overdue</option>
-            </select>
-          </div>
-
-          <div>
-            <label>Department</label>
-            <input id="department" placeholder="Department">
-          </div>
-
-          <div>
-            <label>Due Date</label>
-            <input id="dueDate" type="date">
-          </div>
-
-          <div>
-            <label>Attachment Link</label>
-            <input id="attachmentLink" placeholder="Paste Google Drive link if any">
+            <div class="data-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Task ID</th>
+                    <th>Date Created</th>
+                    <th>Task Name</th>
+                    <th>Description</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Assigned To</th>
+                    <th>Department</th>
+                    <th>Due Date</th>
+                    <th>Completion Date</th>
+                    <th>Comments</th>
+                    <th>Attachment</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="taskTable">
+                  <tr><td colspan="13">Loading tasks...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        <div>
-          <label>Description</label>
-          <textarea id="description" placeholder="Task description"></textarea>
-        </div>
-
-        <div>
-          <label>Comments</label>
-          <textarea id="comments" placeholder="Comments"></textarea>
-        </div>
-
-        <div id="message" class="message"></div>
-
-        <div class="table-wrap" style="margin-top:18px;">
-          <table>
-            <thead>
-              <tr>
-                <th>Task ID</th>
-                <th>Date Created</th>
-                <th>Task Name</th>
-                <th>Description</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Assigned To</th>
-                <th>Department</th>
-                <th>Due Date</th>
-                <th>Completion Date</th>
-                <th>Comments</th>
-                <th>Attachment</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="taskTable">
-              <tr><td colspan="13">Loading tasks...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="panel" id="modules">
-        <div class="panel-header">
-          <h2>Linked Modules</h2>
-        </div>
-        <div class="module-grid">
-          <div class="module-card">
-            <h3>Tasks</h3>
-            <p>Create, assign, monitor and close operational tasks.</p>
-          </div>
-          <div class="module-card">
-            <h3>Users</h3>
-            <p>Stores users, departments, roles and account status.</p>
-          </div>
-          <div class="module-card">
-            <h3>Vehicles</h3>
-            <p>Stores vehicle records, drivers and service dates.</p>
-          </div>
-          <div class="module-card">
-            <h3>Activity Log</h3>
-            <p>Tracks task creation, status changes and dashboard actions.</p>
+        <div id="tickets" class="view">
+          <div class="tickets-panel">
+            <div class="task-toolbar">
+              <h2>Tickets</h2>
+              <button class="create-task-btn" onclick="showTaskForm(); showView('summary');">+ Create Task</button>
+            </div>
+            <div class="data-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Task ID</th>
+                    <th>Date Created</th>
+                    <th>Task Name</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Assigned To</th>
+                    <th>Department</th>
+                    <th>Due Date</th>
+                  </tr>
+                </thead>
+                <tbody id="ticketsTable">
+                  <tr><td colspan="8">Loading tickets...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </section>
 
-      <section class="panel" id="users">
-        <div class="panel-header">
-          <h2>Users</h2>
+        <div id="users" class="view">
+          <div class="module-placeholder">
+            <h2>Users</h2>
+            <div class="data-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>User ID</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Department</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTable">
+                  <tr><td colspan="6">Loading users...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>User ID</th>
-                <th>Full Name</th>
-                <th>Email</th>
-                <th>Department</th>
-                <th>Role</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="usersTable">
-              <tr><td colspan="6">Loading users...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
 
-      <section class="panel" id="vehicles">
-        <div class="panel-header">
-          <h2>Vehicles</h2>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Vehicle ID</th>
-                <th>Registration</th>
-                <th>Driver</th>
-                <th>Department</th>
-                <th>Status</th>
-                <th>Last Service</th>
-                <th>Next Service</th>
-              </tr>
-            </thead>
-            <tbody id="vehiclesTable">
-              <tr><td colspan="7">Loading vehicles...</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <div id="departments" class="view"><div class="module-placeholder"><h2>Departments</h2><p>Department records are linked through the Tasks table Department column.</p></div></div>
+        <div id="employees" class="view"><div class="module-placeholder"><h2>Employees</h2><p>Employee records can be maintained in the Users sheet tab.</p></div></div>
+        <div id="bsc" class="view"><div class="module-placeholder"><h2>BSC</h2><p>Balanced scorecard dashboard section.</p></div></div>
+        <div id="kpis" class="view"><div class="module-placeholder"><h2>KPIs</h2><p>KPIs dashboard section.</p></div></div>
+        <div id="sla" class="view"><div class="module-placeholder"><h2>SLA</h2><p>SLA records and performance monitoring section.</p></div></div>
+        <div id="dashboards" class="view"><div class="module-placeholder"><h2>Dashboards</h2><p>Dashboard records and reporting section.</p></div></div>
+        <div id="divisions" class="view"><div class="module-placeholder"><h2>Divisions</h2><p>Division records section.</p></div></div>
+        <div id="categories" class="view"><div class="module-placeholder"><h2>Categories</h2><p>Category records section.</p></div></div>
+        <div id="slaRules" class="view"><div class="module-placeholder"><h2>SLA Rules</h2><p>SLA rules section.</p></div></div>
+        <div id="projects" class="view"><div class="module-placeholder"><h2>Projects / Clients</h2><p>Projects and clients section.</p></div></div>
       </section>
     </main>
   </div>
@@ -535,11 +1040,57 @@
       IMPORTANT:
       Replace this URL with your deployed Google Apps Script Web App URL.
       Example:
-      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUlfcGLSZNeFMuAL2iFZ76lFPXPl7bAHj0f6QnwYWMFaewe61Li2VBHPgdACDTTlA-/exec';
+      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxN7pozwlFc9UJzNadz-mhm6p-nnxj1isofGoanyxvGpc13WlxVPVKf5omE3GB8RNf/exec';
     */
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUlfcGLSZNeFMuAL2iFZ76lFPXPl7bAHj0f6QnwYWMFaewe61Li2VBHPgdACDTTlA-/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxN7pozwlFc9UJzNadz-mhm6p-nnxj1isofGoanyxvGpc13WlxVPVKf5omE3GB8RNf/exec';
 
-    document.addEventListener('DOMContentLoaded', loadAllData);
+    document.addEventListener('DOMContentLoaded', function() {
+      loadAllData();
+    });
+
+    function showView(viewId) {
+      document.querySelectorAll('.view').forEach(function(view) {
+        view.classList.remove('active');
+      });
+
+      const target = document.getElementById(viewId);
+      if (target) target.classList.add('active');
+
+      document.querySelectorAll('.tab').forEach(function(tab) {
+        tab.classList.remove('active');
+      });
+
+      const tabs = Array.from(document.querySelectorAll('.tab'));
+      const tab = tabs.find(function(t) {
+        return t.textContent.trim().toLowerCase() === viewId.toLowerCase();
+      });
+
+      if (viewId === 'summary') {
+        tabs[0].classList.add('active');
+      } else if (tab) {
+        tab.classList.add('active');
+      }
+    }
+
+    function showTaskForm() {
+      showView('summary');
+      const form = document.getElementById('taskForm');
+      form.classList.add('open');
+      setTimeout(function() {
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('taskName').focus();
+      }, 50);
+    }
+
+    function hideTaskForm() {
+      document.getElementById('taskForm').classList.remove('open');
+    }
+
+    function setLiveStatus(type, text) {
+      const pill = document.getElementById('liveStatus');
+      pill.className = 'live-pill ' + type;
+      pill.textContent = text;
+    }
 
     function apiGet(action, params = {}) {
       const query = new URLSearchParams({ action, ...params });
@@ -565,25 +1116,28 @@
 
     function loadAllData() {
       if (!SCRIPT_URL || SCRIPT_URL === 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
+        setLiveStatus('offline', 'Not Connected');
         showMessage('Replace SCRIPT_URL in this HTML file with your deployed Apps Script Web App URL.', 'error');
+        document.getElementById('taskTable').innerHTML = '<tr><td colspan="13">Not connected. Replace SCRIPT_URL first.</td></tr>';
+        document.getElementById('ticketsTable').innerHTML = '<tr><td colspan="8">Not connected. Replace SCRIPT_URL first.</td></tr>';
         return;
       }
 
+      setLiveStatus('', 'Checking Sheet...');
       loadDashboard();
       loadTasks();
       loadUsers();
-      loadVehicles();
     }
 
     function loadDashboard() {
       apiGet('dashboard')
         .then(function(data) {
-          document.getElementById('totalTasks').textContent = data.totalTasks || 0;
-          document.getElementById('openTasks').textContent = data.openTasks || 0;
-          document.getElementById('closedTasks').textContent = data.closedTasks || 0;
-          document.getElementById('overdueTasks').textContent = data.overdueTasks || 0;
+          setLiveStatus('live', 'Google Sheet Live');
+          const deptCount = Math.max(3, Number(data.openTasks || 1) * 8);
+          document.getElementById('deptBarMain').style.height = Math.min(90, deptCount) + '%';
         })
         .catch(function(error) {
+          setLiveStatus('offline', 'Sheet Offline');
           showMessage(error.message || 'Could not load dashboard.', 'error');
         });
     }
@@ -591,45 +1145,79 @@
     function loadTasks() {
       apiGet('tasks')
         .then(function(tasks) {
-          const body = document.getElementById('taskTable');
-
-          if (!tasks || tasks.length === 0) {
-            body.innerHTML = '<tr><td colspan="13">No tasks found.</td></tr>';
-            return;
-          }
-
-          body.innerHTML = tasks.map(function(task) {
-            const status = task['Status'] || '';
-            const attachment = task['Attachment Link']
-              ? '<a href="' + escapeAttr(task['Attachment Link']) + '" target="_blank">Open</a>'
-              : '';
-
-            return '<tr>' +
-              '<td>' + escapeHtml(task['Task ID']) + '</td>' +
-              '<td>' + formatDate(task['Date Created']) + '</td>' +
-              '<td>' + escapeHtml(task['Task Name']) + '</td>' +
-              '<td>' + escapeHtml(task['Description']) + '</td>' +
-              '<td>' + escapeHtml(task['Priority']) + '</td>' +
-              '<td><span class="badge ' + statusClass(status) + '">' + escapeHtml(status) + '</span></td>' +
-              '<td>' + escapeHtml(task['Assigned To']) + '</td>' +
-              '<td>' + escapeHtml(task['Department']) + '</td>' +
-              '<td>' + formatDate(task['Due Date']) + '</td>' +
-              '<td>' + formatDate(task['Completion Date']) + '</td>' +
-              '<td>' + escapeHtml(task['Comments']) + '</td>' +
-              '<td>' + attachment + '</td>' +
-              '<td><button class="small-btn" onclick="closeTask(\\'' + escapeJs(task['Task ID']) + '\\')">Close</button></td>' +
-            '</tr>';
-          }).join('');
+          setLiveStatus('live', 'Google Sheet Live');
+          renderTaskTable(tasks || []);
+          renderTicketsTable(tasks || []);
         })
         .catch(function(error) {
+          setLiveStatus('offline', 'Sheet Offline');
           document.getElementById('taskTable').innerHTML =
             '<tr><td colspan="13">Could not load tasks: ' + escapeHtml(error.message) + '</td></tr>';
+          document.getElementById('ticketsTable').innerHTML =
+            '<tr><td colspan="8">Could not load tickets: ' + escapeHtml(error.message) + '</td></tr>';
         });
+    }
+
+    function renderTaskTable(tasks) {
+      const body = document.getElementById('taskTable');
+
+      if (!tasks || tasks.length === 0) {
+        body.innerHTML = '<tr><td colspan="13">No tasks found. Click Create Task to add one.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = tasks.map(function(task) {
+        const status = task['Status'] || '';
+        const attachment = task['Attachment Link']
+          ? '<a href="' + escapeAttr(task['Attachment Link']) + '" target="_blank">Open</a>'
+          : '';
+
+        return '<tr>' +
+          '<td>' + escapeHtml(task['Task ID']) + '</td>' +
+          '<td>' + formatDate(task['Date Created']) + '</td>' +
+          '<td>' + escapeHtml(task['Task Name']) + '</td>' +
+          '<td>' + escapeHtml(task['Description']) + '</td>' +
+          '<td>' + escapeHtml(task['Priority']) + '</td>' +
+          '<td><span class="status-badge ' + statusClass(status) + '">' + escapeHtml(status) + '</span></td>' +
+          '<td>' + escapeHtml(task['Assigned To']) + '</td>' +
+          '<td>' + escapeHtml(task['Department']) + '</td>' +
+          '<td>' + formatDate(task['Due Date']) + '</td>' +
+          '<td>' + formatDate(task['Completion Date']) + '</td>' +
+          '<td>' + escapeHtml(task['Comments']) + '</td>' +
+          '<td>' + attachment + '</td>' +
+          '<td><button class="save-task-btn" style="padding:8px 11px;" onclick="closeTask(\\'' + escapeJs(task['Task ID']) + '\\')">Close</button></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function renderTicketsTable(tasks) {
+      const body = document.getElementById('ticketsTable');
+
+      if (!tasks || tasks.length === 0) {
+        body.innerHTML = '<tr><td colspan="8">No tickets found.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = tasks.map(function(task) {
+        const status = task['Status'] || '';
+
+        return '<tr>' +
+          '<td>' + escapeHtml(task['Task ID']) + '</td>' +
+          '<td>' + formatDate(task['Date Created']) + '</td>' +
+          '<td>' + escapeHtml(task['Task Name']) + '</td>' +
+          '<td>' + escapeHtml(task['Priority']) + '</td>' +
+          '<td><span class="status-badge ' + statusClass(status) + '">' + escapeHtml(status) + '</span></td>' +
+          '<td>' + escapeHtml(task['Assigned To']) + '</td>' +
+          '<td>' + escapeHtml(task['Department']) + '</td>' +
+          '<td>' + formatDate(task['Due Date']) + '</td>' +
+        '</tr>';
+      }).join('');
     }
 
     function loadUsers() {
       apiGet('users')
         .then(function(users) {
+          setLiveStatus('live', 'Google Sheet Live');
           const body = document.getElementById('usersTable');
 
           if (!users || users.length === 0) {
@@ -654,51 +1242,29 @@
         });
     }
 
-    function loadVehicles() {
-      apiGet('vehicles')
-        .then(function(vehicles) {
-          const body = document.getElementById('vehiclesTable');
-
-          if (!vehicles || vehicles.length === 0) {
-            body.innerHTML = '<tr><td colspan="7">No vehicles found.</td></tr>';
-            return;
-          }
-
-          body.innerHTML = vehicles.map(function(vehicle) {
-            return '<tr>' +
-              '<td>' + escapeHtml(vehicle['Vehicle ID']) + '</td>' +
-              '<td>' + escapeHtml(vehicle['Registration']) + '</td>' +
-              '<td>' + escapeHtml(vehicle['Driver']) + '</td>' +
-              '<td>' + escapeHtml(vehicle['Department']) + '</td>' +
-              '<td>' + escapeHtml(vehicle['Status']) + '</td>' +
-              '<td>' + formatDate(vehicle['Last Service']) + '</td>' +
-              '<td>' + formatDate(vehicle['Next Service']) + '</td>' +
-            '</tr>';
-          }).join('');
-        })
-        .catch(function(error) {
-          document.getElementById('vehiclesTable').innerHTML =
-            '<tr><td colspan="7">Could not load vehicles: ' + escapeHtml(error.message) + '</td></tr>';
-        });
-    }
-
     function saveTask() {
+      const saveBtn = document.getElementById('saveTaskBtn');
       const data = {
         taskName: document.getElementById('taskName').value.trim(),
         description: document.getElementById('description').value.trim(),
         priority: document.getElementById('priority').value,
         status: document.getElementById('status').value,
         assignedTo: document.getElementById('assignedTo').value.trim(),
-        department: document.getElementById('department').value.trim(),
+        department: document.getElementById('department').value,
         dueDate: document.getElementById('dueDate').value,
         comments: document.getElementById('comments').value.trim(),
         attachmentLink: document.getElementById('attachmentLink').value.trim()
       };
 
       if (!data.taskName) {
-        showMessage('Task Name is required.', 'error');
+        showMessage('Task / Ticket Name is required.', 'error');
+        document.getElementById('taskName').focus();
         return;
       }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      showMessage('Saving task to Google Sheet...', 'info');
 
       apiPost('addTask', data)
         .then(function(result) {
@@ -707,13 +1273,19 @@
             return;
           }
 
-          showMessage('Task created successfully: ' + result.taskId, 'success');
+          setLiveStatus('live', 'Google Sheet Live');
+          showMessage('Task saved successfully: ' + result.taskId, 'success');
           clearTaskForm();
-          loadDashboard();
-          loadTasks();
+          hideTaskForm();
+          loadAllData();
         })
         .catch(function(error) {
+          setLiveStatus('offline', 'Sheet Offline');
           showMessage(error.message || 'Could not create task.', 'error');
+        })
+        .finally(function() {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Task to Google Sheet';
         });
     }
 
@@ -729,8 +1301,7 @@
           }
 
           showMessage('Task closed successfully.', 'success');
-          loadDashboard();
-          loadTasks();
+          loadAllData();
         })
         .catch(function(error) {
           showMessage(error.message || 'Could not close task.', 'error');
@@ -751,22 +1322,25 @@
 
     function showMessage(text, type) {
       const msg = document.getElementById('message');
+      if (!msg) return;
       msg.textContent = text;
       msg.className = 'message ' + type;
-      msg.style.display = 'block';
+      msg.style.display = 'inline-block';
 
-      setTimeout(function() {
-        msg.style.display = 'none';
-      }, 6000);
+      if (type !== 'info') {
+        setTimeout(function() {
+          msg.style.display = 'none';
+        }, 6000);
+      }
     }
 
     function statusClass(status) {
       const value = String(status || '').toLowerCase();
 
-      if (value === 'closed') return 'closed';
-      if (value === 'overdue') return 'overdue';
-      if (value === 'in progress' || value === 'pending') return 'progress';
-      return 'open';
+      if (value === 'closed') return 'status-closed';
+      if (value === 'overdue') return 'status-overdue';
+      if (value === 'in progress' || value === 'pending') return 'status-progress';
+      return 'status-open';
     }
 
     function formatDate(value) {
