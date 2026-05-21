@@ -476,6 +476,46 @@
     .api-card h3 { font-size:15px; margin-bottom:8px; color:#0f172a; }
     .api-card p { font-size:13px; color:#475569; }
 
+
+    .user-session-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      color: #334155;
+      font-weight: 700;
+    }
+
+    .logout-link {
+      background: #fee2e2;
+      color: #991b1b;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .hidden-nav {
+      display: none !important;
+    }
+
+    .api-method-badge {
+      display: inline-block;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .api-method-badge.fetch { background: #dbeafe; color: #1e40af; }
+    .api-method-badge.post { background: #dcfce7; color: #166534; }
+
     @media (max-width: 700px) {
       .sidebar { width: 80px; }
       .brand span { display: none; }
@@ -512,16 +552,58 @@
 <script>
   // ======================== CONFIGURATION =========================
   // ⚠️ IMPORTANT: REPLACE WITH YOUR ACTUAL APPS SCRIPT WEB APP URL
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2TjfhYprHwUBfS-SnCOoOwtdKWOo_Wlh2lOiju2akZa6WB3tSmVFbs0AlOnTjDqrE/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_F5yZtbB9CS0-BDBNuuxYw6ErEJIFWt3mPTJAJXW39cJoeRCb-lwPOb9D-Gfgq8H9/exec';
   const GOOGLE_SHEET_ID = '1KWYWSUmwGYcBVIuDzh7yo86eTrfnMZX35DuGnRAVNv8';
   const GOOGLE_SHEET_NAME = 'Quick';
   // ================================================================
 
   let currentSection = 'dashboard';
+  let currentUser = null;
+  let dashboardCache = null;
+  let dashboardCacheTime = 0;
+  const CACHE_MS = 15000;
+
+  function getCurrentUser() {
+    try {
+      return JSON.parse(localStorage.getItem('quickbase_user') || sessionStorage.getItem('quickbase_user') || 'null');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function requireLogin() {
+    currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.Email) {
+      window.location.href = 'login.html';
+      return false;
+    }
+    document.querySelectorAll('[data-section="approvals"]').forEach(el => {
+      if (!isExecutive()) el.classList.add('hidden-nav');
+      else el.classList.remove('hidden-nav');
+    });
+    return true;
+  }
+
+  function isExecutive() {
+    const role = String(currentUser?.Role || currentUser?.role || '').toLowerCase();
+    return role.includes('executive') || role.includes('admin');
+  }
+
+  function logout() {
+    localStorage.removeItem('quickbase_user');
+    sessionStorage.removeItem('quickbase_user');
+    window.location.href = 'login.html';
+  }
+
+  function userChipHtml() {
+    if (!currentUser) return '';
+    return `<span class="user-session-bar">👤 ${escapeHtml(currentUser['Full Name'] || currentUser.FullName || currentUser.Email || 'User')} · ${escapeHtml(currentUser.Role || 'User')} <button class="logout-link" onclick="logout()">Logout</button></span>`;
+  }
 
   // Helper: API GET
   async function apiGet(action) {
-    const url = `${SCRIPT_URL}?action=${encodeURIComponent(action)}&_=${Date.now()}`;
+    const userParam = currentUser ? `&userEmail=${encodeURIComponent(currentUser.Email || '')}&userRole=${encodeURIComponent(currentUser.Role || '')}` : '';
+    const url = `${SCRIPT_URL}?action=${encodeURIComponent(action)}${userParam}&_=${Date.now()}`;
     const res = await fetch(url, { method: 'GET', cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
@@ -549,12 +631,30 @@
     const res = await fetch(SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action, payload })
+      body: JSON.stringify({ action, payload, user: currentUser || {} })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     if (json && json.success === false) return json;
     return json || {};
+  }
+
+  async function apiConnectionRun(method, endpoint, payloadText) {
+    const payload = {
+      method,
+      endpoint,
+      payloadText
+    };
+    return apiPost('runApiConnection', payload);
+  }
+
+  async function getFastDashboardData() {
+    const now = Date.now();
+    if (dashboardCache && (now - dashboardCacheTime) < CACHE_MS) return dashboardCache;
+    const data = await apiGet('bootstrap');
+    dashboardCache = data;
+    dashboardCacheTime = now;
+    return data;
   }
 
   function showMessage(msg, type, containerId = 'globalMessage') {
@@ -667,14 +767,15 @@
   // ======================= DASHBOARD ==========================
   async function renderDashboard() {
     try {
-      const health = await apiHealth();
-      const data = await apiGet('dashboard');
-      const tasks = normalizeList(await apiGet('tasks'));
-      const projects = normalizeList(await apiGet('projects'));
-      const automatedTasks = normalizeList(await apiGet('automatedTasks'));
-      const approvals = normalizeList(await apiGet('approvals'));
-      const scheduledJobs = normalizeList(await apiGet('scheduledJobs'));
-      const apiConnections = normalizeList(await apiGet('apiConnections'));
+      const boot = await getFastDashboardData();
+      const health = boot.health || await apiHealth();
+      const data = boot.dashboard || {};
+      const tasks = normalizeList(boot.tasks);
+      const projects = normalizeList(boot.projects);
+      const automatedTasks = normalizeList(boot.automatedTasks);
+      const approvals = normalizeList(boot.approvals);
+      const scheduledJobs = normalizeList(boot.scheduledJobs);
+      const apiConnections = normalizeList(boot.apiConnections);
       let openTasks = 0, closedTasks = 0, overdue = 0;
       const today = new Date(); today.setHours(0,0,0,0);
       tasks.forEach(t => {
@@ -701,7 +802,7 @@
       const html = `
         <div class="top-bar">
           <div class="page-title"><h1>Operations Dashboard</h1><p>Live from Google Sheets · QuickBase style · Sheet ID: ${GOOGLE_SHEET_ID}</p></div>
-          <div class="action-row"><span class="${connectionClass}"><span class="live-dot"></span>${connectionText}</span><button class="refresh-btn" onclick="loadCurrentSection()">⟳ Refresh data</button></div>
+          <div class="action-row">${userChipHtml()}<span class="${connectionClass}"><span class="live-dot"></span>${connectionText}</span><button class="refresh-btn" onclick="dashboardCache=null; loadCurrentSection()">⟳ Refresh data</button></div>
         </div>
         <div class="kpi-grid">
           <div class="kpi-card"><div class="kpi-label">📋 Total Tasks</div><div class="kpi-value">${data.totalTasks || tasks.length || 0}</div></div>
@@ -720,7 +821,7 @@
         </div>
         <div class="two-col-grid">
           <div class="panel"><div class="panel-header"><h2>📁 Projects Window</h2><button class="btn-primary" onclick="currentSection='projects'; loadCurrentSection()">Open Projects</button></div><div class="quick-list">${projects.slice(0,5).map(p=>`<div class="quick-item"><div><strong>${escapeHtml(p['Project Name'] || p.Name)}</strong><small>${escapeHtml(p.Owner || '')} · Due ${fmtDate(p['Due Date'])}</small></div><span class="badge open">${escapeHtml(p.Status || 'Open')}</span></div>`).join('') || '<p>No projects found</p>'}</div></div>
-          <div class="panel"><div class="panel-header"><h2>🛂 Pending Approvals</h2><button class="btn-primary" onclick="currentSection='approvals'; loadCurrentSection()">Open Approvals</button></div><div class="quick-list">${pendingRows || '<p>No pending approvals</p>'}</div></div>
+          ${isExecutive() ? `<div class="panel"><div class="panel-header"><h2>🛂 Pending Approvals</h2><button class="btn-primary" onclick="currentSection='approvals'; loadCurrentSection()">Open Approvals</button></div><div class="quick-list">${pendingRows || '<p>No pending approvals</p>'}</div></div>` : ''}
         </div>
         <div class="two-col-grid">
           <div class="panel"><div class="panel-header"><h2>🔁 Automated Recurring Tasks</h2></div><div class="quick-list">${automatedTasks.slice(0,5).map(a=>`<div class="quick-item"><div><strong>${escapeHtml(a['Task Name'] || a.Name)}</strong><small>${escapeHtml(a.Owner || a['Assigned To'] || '')}</small></div><span class="badge ${String(a.Frequency||'daily').toLowerCase()}">${escapeHtml(a.Frequency || 'Daily')}</span></div>`).join('') || '<p>No automated recurring tasks</p>'}</div></div>
@@ -839,6 +940,10 @@
   }
 
   async function renderApprovals() {
+    if (!isExecutive()) {
+      document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>Access Restricted</h1><p>Pending approvals are visible to Executive Managers only.</p></div>${userChipHtml()}</div><div class="panel" style="padding:24px">You do not have Executive Manager rights for approvals.</div>`;
+      return;
+    }
     let approvals = [];
     try { approvals = normalizeList(await apiGet('approvals')); } catch(e) { approvals = []; }
     const rows = approvals.map(a => `<tr><td>${escapeHtml(a['Approval ID'])}</td><td>${escapeHtml(a.Type || a['Approval Type'])}</td><td>${escapeHtml(a.Requester)}</td><td>${escapeHtml(a.Department)}</td><td>${escapeHtml(a.Details || a.Description)}</td><td><span class="badge ${String(a.Status||'pending').toLowerCase()}">${escapeHtml(a.Status)}</span></td><td>${escapeHtml(a['Approval 1 Status'])}</td><td>${escapeHtml(a['Approval 2 Status'])}</td><td>${escapeHtml(a['Executive Only'])}</td><td><div class="action-row"><button class="btn-sm" onclick="approveItem('${escapeHtml(a['Approval ID'])}', '1')">Approve 1</button><button class="btn-sm" onclick="approveItem('${escapeHtml(a['Approval ID'])}', '2')">Approve 2</button><button class="btn-danger" onclick="rejectItem('${escapeHtml(a['Approval ID'])}')">Reject</button></div></td></tr>`).join('');
@@ -887,7 +992,50 @@
     let health = await apiHealth();
     try { connections = normalizeList(await apiGet('apiConnections')); } catch(e) { connections = []; }
     const live = Boolean(health.success || health.googleSheetsConnected);
-    document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>API Connections</h1><p>External services and connection health · Sheet ID: ${GOOGLE_SHEET_ID}</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div><div class="panel"><div class="panel-header"><h2>🔌 Live Connections</h2></div><div class="api-box">${connections.map(c=>`<div class="api-card"><h3><span class="live-dot"></span> ${escapeHtml(c.Name || c.Connection || 'Google Sheets')}</h3><p>Status: <strong style="color:${String(c.Status || '').toLowerCase().includes('live') ? '#166534' : '#991b1b'}">${escapeHtml(c.Status || (live ? 'Live' : 'Offline'))}</strong></p><p>${escapeHtml(c.Description || health.message || '')}</p><p><strong>Sheet:</strong> ${GOOGLE_SHEET_NAME}</p><p><strong>ID:</strong> ${GOOGLE_SHEET_ID}</p></div>`).join('') || `<div class="api-card"><h3><span class="live-dot"></span> Google Sheets - ${GOOGLE_SHEET_NAME}</h3><p>Status: <strong>${live ? 'Live' : 'Offline'}</strong></p><p>${escapeHtml(health.message || '')}</p><p><strong>ID:</strong> ${GOOGLE_SHEET_ID}</p></div>`}</div></div>`;
+
+    document.getElementById('mainContent').innerHTML = `
+      <div class="top-bar">
+        <div class="page-title"><h1>API Connections</h1><p>Fetch or post data through connected APIs · Sheet ID: ${GOOGLE_SHEET_ID}</p></div>
+        <div class="action-row">${userChipHtml()}<button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>🔌 Live Connections</h2></div>
+        <div class="api-box">
+          ${connections.map(c=>`<div class="api-card"><h3><span class="live-dot"></span> ${escapeHtml(c.Name || c.Connection || 'Google Sheets')}</h3><p>Status: <strong style="color:${String(c.Status || '').toLowerCase().includes('live') ? '#166534' : '#991b1b'}">${escapeHtml(c.Status || (live ? 'Live' : 'Offline'))}</strong></p><p>${escapeHtml(c.Description || health.message || '')}</p><p><strong>Mode:</strong> <span class="api-method-badge fetch">FETCH</span> <span class="api-method-badge post">POST</span></p><p><strong>Sheet:</strong> ${GOOGLE_SHEET_NAME}</p><p><strong>ID:</strong> ${GOOGLE_SHEET_ID}</p></div>`).join('') || `<div class="api-card"><h3><span class="live-dot"></span> Google Sheets - ${GOOGLE_SHEET_NAME}</h3><p>Status: <strong>${live ? 'Live' : 'Offline'}</strong></p><p>${escapeHtml(health.message || '')}</p><p><strong>ID:</strong> ${GOOGLE_SHEET_ID}</p></div>`}
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h2>🌐 API Fetch / Post Test</h2></div>
+        <div class="task-form">
+          <div class="form-row">
+            <div class="form-field"><label>Method</label><select id="apiMethod"><option value="GET">Fetch / GET</option><option value="POST">Post / POST</option></select></div>
+            <div class="form-field"><label>Endpoint URL</label><input id="apiEndpoint" placeholder="https://example.com/api"></div>
+          </div>
+          <div class="form-field"><label>Post Payload JSON</label><textarea id="apiPayload" placeholder='{"name":"Test"}'></textarea></div>
+          <div style="margin-top:16px"><button class="btn-primary" id="runApiBtn">Run API Connection</button></div>
+          <div id="apiRunMessage" class="message-bar"></div>
+          <pre id="apiResult" style="margin-top:16px;background:#0f172a;color:#e2e8f0;padding:16px;border-radius:16px;white-space:pre-wrap;display:none"></pre>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('runApiBtn')?.addEventListener('click', async () => {
+      const method = document.getElementById('apiMethod').value;
+      const endpoint = document.getElementById('apiEndpoint').value.trim();
+      const payloadText = document.getElementById('apiPayload').value.trim();
+      if (!endpoint) return showMessage('Endpoint URL required', 'error', 'apiRunMessage');
+      try {
+        const res = await apiConnectionRun(method, endpoint, payloadText);
+        showMessage(res.success ? 'API connection completed' : (res.message || 'API connection failed'), res.success ? 'success' : 'error', 'apiRunMessage');
+        const result = document.getElementById('apiResult');
+        result.style.display = 'block';
+        result.textContent = JSON.stringify(res, null, 2);
+      } catch (e) {
+        showMessage(e.message, 'error', 'apiRunMessage');
+      }
+    });
   }
 
   // USERS
@@ -923,6 +1071,7 @@
   }
 
   async function loadCurrentSection() {
+    if (!requireLogin()) return;
     if (!SCRIPT_URL || SCRIPT_URL.includes('PASTE_YOUR')) {
       document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:24px;background:#fff0f0"><h2>⚠️ Configuration missing</h2><p>Please replace <code>SCRIPT_URL</code> in the HTML with your actual Google Apps Script Web App URL.</p><p>Make sure you deployed as <strong>"Execute as: Me" + "Who has access: Anyone"</strong> for testing.</p></div>`;
       return;
