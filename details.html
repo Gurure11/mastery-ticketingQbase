@@ -552,6 +552,8 @@
       <div class="nav-link" data-section="apiConnections">🔌 API Connections</div>
       <div class="nav-link" data-section="modules">🧩 Modules</div>
       <div class="nav-link" data-section="users">👥 Users</div>
+      <div class="nav-link" data-section="employees">🧑‍💼 Employees</div>
+      <div class="nav-link" data-section="sla">⏱️ SLA Management</div>
       <div class="nav-link" data-section="vehicles">🚗 Vehicles</div>
     </div>
   </aside>
@@ -564,7 +566,7 @@
 <script>
   // ======================== CONFIGURATION =========================
   // ⚠️ IMPORTANT: REPLACE WITH YOUR ACTUAL APPS SCRIPT WEB APP URL
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby0MFXRyMPAAy6aqmOj94KffRU_8fCnMKNMdJMRwbRp_Mk-ZVXDQnI434Zm0VOBNN1m/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDKiPUqNAYrJ3En5xOIPoLpVFsFUbfWwEEXjMd2a4PBBM0WhJFp9wgw2-BTQobjHoD/exec';
   const GOOGLE_SHEET_ID = '1KWYWSUmwGYcBVIuDzh7yo86eTrfnMZX35DuGnRAVNv8';
   const GOOGLE_SHEET_NAME = 'Quick';
   // ================================================================
@@ -573,7 +575,7 @@
   let currentUser = null;
   let dashboardCache = null;
   let dashboardCacheTime = 0;
-  const CACHE_MS = 15000;
+  const CACHE_MS = 120000;
 
   function getCurrentUser() {
     try {
@@ -778,6 +780,7 @@
 
   // ======================= DASHBOARD ==========================
   async function renderDashboard() {
+    document.body.style.pointerEvents='none';
     try {
       const boot = await getFastDashboardData();
       const health = boot.health || await apiHealth();
@@ -818,9 +821,9 @@
         </div>
         <div class="kpi-grid">
           <div class="kpi-card"><div class="kpi-label">📋 Total Tasks</div><div class="kpi-value">${data.totalTasks || tasks.length || 0}</div></div>
-          <div class="kpi-card"><div class="kpi-label">🟠 Open Tasks</div><div class="kpi-value">${openTasks}</div></div>
-          <div class="kpi-card"><div class="kpi-label">✅ Closed Tasks</div><div class="kpi-value">${closedTasks}</div></div>
-          <div class="kpi-card"><div class="kpi-label">⚠️ Overdue</div><div class="kpi-value">${overdue}</div></div>
+          <div class="kpi-card" onclick="currentSection='tasks';loadCurrentSection()" style="cursor:pointer"><div class="kpi-label">🟠 Open Tasks</div><div class="kpi-value">${openTasks}</div></div>
+          <div class="kpi-card" onclick="currentSection='tasks';loadCurrentSection()" style="cursor:pointer"><div class="kpi-label">✅ Closed Tasks</div><div class="kpi-value">${closedTasks}</div></div>
+          <div class="kpi-card" onclick="currentSection='tasks';loadCurrentSection()" style="cursor:pointer"><div class="kpi-label">⚠️ Overdue</div><div class="kpi-value">${overdue}</div></div>
           <div class="kpi-card"><div class="kpi-label">📁 Projects</div><div class="kpi-value">${projects.length}</div></div>
           <div class="kpi-card"><div class="kpi-label">🛂 Pending Approvals</div><div class="kpi-value">${pendingApprovals}</div></div>
           <div class="kpi-card"><div class="kpi-label">🔁 Automated Tasks</div><div class="kpi-value">${automatedTasks.length}</div></div>
@@ -844,6 +847,7 @@
       drawBarChart('taskStatusChart', Object.keys(taskStatus), Object.values(taskStatus));
       drawBarChart('projectStatusChart', Object.keys(projectStatus), Object.values(projectStatus));
       drawDonutChart('approvalChart', Object.keys(approvalStatus), Object.values(approvalStatus));
+      document.body.style.pointerEvents='auto';
     } catch (err) {
       document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:24px;color:red">⚠️ Error loading dashboard: ${err.message}<br>Check SCRIPT_URL and CORS/WebApp deployment.</div>`;
     }
@@ -1050,6 +1054,22 @@
     });
   }
 
+  
+  async function renderEmployees() {
+    let employees = [];
+    try { employees = normalizeList(await apiGet('employees')); } catch(e) { employees = []; }
+    const rows = employees.map(e => `<tr><td>${escapeHtml(e['Employee ID'])}</td><td>${escapeHtml(e['Employee Name'])}</td><td>${escapeHtml(e.Department)}</td><td>${escapeHtml(e.Role)}</td><td>${escapeHtml(e.Manager)}</td><td>${escapeHtml(e.Status)}</td></tr>`).join('');
+    document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>Employees</h1><p>All employees in the system</p></div></div><div class="panel"><div class="table-wrapper"><table><thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Role</th><th>Manager</th><th>Status</th></tr></thead><tbody>${rows || '<tr><td colspan="6">No employees found</td></tr>'}</tbody></table></div></div>`;
+  }
+
+  async function renderSLA() {
+    let sla = [];
+    try { sla = normalizeList(await apiGet('sla')); } catch(e) { sla = []; }
+    const rows = sla.map(s => `<tr><td>${escapeHtml(s['SLA Name'])}</td><td>${escapeHtml(s.Description)}</td><td>${escapeHtml(s.Priority)}</td><td>${escapeHtml(s['First Response'])}</td><td>${escapeHtml(s['Resolution Target'])}</td></tr>`).join('');
+    document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>SLA Management</h1><p>Critical operational SLA tracking</p></div></div><div class="panel"><div class="table-wrapper"><table><thead><tr><th>SLA</th><th>Description</th><th>Priority</th><th>First Response</th><th>Resolution Target</th></tr></thead><tbody>${rows || '<tr><td colspan="5">No SLA records found</td></tr>'}</tbody></table></div></div>`;
+  }
+
+
   // USERS
   async function renderUsers() {
     let users = [];
@@ -1178,6 +1198,8 @@
     else if (currentSection === 'scheduledJobs') await renderScheduledJobs();
     else if (currentSection === 'apiConnections') await renderApiConnections();
     else if (currentSection === 'users') await renderUsers();
+    else if (currentSection === 'employees') await renderEmployees();
+    else if (currentSection === 'sla') await renderSLA();
     else if (currentSection === 'vehicles') await renderVehicles();
     else if (currentSection === 'modules') renderModules();
   }
