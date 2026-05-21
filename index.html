@@ -2,1396 +2,581 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>On Point Group Operations Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>QuickBase-style Dashboard | Google Sheets Backend</title>
   <style>
-    * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
-
-    :root {
-      --blue: #0b66f0;
-      --purple: #7651a6;
-      --border: #d8d8df;
-      --bg: #f7f7f8;
-      --sidebar: #f3f3f6;
-      --text: #1f1f29;
-      --muted: #666673;
-      --card: #ffffff;
-      --shadow: 0 1px 5px rgba(0,0,0,0.18);
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, 'Segoe UI', 'Inter', 'Helvetica Neue', sans-serif;
     }
 
     body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      overflow-x: hidden;
-    }
-
-    button { font: inherit; }
-
-    .top-shell {
-      min-height: 58px;
-      background: #fff;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 0 10px 0 0;
-      position: sticky;
-      top: 0;
-      z-index: 40;
-    }
-
-    .top-left {
-      display: flex;
-      align-items: center;
-      min-width: 0;
-    }
-
-    .menu-grid {
-      width: 34px;
-      display: grid;
-      grid-template-columns: repeat(3, 5px);
-      gap: 3px;
-      justify-content: center;
-      flex: 0 0 auto;
-    }
-
-    .menu-grid span {
-      width: 5px;
-      height: 5px;
-      background: #4e4e58;
-      border-radius: 1px;
-    }
-
-    .logo {
-      width: 220px;
-      min-height: 58px;
-      border: 0;
-      border-right: 1px solid var(--border);
-      background: white;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding-left: 8px;
-      cursor: pointer;
-      font-size: 28px;
-      font-weight: 800;
-      color: #263238;
-      flex: 0 0 auto;
-    }
-
-    .mark {
-      width: 22px;
-      height: 22px;
-      position: relative;
-      flex: 0 0 auto;
-    }
-
-    .mark span {
-      position: absolute;
-      width: 9px;
-      height: 9px;
-      background: #208a73;
-    }
-
-    .mark span:nth-child(1) { left: 0; top: 6px; }
-    .mark span:nth-child(2) { left: 10px; top: 0; }
-    .mark span:nth-child(3) { left: 10px; top: 12px; background: #f05a35; }
-
-    .app-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding-left: 22px;
-      font-size: 23px;
-      font-weight: 700;
-      min-width: 0;
-    }
-
-    .app-title span:last-child {
+      background: #f1f5f9;
+      height: 100vh;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
 
-    .app-icon {
-      background: var(--purple);
-      color: white;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-size: 19px;
-      flex: 0 0 auto;
-    }
-
-    .top-actions {
+    /* APP LAYOUT */
+    .app {
       display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 21px;
-      color: #4d4d59;
-      flex: 0 0 auto;
-    }
-
-    .icon-btn {
-      border: 1px solid var(--border);
-      background: #fff;
-      width: 48px;
-      height: 44px;
-      border-radius: 13px;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      color: #42424f;
-    }
-
-    .icon-btn:hover,
-    .nav-btn:hover,
-    .tab:hover,
-    .chart-card:hover,
-    .tile:hover,
-    .metric-card:hover {
-      background-color: #f8f8fb;
-    }
-
-    .profile {
-      background: #efeff0;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-size: 18px;
-      color: #111;
-    }
-
-    .mobile-menu { display: none; }
-
-    .layout {
-      display: flex;
-      min-height: calc(100vh - 58px);
-    }
-
-    .sidebar {
-      width: 390px;
-      background: var(--sidebar);
-      border-right: 1px solid var(--border);
-      position: fixed;
-      top: 58px;
-      bottom: 0;
-      left: 0;
-      overflow-y: auto;
-      z-index: 25;
-      transition: transform .2s ease;
-    }
-
-    .sidebar-section {
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 14px;
-    }
-
-    .nav-btn {
+      height: 100vh;
       width: 100%;
-      border: 0;
-      background: transparent;
+    }
+
+    /* SIDEBAR (QuickBase style) */
+    .sidebar {
+      width: 280px;
+      background: #0f172a;
+      color: #e2e8f0;
       display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 14px 18px;
-      font-size: 22px;
-      color: #171720;
-      cursor: pointer;
-      text-align: left;
+      flex-direction: column;
+      flex-shrink: 0;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+      overflow-y: auto;
     }
 
-    .nav-btn.active {
-      background: #e8e8ec;
-      font-weight: 700;
-      border-top-right-radius: 12px;
-      border-bottom-right-radius: 12px;
-    }
-
-    .nav-icon {
-      width: 25px;
-      text-align: center;
-      flex: 0 0 auto;
-    }
-
-    .tables-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 13px 28px 8px 0;
-      color: #50505d;
-      font-weight: 700;
-      font-size: 20px;
-    }
-
-    .table-icon {
-      width: 35px;
-      height: 29px;
-      border-radius: 6px;
-      background: #dfdfe4;
-      display: grid;
-      place-items: center;
-      border: 1px solid #c9c9d0;
-      font-size: 16px;
-      flex: 0 0 auto;
-    }
-
-    .content {
-      margin-left: 390px;
-      width: calc(100% - 390px);
-      min-height: calc(100vh - 58px);
-    }
-
-    .crumb-bar {
-      min-height: 74px;
-      background: #fff;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 22px;
-      box-shadow: 0 2px 7px rgba(0,0,0,0.12);
-      position: sticky;
-      top: 58px;
-      z-index: 20;
-    }
-
-    .crumb-left {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      font-size: 21px;
-      font-weight: 700;
-      min-width: 0;
-    }
-
-    .crumb-name {
-      max-width: 290px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .collapse-btn {
-      width: 42px;
-      height: 42px;
-      border: 0;
-      border-radius: 50%;
-      background: white;
-      box-shadow: 0 3px 10px rgba(0,0,0,.2);
-      display: grid;
-      place-items: center;
-      margin-left: -42px;
-      cursor: pointer;
-      flex: 0 0 auto;
+    .brand {
+      padding: 28px 24px 20px 24px;
       font-size: 26px;
-    }
-
-    .crumb-actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 14px;
-      color: #50505d;
-      flex-wrap: wrap;
-    }
-
-    .pill-btn {
-      padding: 11px 22px;
-      border: 1px solid #c4c4cc;
-      border-radius: 999px;
-      background: white;
-      font-size: 18px;
-      cursor: pointer;
-    }
-
-    .primary {
-      background: var(--blue);
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      border-bottom: 1px solid #1e293b;
       color: white;
-      border-color: var(--blue);
     }
 
-    .live-pill {
-      padding: 9px 14px;
-      border-radius: 999px;
-      border: 1px solid #c4c4cc;
-      font-weight: 800;
-      font-size: 13px;
-      background: #fff;
-      color: #555;
-      white-space: nowrap;
+    .brand span {
+      background: #3b82f6;
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-size: 20px;
+      margin-left: 6px;
     }
 
-    .live-pill.live {
-      color: #0f7a35;
-      background: #e8f8ed;
-      border-color: #87d69d;
-    }
-
-    .live-pill.offline {
-      color: #9b1c1c;
-      background: #fff0f0;
-      border-color: #ef9a9a;
-    }
-
-    .dashboard-area {
-      padding: 54px 14px 24px 12px;
-      background: #f7f7f8;
-    }
-
-    .tabs {
+    .nav {
+      padding: 24px 16px;
       display: flex;
-      align-items: flex-end;
-      margin-bottom: 18px;
-      overflow-x: auto;
-      white-space: nowrap;
+      flex-direction: column;
+      gap: 6px;
     }
 
-    .tab {
-      border: 1px solid #d3d3d9;
-      background: #e9e9ed;
-      color: #565663;
-      padding: 13px 20px;
-      font-size: 21px;
-      border-top-left-radius: 6px;
-      border-top-right-radius: 6px;
-      box-shadow: inset 0 2px 2px rgba(255,255,255,.8);
-      cursor: pointer;
-      flex: 0 0 auto;
-    }
-
-    .tab.active {
-      background: white;
-      color: #14141f;
-      border-top: 5px solid var(--blue);
-      padding-top: 9px;
-      border-bottom-color: white;
-    }
-
-    .view { display: none; }
-    .view.active { display: block; }
-
-    .chart-grid {
-      display: grid;
-      grid-template-columns: minmax(430px, 1.15fr) minmax(390px, .95fr);
-      gap: 14px;
-    }
-
-    .chart-card,
-    .panel,
-    .module-panel {
-      background: white;
-      border: 1px solid #dcdce2;
-      border-radius: 9px;
-      box-shadow: var(--shadow);
-    }
-
-    .chart-card {
-      padding: 24px;
-      min-height: 575px;
-      cursor: pointer;
-      text-align: left;
-    }
-
-    .chart-card h2,
-    .panel h2,
-    .module-panel h2 {
-      margin: 0 0 12px;
-      font-size: 30px;
+    .nav-link {
+      padding: 12px 16px;
+      border-radius: 12px;
       font-weight: 500;
-    }
-
-    .sub {
-      color: #656572;
-      font-size: 22px;
-      margin-bottom: 24px;
-    }
-
-    .pie-wrap {
-      height: 420px;
-      display: grid;
-      place-items: center;
-    }
-
-    .pie {
-      width: min(360px, 80vw);
-      height: min(360px, 80vw);
-      max-width: 360px;
-      max-height: 360px;
-      border-radius: 50%;
-      background: conic-gradient(#76afe5 0 var(--critical, 36%), #a385d8 var(--critical, 36%) var(--high, 51%), #ff4146 var(--high, 51%) var(--medium, 62%), #0b63ee var(--medium, 62%) var(--low, 92%), #8082df var(--low, 92%) 100%);
-      position: relative;
-    }
-
-    .pie::after {
-      content: "";
-      position: absolute;
-      inset: -2px;
-      border-radius: 50%;
-      background: repeating-conic-gradient(from 0deg, transparent 0deg 35.5deg, rgba(255,255,255,.85) 35.5deg 36.2deg);
-      pointer-events: none;
-      mix-blend-mode: screen;
-    }
-
-    .bar-chart {
-      height: 420px;
-      display: grid;
-      grid-template-columns: 65px 1fr;
-      align-items: end;
-      padding-top: 10px;
-    }
-
-    .y-axis {
-      height: 380px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: flex-end;
-      padding-right: 16px;
-      color: #656572;
-      font-size: 18px;
-    }
-
-    .bars-area {
-      height: 380px;
-      border-left: 1px solid #ededf0;
-      border-bottom: 1px solid #ededf0;
-      position: relative;
-      display: flex;
-      align-items: flex-end;
-      gap: 24px;
-      padding: 0 20px;
-      overflow-x: auto;
-    }
-
-    .gridline {
-      position: absolute;
-      left: 0;
-      right: 0;
-      border-top: 1px solid #ededf0;
-    }
-
-    .g1 { bottom: 25%; }
-    .g2 { bottom: 50%; }
-    .g3 { bottom: 75%; }
-
-    .bar-column {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-end;
-      height: 100%;
-      gap: 8px;
-      z-index: 2;
-      min-width: 70px;
-      cursor: pointer;
-    }
-
-    .bar {
-      width: 68px;
-      background: var(--blue);
-      min-height: 3px;
-    }
-
-    .bar-label {
-      color: #656572;
-      font-size: 12px;
-      max-width: 76px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      text-align: center;
-    }
-
-    .axis-title {
-      text-align: center;
-      color: #656572;
-      font-size: 21px;
-      font-weight: 700;
-      margin-top: 16px;
-    }
-
-    .metrics-row {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(150px, 1fr));
-      gap: 14px;
-      margin-top: 14px;
-    }
-
-    .metric-card {
-      background: white;
-      border: 1px solid #dcdce2;
-      border-radius: 9px;
-      box-shadow: var(--shadow);
-      padding: 18px;
-      cursor: pointer;
-      text-align: left;
-    }
-
-    .metric-card span {
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .metric-card strong {
-      display: block;
-      font-size: 36px;
-      margin-top: 8px;
-    }
-
-    .panel {
-      padding: 22px;
-      margin-top: 14px;
-    }
-
-    .panel-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-    }
-
-    .action-btn {
-      background: var(--blue);
-      color: white;
-      border: 0;
-      border-radius: 8px;
-      padding: 12px 18px;
-      font-weight: 800;
-      cursor: pointer;
       font-size: 15px;
-    }
-
-    .secondary-btn {
-      background: white;
-      border: 1px solid #bdbdc7;
-      color: #2d2d36;
-      border-radius: 8px;
-      padding: 11px 18px;
-      font-weight: 700;
       cursor: pointer;
+      transition: all 0.2s;
+      color: #cbd5e1;
     }
 
+    .nav-link:hover {
+      background: #1e293b;
+      color: white;
+    }
+
+    .nav-link.active {
+      background: #3b82f6;
+      color: white;
+      box-shadow: 0 2px 6px rgba(59,130,246,0.3);
+    }
+
+    /* MAIN PANEL */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 32px;
+    }
+
+    /* TOP BAR */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .page-title h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .page-title p {
+      color: #475569;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .refresh-btn {
+      background: white;
+      border: 1px solid #cbd5e1;
+      padding: 10px 20px;
+      border-radius: 40px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .refresh-btn:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+
+    /* KPI CARDS */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .kpi-card {
+      background: white;
+      border-radius: 24px;
+      padding: 20px 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.05);
+      border: 1px solid #e2e8f0;
+      transition: 0.2s;
+    }
+
+    .kpi-label {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 42px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+
+    /* PANELS (cards) */
+    .panel {
+      background: white;
+      border-radius: 28px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.02);
+      margin-bottom: 36px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 20px 24px 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      border-bottom: 1px solid #eef2ff;
+    }
+
+    .panel-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 40px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 13px;
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+
+    .btn-sm {
+      background: #eef2ff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      color: #1e40af;
+    }
+
+    .btn-sm:hover {
+      background: #e0e7ff;
+    }
+
+    /* FORMS */
     .task-form {
-      display: none;
-      background: #fbfbfc;
-      border: 1px solid #d9d9df;
-      border-radius: 10px;
-      padding: 16px;
+      padding: 20px 24px;
+      background: #fafcff;
+      border-bottom: 1px solid #eef2ff;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
       margin-bottom: 16px;
     }
 
-    .task-form.open { display: block; }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 12px;
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
-    label {
-      display: block;
-      font-size: 13px;
+    .form-field label {
+      font-size: 12px;
       font-weight: 700;
-      color: #50505d;
-      margin-bottom: 5px;
+      color: #334155;
+      text-transform: uppercase;
     }
 
     input, select, textarea {
-      width: 100%;
-      border: 1px solid #cfcfd7;
-      border-radius: 7px;
-      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 10px 12px;
       font-size: 14px;
       background: white;
     }
 
     textarea {
-      min-height: 70px;
       resize: vertical;
+      min-height: 70px;
     }
 
-    .save-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-
-    .save-task-btn {
-      background: #168a45;
-      color: white;
-      border: 0;
-      border-radius: 8px;
-      padding: 12px 20px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-
-    .message {
-      display: none;
-      padding: 10px 12px;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 14px;
-    }
-
-    .message.success { display: inline-block; background: #dcfce7; color: #166534; }
-    .message.error { display: inline-block; background: #fee2e2; color: #991b1b; }
-    .message.info { display: inline-block; background: #dbeafe; color: #1d4ed8; }
-
-    .data-table-wrap {
+    /* TABLES */
+    .table-wrapper {
       overflow-x: auto;
-      border: 1px solid #dddddf;
-      border-radius: 8px;
+      padding: 0 0 12px 0;
     }
 
     table {
       width: 100%;
-      min-width: 980px;
       border-collapse: collapse;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     th {
-      background: #f1f1f4;
-      color: #30303a;
       text-align: left;
-      padding: 11px;
-      border-bottom: 1px solid #d8d8df;
-      white-space: nowrap;
+      padding: 14px 12px;
+      background: #f8fafc;
+      color: #1e293b;
+      font-weight: 700;
+      border-bottom: 1px solid #e2e8f0;
     }
 
     td {
-      padding: 10px 11px;
-      border-bottom: 1px solid #ececf0;
-      vertical-align: top;
+      padding: 12px;
+      border-bottom: 1px solid #f0f2f5;
+      vertical-align: middle;
     }
 
-    tr:hover td { background: #fafafa; }
-
-    .status-badge {
-      padding: 4px 8px;
-      border-radius: 999px;
+    .badge {
       display: inline-block;
-      font-weight: 800;
-      font-size: 12px;
-      background: #e9e9ed;
+      padding: 4px 10px;
+      border-radius: 40px;
+      font-size: 11px;
+      font-weight: 700;
+      text-align: center;
     }
 
-    .status-open { background: #dbeafe; color: #1d4ed8; }
-    .status-progress { background: #fef3c7; color: #92400e; }
-    .status-closed { background: #dcfce7; color: #166534; }
-    .status-overdue { background: #fee2e2; color: #991b1b; }
+    .badge.open { background: #dbeafe; color: #1e3a8a; }
+    .badge.closed { background: #dcfce7; color: #166534; }
+    .badge.overdue { background: #fee2e2; color: #991b1b; }
+    .badge.progress { background: #fef9c3; color: #854d0e; }
 
-    .module-panel {
-      padding: 28px;
-      min-height: 420px;
+    .message-bar {
+      margin: 12px 24px 0 24px;
+      padding: 12px;
+      border-radius: 20px;
+      display: none;
     }
+
+    .success { background: #dcfce7; color: #166534; border-left: 4px solid #22c55e; }
+    .error { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
 
     .module-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 14px;
-      margin-top: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      padding: 24px;
     }
 
-    .tile {
-      border: 1px solid #dedee5;
-      border-radius: 10px;
-      background: #fbfbfc;
+    .module-card {
+      background: #f8fafc;
+      border-radius: 20px;
       padding: 18px;
-      cursor: pointer;
-      text-align: left;
+      border: 1px solid #e2e8f0;
     }
 
-    .tile h3 { margin: 0 0 8px; }
-    .tile p { margin: 0; color: var(--muted); line-height: 1.45; }
-
-    .backdrop { display: none; }
-
-    @media (max-width: 1200px) {
-      .sidebar { width: 300px; }
-      .content { margin-left: 300px; width: calc(100% - 300px); }
-      .logo { width: 190px; }
-      .chart-grid { grid-template-columns: 1fr; }
-      .metrics-row { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
-    }
-
-    @media (max-width: 850px) {
-      .top-shell { min-height: 58px; padding: 8px; }
-      .mobile-menu { display: grid; }
-      .menu-grid { display: none; }
-      .logo { width: auto; min-height: auto; border-right: 0; font-size: 22px; padding-left: 4px; }
-      .app-title { padding-left: 10px; font-size: 16px; }
-      .top-actions { gap: 6px; font-size: 16px; }
-      .top-actions > span { display: none; }
-      .icon-btn { width: 39px; height: 37px; }
-      .profile { width: 37px; height: 37px; font-size: 14px; }
-      .layout { display: block; }
-      .sidebar {
-        transform: translateX(-105%);
-        width: min(340px, 86vw);
-        top: 58px;
-        min-height: calc(100vh - 58px);
-        box-shadow: 4px 0 20px rgba(0,0,0,.2);
-      }
-      body.sidebar-open .sidebar { transform: translateX(0); }
-      body.sidebar-open .backdrop {
-        display: block;
-        position: fixed;
-        inset: 58px 0 0 0;
-        background: rgba(0,0,0,.25);
-        z-index: 22;
-      }
-      .content { margin-left: 0; width: 100%; }
-      .crumb-bar {
-        top: 58px;
-        min-height: auto;
-        align-items: flex-start;
-        flex-direction: column;
-        padding: 12px;
-      }
-      .crumb-left { width: 100%; font-size: 17px; gap: 8px; }
-      .crumb-name { max-width: 170px; }
-      .collapse-btn { display: none; }
-      .crumb-actions { width: 100%; justify-content: flex-start; gap: 8px; }
-      .pill-btn { padding: 9px 14px; font-size: 14px; }
-      .dashboard-area { padding: 18px 10px; }
-      .tab { font-size: 16px; padding: 10px 14px; }
-      .chart-card { min-height: auto; padding: 16px; }
-      .chart-card h2, .panel h2, .module-panel h2 { font-size: 22px; }
-      .sub { font-size: 16px; }
-      .pie-wrap { height: 300px; }
-      .bar-chart { height: 320px; grid-template-columns: 46px 1fr; }
-      .y-axis, .bars-area { height: 280px; }
-      .bar { width: 48px; }
-      .metrics-row { grid-template-columns: 1fr; }
-      .panel { padding: 15px; }
-    }
-
-    @media (max-width: 520px) {
-      .app-title span:last-child { display: none; }
-      .logo { font-size: 18px; }
-      .mark { transform: scale(.85); }
-      .chart-grid { grid-template-columns: 1fr; }
-      table { min-width: 880px; }
+    @media (max-width: 700px) {
+      .sidebar { width: 80px; }
+      .brand span { display: none; }
+      .nav-link { text-align: center; font-size: 12px; padding: 10px 4px; }
+      .main { padding: 16px; }
     }
   </style>
 </head>
 <body>
-  <header class="top-shell">
-    <div class="top-left">
-      <button class="icon-btn mobile-menu" onclick="toggleSidebar()">☰</button>
-      <div class="menu-grid" aria-hidden="true">
-        <span></span><span></span><span></span>
-        <span></span><span></span><span></span>
-        <span></span><span></span><span></span>
-      </div>
-      <button class="logo" onclick="showView('summary')">
-        <div class="mark"><span></span><span></span><span></span></div>
-        quickbase
-      </button>
-      <div class="app-title"><span class="app-icon">♚</span><span>On Point Group Operations Management</span></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">Quick<span>Base</span></div>
+    <div class="nav">
+      <div class="nav-link active" data-section="dashboard">📊 Dashboard</div>
+      <div class="nav-link" data-section="tasks">✅ Tasks</div>
+      <div class="nav-link" data-section="modules">🧩 Modules</div>
+      <div class="nav-link" data-section="users">👥 Users</div>
+      <div class="nav-link" data-section="vehicles">🚗 Vehicles</div>
     </div>
-    <div class="top-actions">
-      <button class="icon-btn" onclick="showTaskForm()" title="Create task">+</button>
-      <button class="icon-btn" onclick="loadAllData()" title="Refresh">⌕</button>
-      <span>☆</span>
-      <span>♟</span>
-      <span>?</span>
-      <div class="profile">TM</div>
-      <button class="icon-btn" onclick="showView('dashboards')" title="Dashboards">✦</button>
-    </div>
-  </header>
+  </aside>
 
-  <div class="layout">
-    <div class="backdrop" onclick="toggleSidebar(false)"></div>
+  <main class="main" id="mainContent">
+    <!-- dynamic sections will be injected via JS -->
+  </main>
+</div>
 
-    <aside class="sidebar">
-      <div class="sidebar-section">
-        <button class="nav-btn active" data-view-link="summary" onclick="showView('summary')"><span class="nav-icon">⌂</span>App home</button>
-        <button class="nav-btn" data-view-link="users" onclick="showView('users')"><span class="nav-icon">♙</span>Users</button>
-        <button class="nav-btn" data-view-link="settings" onclick="showView('settings')"><span class="nav-icon">⚙</span>App settings</button>
-      </div>
+<script>
+  // ======================== CONFIGURATION =========================
+  // ⚠️ IMPORTANT: REPLACE WITH YOUR ACTUAL APPS SCRIPT WEB APP URL
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzgB1V1pCSmZv-aQCU4MN0XR31p_qWp945PgrGDiZgex6tL485zF78lzgaWdEkTat4Y/exec';
+  // ================================================================
 
-      <div class="tables-head"><span>Tables</span><span>＋ &nbsp;⌕</span></div>
+  let currentSection = 'dashboard';
 
-      <button class="nav-btn" data-view-link="departments" onclick="showView('departments')"><span class="table-icon">▣</span>Departments</button>
-      <button class="nav-btn" data-view-link="employees" onclick="showView('employees')"><span class="table-icon">▦</span>Employees</button>
-      <button class="nav-btn" data-view-link="tickets" onclick="showView('tickets')"><span class="table-icon">▤</span>Tickets</button>
-      <button class="nav-btn" data-view-link="kpis" onclick="showView('kpis')"><span class="table-icon">□</span>KPIs</button>
-      <button class="nav-btn" data-view-link="bsc" onclick="showView('bsc')"><span class="table-icon">□</span>BSC</button>
-      <button class="nav-btn" data-view-link="sla" onclick="showView('sla')"><span class="table-icon">□</span>SLA</button>
-      <button class="nav-btn" data-view-link="dashboards" onclick="showView('dashboards')"><span class="table-icon">□</span>Dashboards</button>
-      <button class="nav-btn" data-view-link="divisions" onclick="showView('divisions')"><span class="table-icon">□</span>Divisions</button>
-      <button class="nav-btn" data-view-link="categories" onclick="showView('categories')"><span class="table-icon">▤</span>Categories</button>
-      <button class="nav-btn" data-view-link="slaRules" onclick="showView('slaRules')"><span class="table-icon">□</span>SLA Rules</button>
-      <button class="nav-btn" data-view-link="projects" onclick="showView('projects')"><span class="table-icon">□</span>Projects / Clients</button>
-    </aside>
+  // Helper: API GET
+  async function apiGet(action) {
+    const res = await fetch(`${SCRIPT_URL}?action=${action}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
 
-    <main class="content">
-      <div class="crumb-bar">
-        <div class="crumb-left">
-          <button class="collapse-btn" onclick="toggleSidebar()">‹</button>
-          <span>⚙</span>
-          <span class="crumb-name">On Point Group Operation...</span>
-          <span style="color:#90909a;">›</span>
-          <span id="currentViewTitle">Default dashboard</span>
-        </div>
-        <div class="crumb-actions">
-          <span id="liveStatus" class="live-pill offline">Checking Sheet...</span>
-          <button class="pill-btn" onclick="clearScreenOnly()">Delete sample data</button>
-          <button class="pill-btn primary" onclick="showTaskForm()">Create Task</button>
-          <button class="icon-btn" onclick="showView('tickets')">▣</button>
-          <button class="icon-btn" onclick="showView('dashboards')">⌯</button>
-          <button class="icon-btn" onclick="showView('settings')">▢</button>
-        </div>
-      </div>
+  // Helper: API POST
+  async function apiPost(action, payload) {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action, payload })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
 
-      <section class="dashboard-area">
-        <nav class="tabs">
-          <button class="tab active" data-tab="summary" onclick="showView('summary')">Summary</button>
-          <button class="tab" data-tab="bsc" onclick="showView('bsc')">BSC</button>
-          <button class="tab" data-tab="departments" onclick="showView('departments')">Departments</button>
-          <button class="tab" data-tab="tickets" onclick="showView('tickets')">Tickets</button>
-          <button class="tab" data-tab="kpis" onclick="showView('kpis')">KPIs</button>
-          <button class="tab" data-tab="sla" onclick="showView('sla')">SLA</button>
-          <button class="tab" data-tab="dashboards" onclick="showView('dashboards')">Dashboards</button>
-          <button class="tab" data-tab="employees" onclick="showView('employees')">Employees</button>
-        </nav>
-
-        <div id="summary" class="view active">
-          <div class="chart-grid">
-            <button class="chart-card" onclick="showView('tickets')">
-              <h2>Tickets - Tickets by Priority</h2>
-              <div class="sub">Shows the number of tickets by priority</div>
-              <div class="pie-wrap"><div id="priorityPie" class="pie"></div></div>
-            </button>
-
-            <button class="chart-card" onclick="showView('departments')">
-              <h2>Tickets - Tickets Assigned by Department</h2>
-              <div class="sub">Shows the number of tickets assigned to each department</div>
-              <div class="bar-chart">
-                <div class="y-axis"><span>200</span><span>150</span><span>100</span><span>50</span><span>0</span></div>
-                <div>
-                  <div class="bars-area" id="departmentBars">
-                    <div class="gridline g1"></div><div class="gridline g2"></div><div class="gridline g3"></div>
-                    <div class="bar-column"><div class="bar" style="height:62%;"></div><span class="bar-label">Operations</span></div>
-                  </div>
-                  <div class="axis-title">Related Assigned To</div>
-                </div>
-              </div>
-            </button>
-          </div>
-
-          <div class="metrics-row">
-            <button class="metric-card" onclick="showView('tickets')"><span>Total Tasks</span><strong id="totalTasksMetric">0</strong></button>
-            <button class="metric-card" onclick="filterTickets('Open')"><span>Open Tasks</span><strong id="openTasksMetric">0</strong></button>
-            <button class="metric-card" onclick="filterTickets('Closed')"><span>Closed Tasks</span><strong id="closedTasksMetric">0</strong></button>
-            <button class="metric-card" onclick="filterTickets('Overdue')"><span>Overdue Tasks</span><strong id="overdueTasksMetric">0</strong></button>
-          </div>
-
-          <div class="panel">
-            <div class="panel-toolbar">
-              <h2>Tasks / Tickets</h2>
-              <button class="action-btn" onclick="showTaskForm()">+ Create Task</button>
-            </div>
-
-            <div id="taskForm" class="task-form">
-              <div class="form-grid">
-                <div><label>Task / Ticket Name *</label><input id="taskName" placeholder="Enter task name"></div>
-                <div><label>Assigned To</label><input id="assignedTo" placeholder="Person responsible"></div>
-                <div><label>Priority</label><select id="priority"><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></div>
-                <div><label>Status</label><select id="status"><option selected>Open</option><option>In Progress</option><option>Pending</option><option>Closed</option><option>Overdue</option></select></div>
-                <div><label>Department</label><select id="department"><option value="">Select department</option><option>Admin</option><option>Business Development</option><option>Finance & IT</option><option>Fleet</option><option>HR</option><option>Operations</option><option>Procurement</option><option>Sales</option><option>SHEQ</option><option>Tendering</option><option>Warehouse</option></select></div>
-                <div><label>Due Date</label><input id="dueDate" type="date"></div>
-                <div><label>Attachment Link</label><input id="attachmentLink" placeholder="Paste Drive link if any"></div>
-              </div>
-              <div style="margin-top:12px;"><label>Description</label><textarea id="description" placeholder="Task details"></textarea></div>
-              <div style="margin-top:12px;"><label>Comments</label><textarea id="comments" placeholder="Comments"></textarea></div>
-              <div class="save-row">
-                <button id="saveTaskBtn" class="save-task-btn" onclick="saveTask()">Save Task to Google Sheet</button>
-                <button class="secondary-btn" onclick="hideTaskForm()">Cancel</button>
-                <span id="message" class="message"></span>
-              </div>
-            </div>
-
-            <div class="data-table-wrap">
-              <table>
-                <thead><tr><th>Task ID</th><th>Date Created</th><th>Task Name</th><th>Description</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Department</th><th>Due Date</th><th>Completion Date</th><th>Comments</th><th>Attachment</th><th>Action</th></tr></thead>
-                <tbody id="taskTable"><tr><td colspan="13">Loading tasks...</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div id="tickets" class="view">
-          <div class="panel">
-            <div class="panel-toolbar">
-              <h2>Tickets</h2>
-              <div>
-                <button class="secondary-btn" onclick="filterTickets('')">All</button>
-                <button class="secondary-btn" onclick="filterTickets('Open')">Open</button>
-                <button class="secondary-btn" onclick="filterTickets('In Progress')">In Progress</button>
-                <button class="secondary-btn" onclick="filterTickets('Closed')">Closed</button>
-                <button class="action-btn" onclick="showTaskForm()">+ Create Task</button>
-              </div>
-            </div>
-            <div class="data-table-wrap">
-              <table>
-                <thead><tr><th>Task ID</th><th>Date Created</th><th>Task Name</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Department</th><th>Due Date</th><th>Action</th></tr></thead>
-                <tbody id="ticketsTable"><tr><td colspan="9">Loading tickets...</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div id="users" class="view">
-          <div class="module-panel"><h2>Users</h2><div class="data-table-wrap"><table><thead><tr><th>User ID</th><th>Full Name</th><th>Email</th><th>Department</th><th>Role</th><th>Status</th></tr></thead><tbody id="usersTable"><tr><td colspan="6">Loading users...</td></tr></tbody></table></div></div>
-        </div>
-
-        <div id="departments" class="view"><div class="module-panel"><h2>Departments</h2><p>Click a department tile to show related tickets.</p><div id="departmentTiles" class="module-grid"></div></div></div>
-        <div id="employees" class="view"><div class="module-panel"><h2>Employees</h2><p>Employee records can be maintained in the Users sheet tab.</p><div id="employeeTiles" class="module-grid"></div></div></div>
-        <div id="bsc" class="view"><div class="module-panel"><h2>BSC</h2><p>Balanced scorecard dashboard section.</p><div class="module-grid"><button class="tile" onclick="showView('kpis')"><h3>View KPIs</h3><p>Open KPI performance data.</p></button><button class="tile" onclick="showView('departments')"><h3>Departments</h3><p>See department performance links.</p></button></div></div></div>
-        <div id="kpis" class="view"><div class="module-panel"><h2>KPIs</h2><p>KPIs dashboard section.</p><div class="module-grid"><button class="tile" onclick="showView('tickets')"><h3>Task KPI</h3><p>Use ticket status and priority as operational measures.</p></button><button class="tile" onclick="showView('sla')"><h3>SLA KPI</h3><p>Open SLA performance section.</p></button></div></div></div>
-        <div id="sla" class="view"><div class="module-panel"><h2>SLA</h2><p>SLA records and performance monitoring section.</p><div class="module-grid"><button class="tile" onclick="showView('slaRules')"><h3>SLA Rules</h3><p>Open SLA rule configuration.</p></button><button class="tile" onclick="showView('tickets')"><h3>Tickets</h3><p>Review tickets against SLA targets.</p></button></div></div></div>
-        <div id="dashboards" class="view"><div class="module-panel"><h2>Dashboards</h2><p>Dashboard records and reporting section.</p><div class="module-grid"><button class="tile" onclick="showView('summary')"><h3>Default dashboard</h3><p>Return to the summary charts.</p></button><button class="tile" onclick="loadAllData()"><h3>Refresh live data</h3><p>Reload Google Sheet records.</p></button></div></div></div>
-        <div id="divisions" class="view"><div class="module-panel"><h2>Divisions</h2><p>Division records section.</p><div class="module-grid"><button class="tile" onclick="showView('departments')"><h3>Departments</h3><p>View departments linked to divisions.</p></button></div></div></div>
-        <div id="categories" class="view"><div class="module-panel"><h2>Categories</h2><p>Category records section.</p><div class="module-grid"><button class="tile" onclick="filterTickets('Open')"><h3>Open Tickets</h3><p>See open ticket categories.</p></button><button class="tile" onclick="filterTickets('Closed')"><h3>Closed Tickets</h3><p>See closed ticket categories.</p></button></div></div></div>
-        <div id="slaRules" class="view"><div class="module-panel"><h2>SLA Rules</h2><p>SLA rules section.</p><div class="module-grid"><button class="tile" onclick="showView('sla')"><h3>SLA Summary</h3><p>Return to the SLA section.</p></button></div></div></div>
-        <div id="projects" class="view"><div class="module-panel"><h2>Projects / Clients</h2><p>Projects and clients section.</p><div class="module-grid"><button class="tile" onclick="showView('tickets')"><h3>Project Tickets</h3><p>Open tickets connected to projects and clients.</p></button></div></div></div>
-        <div id="settings" class="view"><div class="module-panel"><h2>App settings</h2><p>Use this section for settings and connection checks.</p><div class="module-grid"><button class="tile" onclick="loadAllData()"><h3>Test Google Sheet Connection</h3><p>Reload the live data status indicator.</p></button></div></div></div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    /*
-      Replace this URL with your deployed Google Apps Script Web App URL.
-      Example: const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
-    */
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby0eyetkSVoOOMybe-cFu-Zo6xwyStweQnx3z6PiAhxsGdQDEYSHZJCmUYjuzTxbYnn/exec';
-
-    let allTasks = [];
-    let ticketFilter = '';
-
-    document.addEventListener('DOMContentLoaded', loadAllData);
-
-    function toggleSidebar(force) {
-      const open = typeof force === 'boolean' ? force : !document.body.classList.contains('sidebar-open');
-      document.body.classList.toggle('sidebar-open', open);
+  function showMessage(msg, type, containerId = 'globalMessage') {
+    let container = document.getElementById(containerId);
+    if (!container) {
+      const panel = document.querySelector('.panel');
+      if (panel) {
+        const div = document.createElement('div');
+        div.id = containerId;
+        div.className = 'message-bar';
+        panel.parentNode.insertBefore(div, panel);
+        container = div;
+      } else return;
     }
+    container.textContent = msg;
+    container.className = `message-bar ${type}`;
+    container.style.display = 'block';
+    setTimeout(() => { if (container) container.style.display = 'none'; }, 5000);
+  }
 
-    function clearScreenOnly() {
-      allTasks = [];
-      renderAllTaskViews();
-      showMessage('Sample display cleared on screen. Google Sheet data was not deleted.', 'info');
-    }
+  // Format date helper
+  function fmtDate(val) {
+    if (!val) return '';
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? val : d.toLocaleDateString();
+  }
 
-    function showView(viewId) {
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      const target = document.getElementById(viewId);
-      if (target) target.classList.add('active');
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
 
-      document.querySelectorAll('[data-view-link]').forEach(link => {
-        link.classList.toggle('active', link.getAttribute('data-view-link') === viewId);
+  // ======================= DASHBOARD ==========================
+  async function renderDashboard() {
+    try {
+      const data = await apiGet('dashboard');
+      const tasks = await apiGet('tasks');
+      let openTasks = 0, closedTasks = 0, overdue = 0;
+      const today = new Date(); today.setHours(0,0,0,0);
+      tasks.forEach(t => {
+        const status = String(t.Status || '').toLowerCase();
+        if (status === 'closed') closedTasks++;
+        else if (status === 'open' || status === 'in progress' || status === 'pending') openTasks++;
+        if (status === 'overdue') overdue++;
+        else if (t['Due Date']) {
+          const due = new Date(t['Due Date']);
+          if (!isNaN(due) && due < today && status !== 'closed') overdue++;
+        }
       });
-
-      document.querySelectorAll('.tab').forEach(tab => {
-        tab.classList.toggle('active', tab.getAttribute('data-tab') === viewId);
-      });
-
-      if (viewId === 'summary') {
-        const summaryTab = document.querySelector('[data-tab="summary"]');
-        if (summaryTab) summaryTab.classList.add('active');
-      }
-
-      const titleMap = {
-        summary: 'Default dashboard',
-        tickets: 'Tickets',
-        departments: 'Departments',
-        employees: 'Employees',
-        users: 'Users',
-        bsc: 'BSC',
-        kpis: 'KPIs',
-        sla: 'SLA',
-        dashboards: 'Dashboards',
-        divisions: 'Divisions',
-        categories: 'Categories',
-        slaRules: 'SLA Rules',
-        projects: 'Projects / Clients',
-        settings: 'App settings'
-      };
-
-      document.getElementById('currentViewTitle').textContent = titleMap[viewId] || 'Default dashboard';
-      toggleSidebar(false);
+      const html = `
+        <div class="top-bar">
+          <div class="page-title"><h1>Operations Dashboard</h1><p>Live from Google Sheets · QuickBase style</p></div>
+          <button class="refresh-btn" onclick="loadCurrentSection()">⟳ Refresh data</button>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="kpi-label">📋 Total Tasks</div><div class="kpi-value">${data.totalTasks || 0}</div></div>
+          <div class="kpi-card"><div class="kpi-label">🟠 Open Tasks</div><div class="kpi-value">${openTasks}</div></div>
+          <div class="kpi-card"><div class="kpi-label">✅ Closed Tasks</div><div class="kpi-value">${closedTasks}</div></div>
+          <div class="kpi-card"><div class="kpi-label">⚠️ Overdue</div><div class="kpi-value">${overdue}</div></div>
+          <div class="kpi-card"><div class="kpi-label">👥 Users</div><div class="kpi-value">${data.totalUsers || 0}</div></div>
+          <div class="kpi-card"><div class="kpi-label">🚘 Vehicles</div><div class="kpi-value">${data.totalVehicles || 0}</div></div>
+        </div>
+        <div class="panel"><div class="panel-header"><h2>Recent Activity Preview</h2></div><div class="table-wrapper"><p style="padding:20px">✅ Dashboard metrics updated · Use sidebar to manage Tasks, Users & Vehicles</p></div></div>
+      `;
+      document.getElementById('mainContent').innerHTML = html;
+    } catch (err) {
+      document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:24px;color:red">⚠️ Error loading dashboard: ${err.message}<br>Check SCRIPT_URL and CORS/WebApp deployment.</div>`;
     }
+  }
 
-    function showTaskForm() {
-      showView('summary');
-      const form = document.getElementById('taskForm');
-      form.classList.add('open');
-      setTimeout(() => {
-        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        document.getElementById('taskName').focus();
-      }, 50);
-    }
-
-    function hideTaskForm() {
-      document.getElementById('taskForm').classList.remove('open');
-    }
-
-    function setLiveStatus(type, text) {
-      const pill = document.getElementById('liveStatus');
-      pill.className = 'live-pill ' + type;
-      pill.textContent = text;
-    }
-
-    function apiGet(action, params = {}) {
-      const query = new URLSearchParams({ action, ...params });
-      return fetch(SCRIPT_URL + '?' + query.toString()).then(handleResponse);
-    }
-
-    function apiPost(action, payload) {
-      return fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action, payload })
-      }).then(handleResponse);
-    }
-
-    function handleResponse(response) {
-      if (!response.ok) throw new Error('Server error: ' + response.status);
-      return response.json();
-    }
-
-    function loadAllData() {
-      if (!SCRIPT_URL || SCRIPT_URL === 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
-        setLiveStatus('offline', 'Not Connected');
-        showMessage('Replace SCRIPT_URL in this HTML file with your deployed Apps Script Web App URL.', 'error');
-        document.getElementById('taskTable').innerHTML = '<tr><td colspan="13">Not connected. Replace SCRIPT_URL first.</td></tr>';
-        document.getElementById('ticketsTable').innerHTML = '<tr><td colspan="9">Not connected. Replace SCRIPT_URL first.</td></tr>';
-        return;
-      }
-
-      setLiveStatus('', 'Checking Sheet...');
-      loadDashboard();
-      loadTasks();
-      loadUsers();
-    }
-
-    function loadDashboard() {
-      apiGet('dashboard')
-        .then(data => {
-          setLiveStatus('live', 'Google Sheet Live');
-          document.getElementById('totalTasksMetric').textContent = data.totalTasks || 0;
-          document.getElementById('openTasksMetric').textContent = data.openTasks || 0;
-          document.getElementById('closedTasksMetric').textContent = data.closedTasks || 0;
-          document.getElementById('overdueTasksMetric').textContent = data.overdueTasks || 0;
-        })
-        .catch(error => {
-          setLiveStatus('offline', 'Sheet Offline');
-          showMessage(error.message || 'Could not load dashboard.', 'error');
-        });
-    }
-
-    function loadTasks() {
-      apiGet('tasks')
-        .then(tasks => {
-          setLiveStatus('live', 'Google Sheet Live');
-          allTasks = tasks || [];
-          renderAllTaskViews();
-        })
-        .catch(error => {
-          setLiveStatus('offline', 'Sheet Offline');
-          document.getElementById('taskTable').innerHTML = '<tr><td colspan="13">Could not load tasks: ' + escapeHtml(error.message) + '</td></tr>';
-          document.getElementById('ticketsTable').innerHTML = '<tr><td colspan="9">Could not load tickets: ' + escapeHtml(error.message) + '</td></tr>';
-        });
-    }
-
-    function renderAllTaskViews() {
-      renderTaskTable(allTasks);
-      renderTicketsTable(getFilteredTasks());
-      renderDepartmentTiles(allTasks);
-      renderEmployeeTiles(allTasks);
-      renderCharts(allTasks);
-      updateLocalMetrics(allTasks);
-    }
-
-    function updateLocalMetrics(tasks) {
-      const total = tasks.length;
-      const closed = tasks.filter(t => String(t['Status'] || '').toLowerCase() === 'closed').length;
-      const overdue = tasks.filter(t => String(t['Status'] || '').toLowerCase() === 'overdue').length;
-      const open = tasks.filter(t => ['open', 'in progress', 'pending'].includes(String(t['Status'] || '').toLowerCase())).length;
-
-      document.getElementById('totalTasksMetric').textContent = total;
-      document.getElementById('openTasksMetric').textContent = open;
-      document.getElementById('closedTasksMetric').textContent = closed;
-      document.getElementById('overdueTasksMetric').textContent = overdue;
-    }
-
-    function renderCharts(tasks) {
-      const priorities = countBy(tasks, 'Priority');
-      const total = Math.max(1, tasks.length);
-      const critical = ((priorities.Critical || 0) / total) * 100;
-      const high = critical + ((priorities.High || 0) / total) * 100;
-      const medium = high + ((priorities.Medium || 0) / total) * 100;
-      const low = medium + ((priorities.Low || 0) / total) * 100;
-
-      const pie = document.getElementById('priorityPie');
-      pie.style.setProperty('--critical', Math.max(critical, 8) + '%');
-      pie.style.setProperty('--high', Math.max(high, 25) + '%');
-      pie.style.setProperty('--medium', Math.max(medium, 45) + '%');
-      pie.style.setProperty('--low', Math.max(low, 80) + '%');
-
-      const departments = countBy(tasks, 'Department');
-      const max = Math.max(1, ...Object.values(departments));
-      const entries = Object.entries(departments).slice(0, 8);
-      const bars = document.getElementById('departmentBars');
-      const grid = '<div class="gridline g1"></div><div class="gridline g2"></div><div class="gridline g3"></div>';
-
-      if (!entries.length) {
-        bars.innerHTML = grid + '<div class="bar-column" onclick="showView(\\'tickets\\')"><div class="bar" style="height:3%;"></div><span class="bar-label">No data</span></div>';
-        return;
-      }
-
-      bars.innerHTML = grid + entries.map(([label, count]) => {
-        const height = Math.max(3, Math.round((count / max) * 85));
-        return '<div class="bar-column" onclick="filterDepartment(\\'' + escapeJs(label) + '\\')"><div class="bar" style="height:' + height + '%;"></div><span class="bar-label">' + escapeHtml(label || 'Unassigned') + '</span></div>';
-      }).join('');
-    }
-
-    function countBy(rows, key) {
-      return rows.reduce((acc, row) => {
-        const value = row[key] || 'Unassigned';
-        acc[value] = (acc[value] || 0) + 1;
-        return acc;
-      }, {});
-    }
-
-    function renderTaskTable(tasks) {
-      const body = document.getElementById('taskTable');
-      if (!tasks || !tasks.length) {
-        body.innerHTML = '<tr><td colspan="13">No tasks found. Click Create Task to add one.</td></tr>';
-        return;
-      }
-
-      body.innerHTML = tasks.map(task => {
-        const status = task['Status'] || '';
-        const attachment = task['Attachment Link'] ? '<a href="' + escapeAttr(task['Attachment Link']) + '" target="_blank">Open</a>' : '';
-        return '<tr>' +
-          '<td>' + escapeHtml(task['Task ID']) + '</td>' +
-          '<td>' + formatDate(task['Date Created']) + '</td>' +
-          '<td>' + escapeHtml(task['Task Name']) + '</td>' +
-          '<td>' + escapeHtml(task['Description']) + '</td>' +
-          '<td>' + escapeHtml(task['Priority']) + '</td>' +
-          '<td><span class="status-badge ' + statusClass(status) + '">' + escapeHtml(status) + '</span></td>' +
-          '<td>' + escapeHtml(task['Assigned To']) + '</td>' +
-          '<td>' + escapeHtml(task['Department']) + '</td>' +
-          '<td>' + formatDate(task['Due Date']) + '</td>' +
-          '<td>' + formatDate(task['Completion Date']) + '</td>' +
-          '<td>' + escapeHtml(task['Comments']) + '</td>' +
-          '<td>' + attachment + '</td>' +
-          '<td><button class="save-task-btn" style="padding:8px 11px;" onclick="closeTask(\\'' + escapeJs(task['Task ID']) + '\\')">Close</button></td>' +
-        '</tr>';
-      }).join('');
-    }
-
-    function getFilteredTasks() {
-      if (!ticketFilter) return allTasks;
-      return allTasks.filter(task => String(task['Status'] || '').toLowerCase() === ticketFilter.toLowerCase());
-    }
-
-    function filterTickets(status) {
-      ticketFilter = status || '';
-      showView('tickets');
-      renderTicketsTable(getFilteredTasks());
-    }
-
-    function filterDepartment(department) {
-      showView('tickets');
-      renderTicketsTable(allTasks.filter(task => String(task['Department'] || 'Unassigned') === department));
-    }
-
-    function renderTicketsTable(tasks) {
-      const body = document.getElementById('ticketsTable');
-      if (!tasks || !tasks.length) {
-        body.innerHTML = '<tr><td colspan="9">No tickets found.</td></tr>';
-        return;
-      }
-
-      body.innerHTML = tasks.map(task => {
-        const status = task['Status'] || '';
-        return '<tr>' +
-          '<td>' + escapeHtml(task['Task ID']) + '</td>' +
-          '<td>' + formatDate(task['Date Created']) + '</td>' +
-          '<td>' + escapeHtml(task['Task Name']) + '</td>' +
-          '<td>' + escapeHtml(task['Priority']) + '</td>' +
-          '<td><span class="status-badge ' + statusClass(status) + '">' + escapeHtml(status) + '</span></td>' +
-          '<td>' + escapeHtml(task['Assigned To']) + '</td>' +
-          '<td>' + escapeHtml(task['Department']) + '</td>' +
-          '<td>' + formatDate(task['Due Date']) + '</td>' +
-          '<td><button class="save-task-btn" style="padding:8px 11px;" onclick="closeTask(\\'' + escapeJs(task['Task ID']) + '\\')">Close</button></td>' +
-        '</tr>';
-      }).join('');
-    }
-
-    function renderDepartmentTiles(tasks) {
-      const box = document.getElementById('departmentTiles');
-      const entries = Object.entries(countBy(tasks, 'Department'));
-      box.innerHTML = entries.length
-        ? entries.map(([name, count]) => '<button class="tile" onclick="filterDepartment(\\'' + escapeJs(name) + '\\')"><h3>' + escapeHtml(name) + '</h3><p>' + count + ' linked ticket(s). Click to view.</p></button>').join('')
-        : '<button class="tile" onclick="showTaskForm()"><h3>No departments yet</h3><p>Create a task and select a department.</p></button>';
-    }
-
-    function renderEmployeeTiles(tasks) {
-      const box = document.getElementById('employeeTiles');
-      const entries = Object.entries(countBy(tasks, 'Assigned To')).filter(([name]) => name && name !== 'Unassigned');
-      box.innerHTML = entries.length
-        ? entries.map(([name, count]) => '<button class="tile" onclick="showView(\\'tickets\\')"><h3>' + escapeHtml(name) + '</h3><p>' + count + ' assigned ticket(s).</p></button>').join('')
-        : '<button class="tile" onclick="showTaskForm()"><h3>No employees assigned</h3><p>Create a task and assign it to an employee.</p></button>';
-    }
-
-    function loadUsers() {
-      apiGet('users')
-        .then(users => {
-          setLiveStatus('live', 'Google Sheet Live');
-          const body = document.getElementById('usersTable');
-
-          if (!users || !users.length) {
-            body.innerHTML = '<tr><td colspan="6">No users found.</td></tr>';
-            return;
-          }
-
-          body.innerHTML = users.map(user => '<tr>' +
-            '<td>' + escapeHtml(user['User ID']) + '</td>' +
-            '<td>' + escapeHtml(user['Full Name']) + '</td>' +
-            '<td>' + escapeHtml(user['Email']) + '</td>' +
-            '<td>' + escapeHtml(user['Department']) + '</td>' +
-            '<td>' + escapeHtml(user['Role']) + '</td>' +
-            '<td>' + escapeHtml(user['Status']) + '</td>' +
-          '</tr>').join('');
-        })
-        .catch(error => {
-          document.getElementById('usersTable').innerHTML = '<tr><td colspan="6">Could not load users: ' + escapeHtml(error.message) + '</td></tr>';
-        });
-    }
-
-    function saveTask() {
-      const saveBtn = document.getElementById('saveTaskBtn');
-      const data = {
+  // ======================= TASKS (with creation & close) =========
+  async function renderTasks() {
+    let tasks = [];
+    try {
+      tasks = await apiGet('tasks');
+    } catch(e) { tasks = []; }
+    const taskRows = tasks.map(t => `
+      <tr>
+        <td>${escapeHtml(t['Task ID'])}</td>
+        <td>${fmtDate(t['Date Created'])}</td>
+        <td><strong>${escapeHtml(t['Task Name'])}</strong></td>
+        <td>${escapeHtml(t['Description'])}</td>
+        <td>${escapeHtml(t['Priority'])}</td>
+        <td><span class="badge ${String(t.Status||'').toLowerCase().includes('closed')?'closed':(String(t.Status||'').toLowerCase()==='overdue'?'overdue':'open')}">${escapeHtml(t['Status'])}</span></td>
+        <td>${escapeHtml(t['Assigned To'])}</td>
+        <td>${escapeHtml(t['Department'])}</td>
+        <td>${fmtDate(t['Due Date'])}</td>
+        <td>${fmtDate(t['Completion Date'])}</td>
+        <td>${escapeHtml(t['Comments'])}</td>
+        <td>${t['Attachment Link'] ? `<a href="${escapeHtml(t['Attachment Link'])}" target="_blank">Link</a>` : ''}</td>
+        <td><button class="btn-sm" onclick="window.closeTaskById('${escapeHtml(t['Task ID'])}')">Close</button></td>
+      </tr>
+    `).join('');
+    const html = `
+      <div class="top-bar"><div class="page-title"><h1>Task Manager</h1><p>Create, track & update tasks</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
+      <div class="panel">
+        <div class="panel-header"><h2>➕ New Task</h2></div>
+        <div class="task-form">
+          <div class="form-row">
+            <div class="form-field"><label>Task Name *</label><input id="taskName" placeholder="e.g., Submit report"></div>
+            <div class="form-field"><label>Assigned To</label><input id="assignedTo" placeholder="Person/team"></div>
+            <div class="form-field"><label>Priority</label><select id="priority"><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></div>
+            <div class="form-field"><label>Status</label><select id="status"><option>Open</option><option>In Progress</option><option>Pending</option><option>Closed</option><option>Overdue</option></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-field"><label>Department</label><input id="department" placeholder="Operations"></div>
+            <div class="form-field"><label>Due Date</label><input type="date" id="dueDate"></div>
+            <div class="form-field"><label>Attachment Link</label><input id="attachmentLink" placeholder="https://drive..."></div>
+          </div>
+          <div class="form-field"><label>Description</label><textarea id="description" placeholder="Detailed description"></textarea></div>
+          <div class="form-field"><label>Comments</label><textarea id="comments" placeholder="Internal notes"></textarea></div>
+          <div style="margin-top:16px"><button class="btn-primary" id="createTaskBtn">✔ Create Task</button></div>
+          <div id="taskMessage" class="message-bar"></div>
+        </div>
+        <div class="panel-header"><h2>📌 All Tasks</h2></div>
+        <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Created</th><th>Name</th><th>Desc</th><th>Priority</th><th>Status</th><th>Assignee</th><th>Dept</th><th>Due</th><th>Completed</th><th>Comments</th><th>Link</th><th>Action</th></tr></thead><tbody>${taskRows || '<tr><td colspan="13">No tasks found</td></tr>'}</tbody></table></div>
+      </div>
+    `;
+    document.getElementById('mainContent').innerHTML = html;
+    document.getElementById('createTaskBtn')?.addEventListener('click', async () => {
+      const payload = {
         taskName: document.getElementById('taskName').value.trim(),
         description: document.getElementById('description').value.trim(),
         priority: document.getElementById('priority').value,
         status: document.getElementById('status').value,
         assignedTo: document.getElementById('assignedTo').value.trim(),
-        department: document.getElementById('department').value,
+        department: document.getElementById('department').value.trim(),
         dueDate: document.getElementById('dueDate').value,
         comments: document.getElementById('comments').value.trim(),
         attachmentLink: document.getElementById('attachmentLink').value.trim()
       };
+      if (!payload.taskName) return showMessage('Task Name required', 'error', 'taskMessage');
+      try {
+        const res = await apiPost('addTask', payload);
+        if (res.success) { showMessage(`Task ${res.taskId} created`, 'success', 'taskMessage'); renderTasks(); }
+        else showMessage(res.message || 'Error', 'error', 'taskMessage');
+      } catch (err) { showMessage(err.message, 'error', 'taskMessage'); }
+    });
+  }
 
-      if (!data.taskName) {
-        showMessage('Task / Ticket Name is required.', 'error');
-        document.getElementById('taskName').focus();
-        return;
-      }
+  window.closeTaskById = async (taskId) => {
+    try {
+      const res = await apiPost('updateTaskStatus', { taskId, status: 'Closed' });
+      if (res.success) { showMessage('Task closed', 'success', 'globalMessage'); loadCurrentSection(); }
+      else showMessage('Could not close', 'error', 'globalMessage');
+    } catch(e) { showMessage(e.message, 'error', 'globalMessage'); }
+  };
 
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving...';
-      showMessage('Saving task to Google Sheet...', 'info');
+  // USERS
+  async function renderUsers() {
+    let users = [];
+    try { users = await apiGet('users'); } catch(e) { users = []; }
+    const rows = users.map(u => `<tr><td>${escapeHtml(u['User ID'])}</td><td>${escapeHtml(u['Full Name'])}</td><td>${escapeHtml(u['Email'])}</td><td>${escapeHtml(u['Department'])}</td><td>${escapeHtml(u['Role'])}</td><td>${escapeHtml(u['Status'])}</td></tr>`).join('');
+    document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>Users</h1><p>Team directory</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div><div class="panel"><div class="table-wrapper"><table><thead><tr><th>ID</th><th>Full Name</th><th>Email</th><th>Dept</th><th>Role</th><th>Status</th></tr></thead><tbody>${rows || '<tr><td colspan="6">No users</td></tr>'}</tbody></table></div></div>`;
+  }
 
-      apiPost('addTask', data)
-        .then(result => {
-          if (!result || !result.success) {
-            showMessage((result && result.message) || 'Could not create task.', 'error');
-            return;
-          }
+  // VEHICLES
+  async function renderVehicles() {
+    let vehicles = [];
+    try { vehicles = await apiGet('vehicles'); } catch(e) { vehicles = []; }
+    const rows = vehicles.map(v => `<tr><td>${escapeHtml(v['Vehicle ID'])}</td><td>${escapeHtml(v['Registration'])}</td><td>${escapeHtml(v['Driver'])}</td><td>${escapeHtml(v['Department'])}</td><td>${escapeHtml(v['Status'])}</td><td>${fmtDate(v['Last Service'])}</td><td>${fmtDate(v['Next Service'])}</td></tr>`).join('');
+    document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>Vehicles</h1><p>Fleet overview</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div><div class="panel"><div class="table-wrapper"><table><thead><tr><th>ID</th><th>Reg</th><th>Driver</th><th>Dept</th><th>Status</th><th>Last Service</th><th>Next Service</th></tr></thead><tbody>${rows || '<tr><td colspan="7">No vehicles</td></tr>'}</tbody></table></div></div>`;
+  }
 
-          setLiveStatus('live', 'Google Sheet Live');
-          showMessage('Task saved successfully: ' + result.taskId, 'success');
-          clearTaskForm();
-          hideTaskForm();
-          loadAllData();
-        })
-        .catch(error => {
-          setLiveStatus('offline', 'Sheet Offline');
-          showMessage(error.message || 'Could not create task.', 'error');
-        })
-        .finally(() => {
-          saveBtn.disabled = false;
-          saveBtn.textContent = 'Save Task to Google Sheet';
-        });
+  // MODULES
+  function renderModules() {
+    document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>Modules & Data Sources</h1><p>QuickBase-style structure backed by Google Sheets</p></div></div>
+    <div class="module-grid">
+      <div class="module-card"><h3>📋 Tasks</h3><p>Full lifecycle: create, update status, assign, due dates + logs</p></div>
+      <div class="module-card"><h3>👥 Users</h3><p>User directory, roles, department tracking</p></div>
+      <div class="module-card"><h3>🚗 Vehicles</h3><p>Fleet registry, driver assignment, service reminders</p></div>
+      <div class="module-card"><h3>📝 Activity Log</h3><p>Automatic logging of task creation & status changes</p></div>
+      <div class="module-card"><h3>📊 Dashboard KPI</h3><p>Real-time counters from Tasks, Users, Vehicles sheets</p></div>
+    </div>`;
+  }
+
+  async function loadCurrentSection() {
+    if (!SCRIPT_URL || SCRIPT_URL.includes('PASTE_YOUR')) {
+      document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:24px;background:#fff0f0"><h2>⚠️ Configuration missing</h2><p>Please replace <code>SCRIPT_URL</code> in the HTML with your actual Google Apps Script Web App URL.</p><p>Make sure you deployed as <strong>"Execute as: Me" + "Who has access: Anyone"</strong> for testing.</p></div>`;
+      return;
     }
+    if (currentSection === 'dashboard') await renderDashboard();
+    else if (currentSection === 'tasks') await renderTasks();
+    else if (currentSection === 'users') await renderUsers();
+    else if (currentSection === 'vehicles') await renderVehicles();
+    else if (currentSection === 'modules') renderModules();
+  }
 
-    function closeTask(taskId) {
-      apiPost('updateTaskStatus', { taskId, status: 'Closed' })
-        .then(result => {
-          if (!result || !result.success) {
-            showMessage((result && result.message) || 'Could not close task.', 'error');
-            return;
-          }
-          showMessage('Task closed successfully.', 'success');
-          loadAllData();
-        })
-        .catch(error => showMessage(error.message || 'Could not close task.', 'error'));
-    }
+  // Navigation
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+      currentSection = link.getAttribute('data-section');
+      loadCurrentSection();
+    });
+  });
 
-    function clearTaskForm() {
-      ['taskName', 'description', 'assignedTo', 'dueDate', 'comments', 'attachmentLink'].forEach(id => document.getElementById(id).value = '');
-      document.getElementById('priority').value = 'Medium';
-      document.getElementById('status').value = 'Open';
-      document.getElementById('department').value = '';
-    }
-
-    function showMessage(text, type) {
-      const msg = document.getElementById('message');
-      if (!msg) return;
-      msg.textContent = text;
-      msg.className = 'message ' + type;
-      msg.style.display = 'inline-block';
-      if (type !== 'info') setTimeout(() => { msg.style.display = 'none'; }, 6000);
-    }
-
-    function statusClass(status) {
-      const value = String(status || '').toLowerCase();
-      if (value === 'closed') return 'status-closed';
-      if (value === 'overdue') return 'status-overdue';
-      if (value === 'in progress' || value === 'pending') return 'status-progress';
-      return 'status-open';
-    }
-
-    function formatDate(value) {
-      if (!value) return '';
-      const d = new Date(value);
-      if (isNaN(d.getTime())) return escapeHtml(value);
-      return d.toLocaleDateString();
-    }
-
-    function escapeHtml(value) {
-      return String(value || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    function escapeAttr(value) { return escapeHtml(value); }
-    function escapeJs(value) { return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
-  </script>
+  // initial load
+  loadCurrentSection();
+</script>
 </body>
 </html>
