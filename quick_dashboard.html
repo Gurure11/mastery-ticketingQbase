@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #eef2f7;
+      color: #111827;
+    }
+
+    .app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: #111827;
+      color: #fff;
+      padding: 24px 18px;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+    }
+
+    .brand {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 28px;
+    }
+
+    .nav-link {
+      display: block;
+      padding: 13px 14px;
+      color: #d1d5db;
+      text-decoration: none;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .main {
+      margin-left: 260px;
+      width: calc(100% - 260px);
+      padding: 24px;
+    }
+
+    .topbar {
+      background: #fff;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .topbar p {
+      margin: 6px 0 0;
+      color: #6b7280;
+    }
+
+    .refresh-btn,
+    .primary-btn,
+    .small-btn {
+      border: 0;
+      background: #2563eb;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .small-btn {
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .refresh-btn:hover,
+    .primary-btn:hover,
+    .small-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      border-left: 6px solid #2563eb;
+    }
+
+    .metric-card.orange {
+      border-left-color: #f97316;
+    }
+
+    .metric-card.green {
+      border-left-color: #16a34a;
+    }
+
+    .metric-card.red {
+      border-left-color: #dc2626;
+    }
+
+    .metric-label {
+      color: #6b7280;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      margin-top: 10px;
+      font-size: 38px;
+      font-weight: 900;
+    }
+
+    .panel {
+      background: #fff;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      margin-bottom: 24px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #374151;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+    }
+
+    th {
+      background: #111827;
+      color: white;
+      text-align: left;
+      padding: 13px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 12px 13px;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+      vertical-align: top;
+    }
+
+    tr:hover td {
+      background: #f9fafb;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #e5e7eb;
+    }
+
+    .badge.open {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .badge.closed {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge.overdue {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge.progress {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .message {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+
+    .success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .info {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .module-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 18px;
+      background: #f9fafb;
+    }
+
+    .module-card h3 {
+      margin: 0 0 8px;
+    }
+
+    .module-card p {
+      margin: 0;
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        display: block;
+      }
+
+      .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+      }
+
+      .main {
+        margin-left: 0;
+        width: 100%;
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">Quick</div>
+      <a class="nav-link active" href="#dashboard">Dashboard</a>
+      <a class="nav-link" href="#tasks">Tasks</a>
+      <a class="nav-link" href="#modules">Modules</a>
+      <a class="nav-link" href="#users">Users</a>
+      <a class="nav-link" href="#vehicles">Vehicles</a>
+    </aside>
+
+    <main class="main">
+      <section class="topbar" id="dashboard">
+        <div>
+          <h1>Operations Dashboard</h1>
+          <p>Google Sheets powered QuickBase-style management dashboard.</p>
+        </div>
+        <button class="refresh-btn" onclick="loadAllData()">Refresh Data</button>
+      </section>
+
+      <section class="cards">
+        <div class="metric-card">
+          <div class="metric-label">Total Tasks</div>
+          <div class="metric-value" id="totalTasks">0</div>
+        </div>
+        <div class="metric-card orange">
+          <div class="metric-label">Open Tasks</div>
+          <div class="metric-value" id="openTasks">0</div>
+        </div>
+        <div class="metric-card green">
+          <div class="metric-label">Closed Tasks</div>
+          <div class="metric-value" id="closedTasks">0</div>
+        </div>
+        <div class="metric-card red">
+          <div class="metric-label">Overdue Tasks</div>
+          <div class="metric-value" id="overdueTasks">0</div>
+        </div>
+      </section>
+
+      <section class="panel" id="tasks">
+        <div class="panel-header">
+          <h2>Tasks</h2>
+          <button class="primary-btn" onclick="saveTask()">Create Task</button>
+        </div>
+
+        <div class="form-grid">
+          <div>
+            <label>Task Name</label>
+            <input id="taskName" placeholder="Enter task name">
+          </div>
+
+          <div>
+            <label>Assigned To</label>
+            <input id="assignedTo" placeholder="Person responsible">
+          </div>
+
+          <div>
+            <label>Priority</label>
+            <select id="priority">
+              <option>Low</option>
+              <option selected>Medium</option>
+              <option>High</option>
+              <option>Critical</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Status</label>
+            <select id="status">
+              <option selected>Open</option>
+              <option>In Progress</option>
+              <option>Pending</option>
+              <option>Closed</option>
+              <option>Overdue</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Department</label>
+            <input id="department" placeholder="Department">
+          </div>
+
+          <div>
+            <label>Due Date</label>
+            <input id="dueDate" type="date">
+          </div>
+
+          <div>
+            <label>Attachment Link</label>
+            <input id="attachmentLink" placeholder="Paste Google Drive link if any">
+          </div>
+        </div>
+
+        <div>
+          <label>Description</label>
+          <textarea id="description" placeholder="Task description"></textarea>
+        </div>
+
+        <div>
+          <label>Comments</label>
+          <textarea id="comments" placeholder="Comments"></textarea>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div class="table-wrap" style="margin-top:18px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Task ID</th>
+                <th>Date Created</th>
+                <th>Task Name</th>
+                <th>Description</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Assigned To</th>
+                <th>Department</th>
+                <th>Due Date</th>
+                <th>Completion Date</th>
+                <th>Comments</th>
+                <th>Attachment</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="taskTable">
+              <tr><td colspan="13">Loading tasks...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" id="modules">
+        <div class="panel-header">
+          <h2>Linked Modules</h2>
+        </div>
+        <div class="module-grid">
+          <div class="module-card">
+            <h3>Tasks</h3>
+            <p>Create, assign, monitor and close operational tasks.</p>
+          </div>
+          <div class="module-card">
+            <h3>Users</h3>
+            <p>Stores users, departments, roles and account status.</p>
+          </div>
+          <div class="module-card">
+            <h3>Vehicles</h3>
+            <p>Stores vehicle records, drivers and service dates.</p>
+          </div>
+          <div class="module-card">
+            <h3>Activity Log</h3>
+            <p>Tracks task creation, status changes and dashboard actions.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="users">
+        <div class="panel-header">
+          <h2>Users</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>User ID</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Department</th>
+                <th>Role</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="usersTable">
+              <tr><td colspan="6">Loading users...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" id="vehicles">
+        <div class="panel-header">
+          <h2>Vehicles</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Vehicle ID</th>
+                <th>Registration</th>
+                <th>Driver</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th>Last Service</th>
+                <th>Next Service</th>
+              </tr>
+            </thead>
+            <tbody id="vehiclesTable">
+              <tr><td colspan="7">Loading vehicles...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    /*
+      IMPORTANT:
+      Replace this URL with your deployed Google Apps Script Web App URL.
+      Example:
+      const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+    */
+    const SCRIPT_URL = 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
+
+    document.addEventListener('DOMContentLoaded', loadAllData);
+
+    function apiGet(action, params = {}) {
+      const query = new URLSearchParams({ action, ...params });
+      return fetch(SCRIPT_URL + '?' + query.toString()).then(handleResponse);
+    }
+
+    function apiPost(action, payload) {
+      return fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify({ action, payload })
+      }).then(handleResponse);
+    }
+
+    function handleResponse(response) {
+      if (!response.ok) {
+        throw new Error('Server error: ' + response.status);
+      }
+      return response.json();
+    }
+
+    function loadAllData() {
+      if (!SCRIPT_URL || SCRIPT_URL === 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
+        showMessage('Replace SCRIPT_URL in this HTML file with your deployed Apps Script Web App URL.', 'error');
+        return;
+      }
+
+      loadDashboard();
+      loadTasks();
+      loadUsers();
+      loadVehicles();
+    }
+
+    function loadDashboard() {
+      apiGet('dashboard')
+        .then(function(data) {
+          document.getElementById('totalTasks').textContent = data.totalTasks || 0;
+          document.getElementById('openTasks').textContent = data.openTasks || 0;
+          document.getElementById('closedTasks').textContent = data.closedTasks || 0;
+          document.getElementById('overdueTasks').textContent = data.overdueTasks || 0;
+        })
+        .catch(function(error) {
+          showMessage(error.message || 'Could not load dashboard.', 'error');
+        });
+    }
+
+    function loadTasks() {
+      apiGet('tasks')
+        .then(function(tasks) {
+          const body = document.getElementById('taskTable');
+
+          if (!tasks || tasks.length === 0) {
+            body.innerHTML = '<tr><td colspan="13">No tasks found.</td></tr>';
+            return;
+          }
+
+          body.innerHTML = tasks.map(function(task) {
+            const status = task['Status'] || '';
+            const attachment = task['Attachment Link']
+              ? '<a href="' + escapeAttr(task['Attachment Link']) + '" target="_blank">Open</a>'
+              : '';
+
+            return '<tr>' +
+              '<td>' + escapeHtml(task['Task ID']) + '</td>' +
+              '<td>' + formatDate(task['Date Created']) + '</td>' +
+              '<td>' + escapeHtml(task['Task Name']) + '</td>' +
+              '<td>' + escapeHtml(task['Description']) + '</td>' +
+              '<td>' + escapeHtml(task['Priority']) + '</td>' +
+              '<td><span class="badge ' + statusClass(status) + '">' + escapeHtml(status) + '</span></td>' +
+              '<td>' + escapeHtml(task['Assigned To']) + '</td>' +
+              '<td>' + escapeHtml(task['Department']) + '</td>' +
+              '<td>' + formatDate(task['Due Date']) + '</td>' +
+              '<td>' + formatDate(task['Completion Date']) + '</td>' +
+              '<td>' + escapeHtml(task['Comments']) + '</td>' +
+              '<td>' + attachment + '</td>' +
+              '<td><button class="small-btn" onclick="closeTask(\\'' + escapeJs(task['Task ID']) + '\\')">Close</button></td>' +
+            '</tr>';
+          }).join('');
+        })
+        .catch(function(error) {
+          document.getElementById('taskTable').innerHTML =
+            '<tr><td colspan="13">Could not load tasks: ' + escapeHtml(error.message) + '</td></tr>';
+        });
+    }
+
+    function loadUsers() {
+      apiGet('users')
+        .then(function(users) {
+          const body = document.getElementById('usersTable');
+
+          if (!users || users.length === 0) {
+            body.innerHTML = '<tr><td colspan="6">No users found.</td></tr>';
+            return;
+          }
+
+          body.innerHTML = users.map(function(user) {
+            return '<tr>' +
+              '<td>' + escapeHtml(user['User ID']) + '</td>' +
+              '<td>' + escapeHtml(user['Full Name']) + '</td>' +
+              '<td>' + escapeHtml(user['Email']) + '</td>' +
+              '<td>' + escapeHtml(user['Department']) + '</td>' +
+              '<td>' + escapeHtml(user['Role']) + '</td>' +
+              '<td>' + escapeHtml(user['Status']) + '</td>' +
+            '</tr>';
+          }).join('');
+        })
+        .catch(function(error) {
+          document.getElementById('usersTable').innerHTML =
+            '<tr><td colspan="6">Could not load users: ' + escapeHtml(error.message) + '</td></tr>';
+        });
+    }
+
+    function loadVehicles() {
+      apiGet('vehicles')
+        .then(function(vehicles) {
+          const body = document.getElementById('vehiclesTable');
+
+          if (!vehicles || vehicles.length === 0) {
+            body.innerHTML = '<tr><td colspan="7">No vehicles found.</td></tr>';
+            return;
+          }
+
+          body.innerHTML = vehicles.map(function(vehicle) {
+            return '<tr>' +
+              '<td>' + escapeHtml(vehicle['Vehicle ID']) + '</td>' +
+              '<td>' + escapeHtml(vehicle['Registration']) + '</td>' +
+              '<td>' + escapeHtml(vehicle['Driver']) + '</td>' +
+              '<td>' + escapeHtml(vehicle['Department']) + '</td>' +
+              '<td>' + escapeHtml(vehicle['Status']) + '</td>' +
+              '<td>' + formatDate(vehicle['Last Service']) + '</td>' +
+              '<td>' + formatDate(vehicle['Next Service']) + '</td>' +
+            '</tr>';
+          }).join('');
+        })
+        .catch(function(error) {
+          document.getElementById('vehiclesTable').innerHTML =
+            '<tr><td colspan="7">Could not load vehicles: ' + escapeHtml(error.message) + '</td></tr>';
+        });
+    }
+
+    function saveTask() {
+      const data = {
+        taskName: document.getElementById('taskName').value.trim(),
+        description: document.getElementById('description').value.trim(),
+        priority: document.getElementById('priority').value,
+        status: document.getElementById('status').value,
+        assignedTo: document.getElementById('assignedTo').value.trim(),
+        department: document.getElementById('department').value.trim(),
+        dueDate: document.getElementById('dueDate').value,
+        comments: document.getElementById('comments').value.trim(),
+        attachmentLink: document.getElementById('attachmentLink').value.trim()
+      };
+
+      if (!data.taskName) {
+        showMessage('Task Name is required.', 'error');
+        return;
+      }
+
+      apiPost('addTask', data)
+        .then(function(result) {
+          if (!result || !result.success) {
+            showMessage((result && result.message) || 'Could not create task.', 'error');
+            return;
+          }
+
+          showMessage('Task created successfully: ' + result.taskId, 'success');
+          clearTaskForm();
+          loadDashboard();
+          loadTasks();
+        })
+        .catch(function(error) {
+          showMessage(error.message || 'Could not create task.', 'error');
+        });
+    }
+
+    function closeTask(taskId) {
+      apiPost('updateTaskStatus', {
+        taskId: taskId,
+        status: 'Closed'
+      })
+        .then(function(result) {
+          if (!result || !result.success) {
+            showMessage((result && result.message) || 'Could not close task.', 'error');
+            return;
+          }
+
+          showMessage('Task closed successfully.', 'success');
+          loadDashboard();
+          loadTasks();
+        })
+        .catch(function(error) {
+          showMessage(error.message || 'Could not close task.', 'error');
+        });
+    }
+
+    function clearTaskForm() {
+      document.getElementById('taskName').value = '';
+      document.getElementById('description').value = '';
+      document.getElementById('priority').value = 'Medium';
+      document.getElementById('status').value = 'Open';
+      document.getElementById('assignedTo').value = '';
+      document.getElementById('department').value = '';
+      document.getElementById('dueDate').value = '';
+      document.getElementById('comments').value = '';
+      document.getElementById('attachmentLink').value = '';
+    }
+
+    function showMessage(text, type) {
+      const msg = document.getElementById('message');
+      msg.textContent = text;
+      msg.className = 'message ' + type;
+      msg.style.display = 'block';
+
+      setTimeout(function() {
+        msg.style.display = 'none';
+      }, 6000);
+    }
+
+    function statusClass(status) {
+      const value = String(status || '').toLowerCase();
+
+      if (value === 'closed') return 'closed';
+      if (value === 'overdue') return 'overdue';
+      if (value === 'in progress' || value === 'pending') return 'progress';
+      return 'open';
+    }
+
+    function formatDate(value) {
+      if (!value) return '';
+
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return escapeHtml(value);
+
+      return d.toLocaleDateString();
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value);
+    }
+
+    function escapeJs(value) {
+      return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+  </script>
+</body>
+</html>
