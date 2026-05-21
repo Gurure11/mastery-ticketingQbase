@@ -37,7 +37,8 @@
   </div>
 
 <script>
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzgB1V1pCSmZv-aQCU4MN0XR31p_qWp945PgrGDiZgex6tL485zF78lzgaWdEkTat4Y/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVn0LFIjW2UnSbnZKsedsUPobhd9IqIZNj459DR8DpkZiY2rK-SUJp6BIcBv92YWEaew/exec';
+  const DASHBOARD_URL = 'details.html';
 
   function showMsg(text, type) {
     const msg = document.getElementById('msg');
@@ -62,7 +63,7 @@
 
       localStorage.setItem('quickbase_user', JSON.stringify(data.user));
       showMsg('Login successful. Opening dashboard...', 'success');
-      setTimeout(() => { window.location.href = 'details.html'; }, 600);
+      setTimeout(() => { window.location.href = DASHBOARD_URL; }, 600);
     } catch (e) {
       showMsg('Connection failed: ' + e.message, 'error');
     }
