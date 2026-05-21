@@ -527,16 +527,18 @@
     const timeout = setTimeout(() => controller.abort(), 15000);
     try {
       const url = `${SCRIPT_URL}?action=${encodeURIComponent(action)}&_=${Date.now()}`;
-      const res = await fetch(url, { method: 'GET', signal: controller.signal });
+      const res = await fetch(url, { method: 'GET', signal: controller.signal, cache: 'no-store' });
       clearTimeout(timeout);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      if (json && json.success === true) {
-        if (json.data && Array.isArray(json.data)) return json.data;
-        if (Array.isArray(json)) return json;
-        return json.data || json;
-      }
+
       if (Array.isArray(json)) return json;
+      if (json && Array.isArray(json.data)) return json.data;
+      if (json && Array.isArray(json.rows)) return json.rows;
+      if (json && json.success === false) {
+        console.error(`API returned error (${action}):`, json.message || json.error);
+        return [];
+      }
       return [];
     } catch(e) {
       clearTimeout(timeout);
@@ -804,15 +806,39 @@
   async function renderEmployees() { const data = await apiGet('employees'); renderSimpleTable('Employees', data, ['Employee ID', 'Employee Name', 'Department', 'Role', 'Status']); }
   async function renderTickets() { let data = await apiGet('tickets'); if (window.taskFilter === 'open') data = data.filter(t => !String(t.Status || '').toLowerCase().includes('closed')); else if (window.taskFilter === 'overdue') { const today = new Date(); data = data.filter(t => { const due = new Date(t['Due Date']); return due < today && !String(t.Status || '').toLowerCase().includes('closed'); }); } renderSimpleTable('Tickets', data, ['Ticket ID', 'Title', 'Priority', 'Status', 'Department', 'Assigned To', 'Due Date']); }
   async function renderKPIs() { const data = await apiGet('kpis'); renderSimpleTable('KPIs', data, ['KPIName', 'Target Value', 'Actual Value', 'Related Department', 'Frequency']); }
-  async function renderSLA() { const data = await apiGet('sla'); renderSimpleTable('SLA', data, ['SLA Name', 'Priority', 'First Response', 'Resolution Target', 'Status']); }
-  async function renderBSC() { const data = await apiGet('bscMetrics'); renderSimpleTable('BSC Metrics', data, ['BSC Name', 'Target Score', 'Actual Score', 'Related Department', 'Frequency']); }
-  async function renderDivisions() { const data = await apiGet('divisions'); renderSimpleTable('Divisions', data, ['Division ID', 'Division Name', 'Head', 'Region', 'Status']); }
+  async function renderSLA() { const data = await apiGet('sla'); renderSimpleTable('SLA', data, ['SLA Name', 'Description', 'Priority', 'First Response', 'Resolution Target', 'Status'], 'SLA'); }
+  async function renderBSC() { const data = await apiGet('bscMetrics'); renderSimpleTable('BSC Metrics', data, ['BSC Name', 'BSC Description', 'Target Score', 'Actual Score', 'Related Department', 'Frequency'], 'BSC Metrics'); }
+  async function renderDivisions() { const data = await apiGet('divisions'); renderSimpleTable('Divisions', data, ['Division ID', 'Division Name', 'Head', 'Region', 'Status'], 'Divisions'); }
   async function renderAutomatedTasks() { const data = await apiGet('automatedTasks'); renderSimpleTable('Automated Tasks', data, ['Task Name', 'Frequency', 'Assigned To', 'Department', 'Next Run', 'Status']); }
   
-  function renderSimpleTable(title, data, columns) {
+  function getCellValue(row, column) {
+    if (!row) return '-';
+    const aliases = {
+      'SLA Name': ['SLA Name', 'Name', 'SLA'],
+      'First Response': ['First Response', 'First Response Target', 'SLA Rule - First Response Target'],
+      'Resolution Target': ['Resolution Target', 'Resolution', 'SLA Rule - Resolution Target'],
+      'BSC Name': ['BSC Name', 'Name'],
+      'BSC Description': ['BSC Description', 'Description'],
+      'Target Score': ['Target Score', 'Target'],
+      'Actual Score': ['Actual Score', 'Actual'],
+      'Related Department': ['Related Department', 'Department'],
+      'Division ID': ['Division ID', 'ID'],
+      'Division Name': ['Division Name', 'Name'],
+      'Head': ['Head', 'Division Head', 'Manager'],
+      'Region': ['Region', 'Area'],
+      'Status': ['Status']
+    };
+    const keys = aliases[column] || [column];
+    for (const key of keys) {
+      if (row[key] !== undefined && row[key] !== null && row[key] !== '') return row[key];
+    }
+    return '-';
+  }
+
+  function renderSimpleTable(title, data, columns, sheetTabName = title) {
     const main = document.getElementById('mainContent');
     const dataArray = Array.isArray(data) ? data : [];
-    main.innerHTML = `<div class="top-bar"><div class="page-title"><h1>${title}</h1><p>Sheet tab: ${title}</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div><div class="panel"><div class="panel-header"><h2>📋 ${title}</h2></div><div class="table-wrapper"><tr><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${dataArray.length ? dataArray.map(row => `<tr>${columns.map(c => `<td>${escapeHtml(row[c] || '-')}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${columns.length}" style="text-align:center">No data found</td></tr>`}</tbody></table></div></div>`;
+    main.innerHTML = `<div class="top-bar"><div class="page-title"><h1>${title}</h1><p>Sheet tab: ${sheetTabName}</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div><div class="panel"><div class="panel-header"><h2>📋 ${title}</h2></div><div class="table-wrapper"><table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${dataArray.length ? dataArray.map(row => `<tr>${columns.map(c => `<td>${escapeHtml(getCellValue(row, c))}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${columns.length}" style="text-align:center">No data found</td></tr>`}</tbody></table></div></div>`;
   }
   
   async function loadCurrentSection() {
