@@ -490,16 +490,23 @@
 <script>
   // ======================== CONFIGURATION =========================
   // ⚠️ IMPORTANT: REPLACE WITH YOUR ACTUAL APPS SCRIPT WEB APP URL
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlxrDjlkLjDTS8Mx7O7Swimh0fRiOmIU84uXQ3MhyQ1mEk04AtNbjEJIxJkSUx-CFI/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwNgBtpDDZMhAjGwXLj5n4JKc3_hjTRAfM5jBw_7jvTds78SIw5nyOVLP-C_1yx1RGC/exec';
   // ================================================================
 
   let currentSection = 'dashboard';
 
   // Helper: API GET
   async function apiGet(action) {
-    const res = await fetch(`${SCRIPT_URL}?action=${action}`);
+    const url = `${SCRIPT_URL}?action=${encodeURIComponent(action)}&_=${Date.now()}`;
+    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    const json = await res.json();
+
+    // Supports both direct arrays and wrapped responses like { success:true, data:[...] }
+    if (Array.isArray(json)) return json;
+    if (json && json.success === false) throw new Error(json.message || json.error || `Could not load ${action}`);
+    if (json && Array.isArray(json.data)) return json.data;
+    return json || {};
   }
 
   // Helper: API POST
@@ -510,7 +517,9 @@
       body: JSON.stringify({ action, payload })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    const json = await res.json();
+    if (json && json.success === false) return json;
+    return json || {};
   }
 
   function showMessage(msg, type, containerId = 'globalMessage') {
@@ -551,7 +560,9 @@
 
 
   function normalizeList(data) {
-    return Array.isArray(data) ? data : [];
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.data)) return data.data;
+    return [];
   }
 
   function countBy(list, key, fallback = 'Unknown') {
@@ -688,9 +699,13 @@
   // ======================= TASKS (with creation & close) =========
   async function renderTasks() {
     let tasks = [];
+    let taskLoadError = '';
     try {
-      tasks = await apiGet('tasks');
-    } catch(e) { tasks = []; }
+      tasks = normalizeList(await apiGet('tasks'));
+    } catch(e) {
+      taskLoadError = e.message || 'Could not load Tasks sheet';
+      tasks = [];
+    }
     const taskRows = tasks.map(t => `
       <tr>
         <td>${escapeHtml(t['Task ID'])}</td>
@@ -730,7 +745,7 @@
           <div id="taskMessage" class="message-bar"></div>
         </div>
         <div class="panel-header"><h2>📌 All Tasks</h2></div>
-        <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Created</th><th>Name</th><th>Desc</th><th>Priority</th><th>Status</th><th>Assignee</th><th>Dept</th><th>Due</th><th>Completed</th><th>Comments</th><th>Link</th><th>Action</th></tr></thead><tbody>${taskRows || '<tr><td colspan="13">No tasks found</td></tr>'}</tbody></table></div>
+        <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Created</th><th>Name</th><th>Desc</th><th>Priority</th><th>Status</th><th>Assignee</th><th>Dept</th><th>Due</th><th>Completed</th><th>Comments</th><th>Link</th><th>Action</th></tr></thead><tbody>${taskRows || `<tr><td colspan="13">${taskLoadError ? '⚠️ ' + escapeHtml(taskLoadError) : 'No tasks found'}</td></tr>`}</tbody></table></div>
       </div>
     `;
     document.getElementById('mainContent').innerHTML = html;
@@ -836,7 +851,7 @@
   // USERS
   async function renderUsers() {
     let users = [];
-    try { users = await apiGet('users'); } catch(e) { users = []; }
+    try { users = normalizeList(await apiGet('users')); } catch(e) { users = []; }
     const rows = users.map(u => `<tr><td>${escapeHtml(u['User ID'])}</td><td>${escapeHtml(u['Full Name'])}</td><td>${escapeHtml(u['Email'])}</td><td>${escapeHtml(u['Department'])}</td><td>${escapeHtml(u['Role'])}</td><td>${escapeHtml(u['Status'])}</td></tr>`).join('');
     document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>Users</h1><p>Team directory</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div><div class="panel"><div class="table-wrapper"><table><thead><tr><th>ID</th><th>Full Name</th><th>Email</th><th>Dept</th><th>Role</th><th>Status</th></tr></thead><tbody>${rows || '<tr><td colspan="6">No users</td></tr>'}</tbody></table></div></div>`;
   }
@@ -844,7 +859,7 @@
   // VEHICLES
   async function renderVehicles() {
     let vehicles = [];
-    try { vehicles = await apiGet('vehicles'); } catch(e) { vehicles = []; }
+    try { vehicles = normalizeList(await apiGet('vehicles')); } catch(e) { vehicles = []; }
     const rows = vehicles.map(v => `<tr><td>${escapeHtml(v['Vehicle ID'])}</td><td>${escapeHtml(v['Registration'])}</td><td>${escapeHtml(v['Driver'])}</td><td>${escapeHtml(v['Department'])}</td><td>${escapeHtml(v['Status'])}</td><td>${fmtDate(v['Last Service'])}</td><td>${fmtDate(v['Next Service'])}</td></tr>`).join('');
     document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>Vehicles</h1><p>Fleet overview</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div><div class="panel"><div class="table-wrapper"><table><thead><tr><th>ID</th><th>Reg</th><th>Driver</th><th>Dept</th><th>Status</th><th>Last Service</th><th>Next Service</th></tr></thead><tbody>${rows || '<tr><td colspan="7">No vehicles</td></tr>'}</tbody></table></div></div>`;
   }
