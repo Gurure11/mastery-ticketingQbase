@@ -62,7 +62,7 @@
 
       localStorage.setItem('quickbase_user', JSON.stringify(data.user));
       showMsg('Login successful. Opening dashboard...', 'success');
-      setTimeout(() => { window.location.href = 'quickbase_dashboard_quick_sheet_live_fixed.html'; }, 600);
+      setTimeout(() => { window.location.href = 'details.html'; }, 600);
     } catch (e) {
       showMsg('Connection failed: ' + e.message, 'error');
     }
