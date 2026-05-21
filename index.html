@@ -11,7 +11,7 @@
       --blue: #0b66f0;
       --purple: #7651a6;
       --border: #d8d8df;
-      --bg: #f6f6f8;
+      --bg: #f7f7f8;
       --sidebar: #f3f3f6;
       --text: #1f1f29;
       --muted: #666673;
@@ -26,9 +26,7 @@
       overflow-x: hidden;
     }
 
-    button {
-      font: inherit;
-    }
+    button { font: inherit; }
 
     .top-shell {
       min-height: 58px;
@@ -170,9 +168,7 @@
       color: #111;
     }
 
-    .mobile-menu {
-      display: none;
-    }
+    .mobile-menu { display: none; }
 
     .layout {
       display: flex;
@@ -379,13 +375,8 @@
       border-bottom-color: white;
     }
 
-    .view {
-      display: none;
-    }
-
-    .view.active {
-      display: block;
-    }
+    .view { display: none; }
+    .view.active { display: block; }
 
     .chart-grid {
       display: grid;
@@ -601,9 +592,7 @@
       margin-bottom: 16px;
     }
 
-    .task-form.open {
-      display: block;
-    }
+    .task-form.open { display: block; }
 
     .form-grid {
       display: grid;
@@ -990,7 +979,11 @@
   </div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxN7pozwlFc9UJzNadz-mhm6p-nnxj1isofGoanyxvGpc13WlxVPVKf5omE3GB8RNf/exec';
+    /*
+      Replace this URL with your deployed Google Apps Script Web App URL.
+      Example: const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+    */
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby0eyetkSVoOOMybe-cFu-Zo6xwyStweQnx3z6PiAhxsGdQDEYSHZJCmUYjuzTxbYnn/exec';
 
     let allTasks = [];
     let ticketFilter = '';
