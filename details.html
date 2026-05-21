@@ -221,6 +221,7 @@
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
+      gap: 12px;
     }
 
     .panel-header h2 {
@@ -235,6 +236,17 @@
       padding: 8px 18px;
       border-radius: 40px;
       color: white;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .btn-secondary {
+      background: #eef2ff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 40px;
+      color: #1e40af;
       font-weight: 600;
       cursor: pointer;
       font-size: 13px;
@@ -277,6 +289,9 @@
     .badge-medium { background: #fef3c7; color: #92400e; }
     .badge-low { background: #dcfce7; color: #166534; }
     .badge-critical { background: #fecaca; color: #7f1d1d; }
+    .badge-open { background: #dbeafe; color: #1e3a8a; }
+    .badge-overdue { background: #fee2e2; color: #991b1b; }
+    .badge-closed-late { background: #fef3c7; color: #92400e; }
 
     .loading {
       display: flex;
@@ -335,6 +350,7 @@
       display: flex;
       gap: 12px;
       margin-top: 12px;
+      flex-wrap: wrap;
     }
 
     .metric-pill {
@@ -364,11 +380,94 @@
       color: #991b1b;
     }
 
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-field label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+      text-transform: uppercase;
+    }
+
+    input, select, textarea {
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 14px;
+      background: white;
+    }
+
+    .message-bar {
+      margin: 12px 0 0 0;
+      padding: 10px 16px;
+      border-radius: 14px;
+      display: none;
+    }
+
+    .message-success { background: #dcfce7; color: #166534; border-left: 3px solid #22c55e; }
+    .message-error { background: #fee2e2; color: #991b1b; border-left: 3px solid #ef4444; }
+
+    .task-status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .status-stat-card {
+      background: white;
+      border-radius: 20px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .status-stat-card:hover {
+      transform: translateY(-2px);
+      border-color: #3b82f6;
+    }
+
+    .status-stat-card h3 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .status-stat-card p {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .auto-task-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 40px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .auto-daily { background: #e0f2fe; color: #075985; }
+    .auto-weekly { background: #ede9fe; color: #5b21b6; }
+    .auto-monthly { background: #fce7f3; color: #9d174d; }
+
     @media (max-width: 768px) {
       .sidebar { width: 80px; }
       .nav-link span:not(.emoji) { display: none; }
       .main { padding: 16px; }
       .chart-grid { grid-template-columns: 1fr; }
+      .task-status-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -392,6 +491,7 @@
       <div class="nav-link" data-section="sla">⏱️ SLA</div>
       <div class="nav-link" data-section="bsc">🎯 BSC Metrics</div>
       <div class="nav-link" data-section="divisions">🏭 Divisions</div>
+      <div class="nav-link" data-section="automatedTasks">🔄 Auto Tasks</div>
     </div>
   </aside>
   <main class="main" id="mainContent">
@@ -401,15 +501,13 @@
 
 <script>
   // ==================== CONFIGURATION ====================
-  // IMPORTANT: After deploying Apps Script, replace this URL with your Web App URL
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyyhRIekK-iOoJa9g1VYxjEmZ0d1XJxqPlGJ-aGO5Wx25C631_wkvqdXU3yqJR62ND7/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2x1Px_YOUR_DEPLOYED_ID/exec';
   const SHEET_ID = '1KWYWSUmwGYcBVIuDzh7yo86eTrfnMZX35DuGnRAVNv8';
   
   let currentUser = null;
   let currentSection = 'dashboard';
   let charts = {};
 
-  // ==================== AUTH ====================
   function getCurrentUser() {
     try {
       return JSON.parse(localStorage.getItem('quickbase_user') || sessionStorage.getItem('quickbase_user') || 'null');
@@ -424,28 +522,20 @@
     return true;
   }
 
-  // ==================== API CALLS ====================
   async function apiGet(action) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     try {
       const url = `${SCRIPT_URL}?action=${encodeURIComponent(action)}&_=${Date.now()}`;
-      console.log(`Fetching: ${action}`);
       const res = await fetch(url, { method: 'GET', signal: controller.signal });
       clearTimeout(timeout);
-      
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      
-      console.log(`Response for ${action}:`, json);
-      
-      // Handle different response formats
       if (json && json.success === true) {
         if (json.data && Array.isArray(json.data)) return json.data;
         if (Array.isArray(json)) return json;
         return json.data || json;
       }
-      
       if (Array.isArray(json)) return json;
       return [];
     } catch(e) {
@@ -455,42 +545,83 @@
     }
   }
 
-  // ==================== DASHBOARD RENDER ====================
+  async function apiPost(action, payload) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, payload, user: currentUser }),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      return await res.json();
+    } catch(e) {
+      clearTimeout(timeout);
+      throw e;
+    }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
+  }
+
+  function showMessage(msg, type, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.textContent = msg;
+    container.className = `message-bar message-${type}`;
+    container.style.display = 'block';
+    setTimeout(() => { if(container) container.style.display = 'none'; }, 5000);
+  }
+
+  // ==================== DASHBOARD with TASK STATUS SECTION ====================
   async function renderDashboard() {
     const main = document.getElementById('mainContent');
     main.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading dashboard data...</p></div>';
     
     try {
-      // Fetch all required data in parallel
-      const [tickets, departments, bscMetrics, kpis, sla, employees] = await Promise.all([
-        apiGet('tickets'),
-        apiGet('departments'),
-        apiGet('bscMetrics'),
-        apiGet('kpis'),
-        apiGet('sla'),
-        apiGet('employees')
+      const [tickets, departments, bscMetrics, kpis, sla, employees, automatedTasks] = await Promise.all([
+        apiGet('tickets'), apiGet('departments'), apiGet('bscMetrics'),
+        apiGet('kpis'), apiGet('sla'), apiGet('employees'), apiGet('automatedTasks')
       ]);
       
-      console.log('Tickets loaded:', tickets?.length || 0);
-      console.log('Departments loaded:', departments?.length || 0);
-      console.log('BSC Metrics loaded:', bscMetrics?.length || 0);
-      
       const ticketsArray = Array.isArray(tickets) ? tickets : [];
-      const depts = Array.isArray(departments) ? departments : [];
       const bsc = Array.isArray(bscMetrics) ? bscMetrics : [];
       const kpiArray = Array.isArray(kpis) ? kpis : [];
       const slaArray = Array.isArray(sla) ? sla : [];
+      const autoTasks = Array.isArray(automatedTasks) ? automatedTasks : [];
       
-      // Calculate KPIs
-      const totalTickets = ticketsArray.length;
-      const openTickets = ticketsArray.filter(t => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Calculate task/ticket statuses
+      let openTasks = 0;
+      let closedButLate = 0;
+      let openOverdue = 0;
+      
+      ticketsArray.forEach(t => {
         const status = String(t.Status || '').toLowerCase();
-        return status !== 'closed' && status !== 'resolved' && status !== 'done';
-      }).length;
-      const criticalTickets = ticketsArray.filter(t => String(t.Priority || '').toLowerCase() === 'critical').length;
-      const highTickets = ticketsArray.filter(t => String(t.Priority || '').toLowerCase() === 'high').length;
+        const dueDateStr = t['Due Date'] || t.DueDate;
+        let isLate = false;
+        if (dueDateStr) {
+          const due = new Date(dueDateStr);
+          if (!isNaN(due) && due < today) isLate = true;
+        }
+        
+        if (status === 'open' || status === 'in progress' || status === 'pending' || status === 'new') {
+          openTasks++;
+          if (isLate) openOverdue++;
+        } else if (status === 'closed' || status === 'resolved' || status === 'done') {
+          if (isLate) closedButLate++;
+        }
+      });
       
-      // Prepare chart data: Tickets by Priority
+      const totalTickets = ticketsArray.length;
+      const criticalTickets = ticketsArray.filter(t => String(t.Priority || '').toLowerCase() === 'critical').length;
+      
       const priorityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
       ticketsArray.forEach(t => {
         const p = String(t.Priority || 'Medium').toLowerCase();
@@ -500,21 +631,25 @@
         else priorityCounts.Medium++;
       });
       
-      // Tickets by Department (Assigned)
       const deptTicketCount = {};
       ticketsArray.forEach(t => {
         const dept = String(t.Department || t['Assigned Department'] || 'Unassigned');
         deptTicketCount[dept] = (deptTicketCount[dept] || 0) + 1;
       });
       
-      // Tickets submitted by department
       const submittedByDept = {};
       ticketsArray.forEach(t => {
-        const dept = String(t['Requester Department'] || t['Submitted By Dept'] || t['Requesting Department'] || 'Unknown');
+        const dept = String(t['Requester Department'] || t['Submitted By Dept'] || 'Unknown');
         submittedByDept[dept] = (submittedByDept[dept] || 0) + 1;
       });
       
-      // If no data, show sample message
+      const deptScores = {};
+      bsc.forEach(b => { 
+        const dept = b['Related Department'] || b.Department || 'General'; 
+        const actual = parseFloat(b['Actual Score']) || 0;
+        deptScores[dept] = (deptScores[dept] || 0) + actual;
+      });
+      
       const hasData = ticketsArray.length > 0;
       
       const html = `
@@ -525,258 +660,164 @@
           </div>
           <div class="user-chip">👤 ${currentUser?.['Full Name'] || 'Admin'} · ${currentUser?.Role || 'Executive'}</div>
         </div>
-        ${!hasData ? `
-        <div class="error-banner">
-          ⚠️ No data found in Google Sheets. The system will auto-create required tabs. Add sample data or wait for sync.
-          <br><br>
-          <strong>Sheet ID:</strong> ${SHEET_ID}<br>
-          <strong>Required tabs:</strong> Tickets, Departments, BSCMetrics, KPIs, SLA, Employees
+        
+        <!-- TASK STATUS SECTION - CLICKABLE CARDS -->
+        <div class="task-status-grid">
+          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='open';loadCurrentSection()">
+            <h3 style="color:#3b82f6">${openTasks}</h3>
+            <p>📋 Open Tasks/Tickets</p>
+            <small style="font-size:10px;color:#64748b">Click to view</small>
+          </div>
+          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='closed-late';loadCurrentSection()">
+            <h3 style="color:#f59e0b">${closedButLate}</h3>
+            <p>✅ Closed But Late</p>
+            <small style="font-size:10px;color:#64748b">Completed after due date</small>
+          </div>
+          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='overdue';loadCurrentSection()">
+            <h3 style="color:#ef4444">${openOverdue}</h3>
+            <p>⚠️ Open Overdue</p>
+            <small style="font-size:10px;color:#64748b">Past due date</small>
+          </div>
+          <div class="status-stat-card" onclick="currentSection='tickets';loadCurrentSection()">
+            <h3 style="color:#8b5cf6">${totalTickets}</h3>
+            <p>🎫 Total Tickets</p>
+            <small style="font-size:10px;color:#64748b">All records</small>
+          </div>
         </div>
-        ` : ''}
         
         <div class="kpi-grid">
           <div class="kpi-card" onclick="currentSection='tickets';loadCurrentSection()">
             <div class="kpi-label">🎫 Total Tickets</div>
             <div class="kpi-value">${totalTickets}</div>
           </div>
-          <div class="kpi-card" onclick="currentSection='tickets';loadCurrentSection()">
+          <div class="kpi-card" onclick="currentSection='tickets';window.taskFilter='open';loadCurrentSection()">
             <div class="kpi-label">📋 Open Tickets</div>
-            <div class="kpi-value">${openTickets}</div>
+            <div class="kpi-value">${openTasks}</div>
+          </div>
+          <div class="kpi-card" onclick="currentSection='tickets';window.taskFilter='overdue';loadCurrentSection()">
+            <div class="kpi-label">⚠️ Open Overdue</div>
+            <div class="kpi-value">${openOverdue}</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">⚠️ Critical Priority</div>
+            <div class="kpi-label">🔴 Critical Priority</div>
             <div class="kpi-value">${criticalTickets}</div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-label">🔴 High Priority</div>
-            <div class="kpi-value">${highTickets}</div>
-          </div>
         </div>
         
         <div class="chart-grid">
-          <div class="chart-card">
-            <h3>Tickets by Priority</h3>
-            <p>Number of tickets grouped by priority level</p>
-            <canvas id="priorityChart"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>Tickets Assigned by Department</h3>
-            <p>Ticket distribution across departments</p>
-            <canvas id="assignedChart"></canvas>
-          </div>
+          <div class="chart-card"><h3>Tickets by Priority</h3><canvas id="priorityChart"></canvas></div>
+          <div class="chart-card"><h3>Tickets Assigned by Department</h3><canvas id="assignedChart"></canvas></div>
         </div>
-        
         <div class="chart-grid">
-          <div class="chart-card">
-            <h3>Tickets Submitted by Department</h3>
-            <p>Requests submitted per department</p>
-            <canvas id="submittedChart"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>BSC Metrics Overview</h3>
-            <p>Balanced Scorecard performance</p>
-            <canvas id="bscChart"></canvas>
+          <div class="chart-card"><h3>Tickets Submitted by Department</h3><canvas id="submittedChart"></canvas></div>
+          <div class="chart-card"><h3>BSC Metrics Overview</h3><canvas id="bscChart"></canvas></div>
+        </div>
+        
+        <!-- NEW TASK / TICKET FORM -->
+        <div class="panel">
+          <div class="panel-header"><h2>➕ New Task / Ticket</h2><button class="btn-secondary" onclick="document.getElementById('newTicketForm').style.display='block'">Show Form</button></div>
+          <div id="newTicketForm" style="padding:20px; display:block">
+            <div class="form-row">
+              <div class="form-field"><label>Title *</label><input id="ticketTitle" placeholder="Task/Ticket title"></div>
+              <div class="form-field"><label>Priority</label><select id="ticketPriority"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select></div>
+              <div class="form-field"><label>Status</label><select id="ticketStatus"><option>Open</option><option>In Progress</option><option>Pending</option><option>Closed</option></select></div>
+            </div>
+            <div class="form-row">
+              <div class="form-field"><label>Department</label><input id="ticketDept" placeholder="Department"></div>
+              <div class="form-field"><label>Assigned To</label><input id="ticketAssignee" placeholder="Person/Team"></div>
+              <div class="form-field"><label>Due Date</label><input type="date" id="ticketDueDate"></div>
+            </div>
+            <div class="form-field"><label>Description</label><textarea id="ticketDesc" rows="2" placeholder="Detailed description"></textarea></div>
+            <button class="btn-primary" id="createTicketBtn">✨ Create Ticket</button>
+            <div id="ticketFormMessage" class="message-bar"></div>
           </div>
         </div>
         
+        <!-- AUTOMATED RECURRING TASK FORM -->
         <div class="panel">
-          <div class="panel-header">
-            <h2>🎯 BSC Metrics by Department</h2>
-            <button class="btn-primary" onclick="currentSection='bsc';loadCurrentSection()">View All →</button>
+          <div class="panel-header"><h2>🔄 Automated Recurring Task</h2><button class="btn-secondary" onclick="document.getElementById('autoTaskForm').style.display='block'">Show Form</button></div>
+          <div id="autoTaskForm" style="padding:20px; display:block">
+            <div class="form-row">
+              <div class="form-field"><label>Task Name *</label><input id="autoTaskName" placeholder="e.g., Weekly Report"></div>
+              <div class="form-field"><label>Frequency</label><select id="autoFrequency"><option>Daily</option><option>Weekly</option><option>Monthly</option></select></div>
+              <div class="form-field"><label>Assigned To</label><input id="autoAssignee" placeholder="Team member"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-field"><label>Department</label><input id="autoDept" placeholder="Department"></div>
+              <div class="form-field"><label>Next Run Date</label><input type="date" id="autoNextRun"></div>
+              <div class="form-field"><label>Status</label><select id="autoStatus"><option>Active</option><option>Paused</option></select></div>
+            </div>
+            <div class="form-field"><label>Description</label><textarea id="autoDesc" rows="2" placeholder="Task description"></textarea></div>
+            <button class="btn-primary" id="createAutoTaskBtn">✨ Create Automated Task</button>
+            <div id="autoTaskMessage" class="message-bar"></div>
           </div>
-          <div class="bsc-grid" id="bscGrid"></div>
         </div>
         
-        <div class="panel">
-          <div class="panel-header">
-            <h2>📊 KPI Performance</h2>
-            <button class="btn-primary" onclick="currentSection='kpis';loadCurrentSection()">View All KPIs →</button>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>KPI Name</th><th>Target</th><th>Actual</th><th>Department</th><th>Status</th></tr></thead>
-              <tbody id="kpiTable"></tbody>
-            </table>
-          </div>
-        </div>
+        <div class="panel"><div class="panel-header"><h2>🎯 BSC Metrics by Department</h2><button class="btn-primary" onclick="currentSection='bsc';loadCurrentSection()">View All →</button></div>
+          <div class="bsc-grid" id="bscGrid">${bsc.map(b => `<div class="bsc-card"><h4>${escapeHtml(b['BSC Name'] || b.Name)}</h4><p>${escapeHtml(b['BSC Description'] || '')}</p><div class="bsc-metrics"><span class="metric-pill">🎯 Target: ${b['Target Score'] || '-'}</span><span class="metric-pill">📊 Actual: ${b['Actual Score'] || '-'}</span></div><div style="font-size:12px;color:#64748b">${escapeHtml(b['Related Department'] || b.Department)} · ${escapeHtml(b.Frequency || 'Monthly')}</div></div>`).join('') || '<div style="padding:20px;text-align:center">No BSC metrics found</div>'}</div></div>
         
-        <div class="panel">
-          <div class="panel-header">
-            <h2>⏱️ SLA Management</h2>
-            <button class="btn-primary" onclick="currentSection='sla';loadCurrentSection()">View SLA Rules →</button>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>SLA Name</th><th>Priority</th><th>First Response</th><th>Resolution Target</th><th>Status</th></tr></thead>
-              <tbody id="slaTable"></tbody>
-            </table>
-          </div>
-        </div>
+        <div class="panel"><div class="panel-header"><h2>📊 KPI Performance</h2><button class="btn-primary" onclick="currentSection='kpis';loadCurrentSection()">View All →</button></div>
+          <div class="table-wrapper"><table><thead><tr><th>KPI Name</th><th>Target</th><th>Actual</th><th>Department</th><th>Status</th></tr></thead><tbody>${kpiArray.slice(0,5).map(k => `<tr><td><strong>${escapeHtml(k.KPIName || k.Name)}</strong></td><td>${escapeHtml(k['Target Value'] || k.Target)}</td><td>${escapeHtml(k['Actual Value'] || k.Actual)}</td><td>${escapeHtml(k['Related Department'] || k.Department)}</td><td><span class="badge ${(parseFloat(k['Actual Value']) >= parseFloat(k['Target Value'])) ? 'badge-low' : 'badge-high'}">${(parseFloat(k['Actual Value']) >= parseFloat(k['Target Value'])) ? '✓ On Track' : '⚠️ Behind'}</span></td></tr>`).join('') || '<tr><td colspan="5">No KPI data</td></tr>'}</tbody></table></div></div>
+        
+        <div class="panel"><div class="panel-header"><h2>⏱️ SLA Management</h2><button class="btn-primary" onclick="currentSection='sla';loadCurrentSection()">View All →</button></div>
+          <div class="table-wrapper"><table><thead><tr><th>SLA Name</th><th>Priority</th><th>First Response</th><th>Resolution Target</th><th>Status</th></tr></thead><tbody>${slaArray.slice(0,5).map(s => `<tr><td><strong>${escapeHtml(s['SLA Name'] || s.Name)}</strong></td><td><span class="badge badge-high">${escapeHtml(s.Priority)}</span></td><td>${escapeHtml(s['First Response'] || s.FirstResponse)}</td><td>${escapeHtml(s['Resolution Target'] || s.Resolution)}</td><td><span class="badge badge-low">Active</span></td></tr>`).join('') || '<tr><td colspan="5">No SLA records</td></tr>'}</tbody></table></div></div>
       `;
       
       main.innerHTML = html;
       
-      // Render charts
       if (typeof Chart !== 'undefined') {
-        // Priority Chart
-        const priorityCtx = document.getElementById('priorityChart')?.getContext('2d');
-        if (priorityCtx) {
-          if (charts.priority) charts.priority.destroy();
-          charts.priority = new Chart(priorityCtx, {
-            type: 'doughnut',
-            data: { labels: ['Critical', 'High', 'Medium', 'Low'], datasets: [{ data: [priorityCounts.Critical, priorityCounts.High, priorityCounts.Medium, priorityCounts.Low], backgroundColor: ['#ef4444', '#f97316', '#3b82f6', '#22c55e'] }] },
-            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
-          });
-        }
-        
-        // Assigned by Department Chart
-        const assignedCtx = document.getElementById('assignedChart')?.getContext('2d');
-        if (assignedCtx && Object.keys(deptTicketCount).length) {
-          if (charts.assigned) charts.assigned.destroy();
-          charts.assigned = new Chart(assignedCtx, {
-            type: 'bar',
-            data: { labels: Object.keys(deptTicketCount), datasets: [{ label: 'Tickets Assigned', data: Object.values(deptTicketCount), backgroundColor: '#3b82f6' }] },
-            options: { responsive: true, maintainAspectRatio: true }
-          });
-        } else if (assignedCtx) {
-          assignedCtx.fillStyle = '#e2e8f0';
-          assignedCtx.fillRect(0, 0, 400, 200);
-        }
-        
-        // Submitted by Department Chart
-        const submittedCtx = document.getElementById('submittedChart')?.getContext('2d');
-        if (submittedCtx && Object.keys(submittedByDept).length) {
-          if (charts.submitted) charts.submitted.destroy();
-          charts.submitted = new Chart(submittedCtx, {
-            type: 'bar',
-            data: { labels: Object.keys(submittedByDept), datasets: [{ label: 'Tickets Submitted', data: Object.values(submittedByDept), backgroundColor: '#8b5cf6' }] },
-            options: { responsive: true, maintainAspectRatio: true }
-          });
-        }
-        
-        // BSC Chart
-        const deptScores = {};
-        bsc.forEach(b => { 
-          const dept = b['Related Department'] || b.Department || 'General'; 
-          const actual = parseFloat(b['Actual Score']) || 0;
-          deptScores[dept] = (deptScores[dept] || 0) + actual;
-        });
-        const bscCtx = document.getElementById('bscChart')?.getContext('2d');
-        if (bscCtx && Object.keys(deptScores).length) {
-          if (charts.bsc) charts.bsc.destroy();
-          charts.bsc = new Chart(bscCtx, {
-            type: 'pie',
-            data: { labels: Object.keys(deptScores), datasets: [{ data: Object.values(deptScores), backgroundColor: ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'] }] },
-            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-          });
-        }
+        const pCtx = document.getElementById('priorityChart')?.getContext('2d');
+        if (pCtx) { if (charts.priority) charts.priority.destroy(); charts.priority = new Chart(pCtx, { type: 'doughnut', data: { labels: ['Critical','High','Medium','Low'], datasets: [{ data: [priorityCounts.Critical, priorityCounts.High, priorityCounts.Medium, priorityCounts.Low], backgroundColor: ['#ef4444','#f97316','#3b82f6','#22c55e'] }] }, options: { responsive: true } }); }
+        const aCtx = document.getElementById('assignedChart')?.getContext('2d');
+        if (aCtx && Object.keys(deptTicketCount).length) { if (charts.assigned) charts.assigned.destroy(); charts.assigned = new Chart(aCtx, { type: 'bar', data: { labels: Object.keys(deptTicketCount), datasets: [{ label: 'Tickets Assigned', data: Object.values(deptTicketCount), backgroundColor: '#3b82f6' }] } }); }
+        const sCtx = document.getElementById('submittedChart')?.getContext('2d');
+        if (sCtx && Object.keys(submittedByDept).length) { if (charts.submitted) charts.submitted.destroy(); charts.submitted = new Chart(sCtx, { type: 'bar', data: { labels: Object.keys(submittedByDept), datasets: [{ label: 'Tickets Submitted', data: Object.values(submittedByDept), backgroundColor: '#8b5cf6' }] } }); }
+        const bCtx = document.getElementById('bscChart')?.getContext('2d');
+        if (bCtx && Object.keys(deptScores).length) { if (charts.bsc) charts.bsc.destroy(); charts.bsc = new Chart(bCtx, { type: 'pie', data: { labels: Object.keys(deptScores), datasets: [{ data: Object.values(deptScores), backgroundColor: ['#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6'] }] } }); }
       }
       
-      // Render BSC Cards
-      const bscGrid = document.getElementById('bscGrid');
-      if (bscGrid) {
-        if (bsc.length) {
-          bscGrid.innerHTML = bsc.slice(0, 6).map(b => `
-            <div class="bsc-card">
-              <h4>${escapeHtml(b['BSC Name'] || b.Name || 'Unnamed')}</h4>
-              <p>${escapeHtml(b['BSC Description'] || b.Description || '')}</p>
-              <div class="bsc-metrics">
-                <span class="metric-pill">🎯 Target: ${b['Target Score'] || '-'}</span>
-                <span class="metric-pill">📊 Actual: ${b['Actual Score'] || '-'}</span>
-              </div>
-              <div style="margin-top:8px; font-size:12px; color:#64748b">${escapeHtml(b['Related Department'] || b.Department || '')} · ${escapeHtml(b.Frequency || 'Monthly')}</div>
-            </div>
-          `).join('');
-        } else {
-          bscGrid.innerHTML = '<div style="padding:20px; text-align:center; color:#64748b">No BSC metrics found. Add them via the BSC section or ensure sheet has data.</div>';
-        }
-      }
+      document.getElementById('createTicketBtn')?.addEventListener('click', async () => {
+        const payload = { title: document.getElementById('ticketTitle').value, priority: document.getElementById('ticketPriority').value, status: document.getElementById('ticketStatus').value, department: document.getElementById('ticketDept').value, assignedTo: document.getElementById('ticketAssignee').value, dueDate: document.getElementById('ticketDueDate').value, description: document.getElementById('ticketDesc').value };
+        if (!payload.title) return showMessage('Title required', 'error', 'ticketFormMessage');
+        const res = await apiPost('addTicket', payload);
+        showMessage(res.success ? 'Ticket created!' : (res.message || 'Error'), res.success ? 'success' : 'error', 'ticketFormMessage');
+        if (res.success) setTimeout(() => renderDashboard(), 1000);
+      });
       
-      // Render KPI Table
-      const kpiTable = document.getElementById('kpiTable');
-      if (kpiTable) {
-        if (kpiArray.length) {
-          kpiTable.innerHTML = kpiArray.slice(0, 5).map(k => {
-            const target = parseFloat(k['Target Value'] || k.Target || 0);
-            const actual = parseFloat(k['Actual Value'] || k.Actual || 0);
-            const onTrack = actual >= target;
-            return `
-              <tr>
-                <td><strong>${escapeHtml(k.KPIName || k.Name)}</strong></td>
-                <td>${escapeHtml(k['Target Value'] || k.Target)}</td>
-                <td>${escapeHtml(k['Actual Value'] || k.Actual)}</td>
-                <td>${escapeHtml(k['Related Department'] || k.Department)}</td>
-                <td><span class="badge ${onTrack ? 'badge-low' : 'badge-high'}">${onTrack ? '✓ On Track' : '⚠️ Behind'}</span></td>
-              </tr>
-            `;
-          }).join('');
-        } else {
-          kpiTable.innerHTML = '<tr><td colspan="5" style="text-align:center">No KPI data found</td></tr>';
-        }
-      }
-      
-      // Render SLA Table
-      const slaTable = document.getElementById('slaTable');
-      if (slaTable) {
-        if (slaArray.length) {
-          slaTable.innerHTML = slaArray.slice(0, 5).map(s => `
-            <tr>
-              <td><strong>${escapeHtml(s['SLA Name'] || s.Name)}</strong></td>
-              <td><span class="badge badge-high">${escapeHtml(s.Priority)}</span></td>
-              <td>${escapeHtml(s['First Response'] || s.FirstResponse)}</td>
-              <td>${escapeHtml(s['Resolution Target'] || s.Resolution)}</td>
-              <td><span class="badge badge-low">Active</span></td>
-            </tr>
-          `).join('');
-        } else {
-          slaTable.innerHTML = '<tr><td colspan="5" style="text-align:center">No SLA records found</td></tr>';
-        }
-      }
+      document.getElementById('createAutoTaskBtn')?.addEventListener('click', async () => {
+        const payload = { taskName: document.getElementById('autoTaskName').value, frequency: document.getElementById('autoFrequency').value, assignedTo: document.getElementById('autoAssignee').value, department: document.getElementById('autoDept').value, nextRun: document.getElementById('autoNextRun').value, status: document.getElementById('autoStatus').value, description: document.getElementById('autoDesc').value };
+        if (!payload.taskName) return showMessage('Task name required', 'error', 'autoTaskMessage');
+        const res = await apiPost('addAutomatedTask', payload);
+        showMessage(res.success ? 'Automated task created!' : (res.message || 'Error'), res.success ? 'success' : 'error', 'autoTaskMessage');
+        if (res.success) setTimeout(() => renderDashboard(), 1000);
+      });
       
     } catch (err) {
-      console.error('Dashboard error:', err);
-      main.innerHTML = `
-        <div class="panel" style="padding:40px; text-align:center; color:#ef4444">
-          <h2>⚠️ Error Loading Dashboard</h2>
-          <p>${escapeHtml(err.message)}</p>
-          <p style="margin-top:16px; color:#64748b">Make sure you've deployed the Apps Script backend and updated SCRIPT_URL</p>
-          <button class="refresh-btn" onclick="loadCurrentSection()" style="margin-top:16px">Try Again</button>
-        </div>
-      `;
+      main.innerHTML = `<div class="panel" style="padding:40px;text-align:center;color:#ef4444"><h2>⚠️ Error Loading Dashboard</h2><p>${escapeHtml(err.message)}</p><button class="refresh-btn" onclick="loadCurrentSection()">Try Again</button></div>`;
     }
   }
   
-  // ==================== SECTION RENDERERS ====================
-  async function renderUsers() { const main = document.getElementById('mainContent'); main.innerHTML = `<div class="panel" style="padding:40px"><h2>👥 Users Management</h2><p>User directory - Sheet tab: Users</p><p>Total users: ${(await apiGet('users')).length || 0}</p></div>`; }
-  async function renderSettings() { const main = document.getElementById('mainContent'); main.innerHTML = `<div class="panel" style="padding:40px"><h2>⚙️ App Settings</h2><p><strong>Sheet ID:</strong> ${SHEET_ID}</p><p><strong>Script URL:</strong> ${SCRIPT_URL.substring(0, 60)}...</p><button class="refresh-btn" onclick="loadCurrentSection()">Refresh</button></div>`; }
-  async function renderDepartments() { const data = await apiGet('departments'); renderSimpleTable('Departments', data, ['Department ID', 'Department Name', 'Manager', 'Status']); }
+  // Section renderers
+  async function renderUsers() { const data = await apiGet('users'); renderSimpleTable('Users', data, ['User ID', 'Full Name', 'Email', 'Department', 'Role', 'Status']); }
+  async function renderSettings() { document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:40px"><h2>⚙️ App Settings</h2><p><strong>Sheet ID:</strong> ${SHEET_ID}</p><button class="refresh-btn" onclick="loadCurrentSection()">Refresh</button></div>`; }
+  async function renderDepartments() { const data = await apiGet('departments'); renderSimpleTable('Departments', data, ['Department ID', 'Department Name', 'Manager', 'Budget', 'Status']); }
   async function renderEmployees() { const data = await apiGet('employees'); renderSimpleTable('Employees', data, ['Employee ID', 'Employee Name', 'Department', 'Role', 'Status']); }
-  async function renderTickets() { const data = await apiGet('tickets'); renderSimpleTable('Tickets', data, ['Ticket ID', 'Title', 'Priority', 'Status', 'Department', 'Assigned To']); }
+  async function renderTickets() { let data = await apiGet('tickets'); if (window.taskFilter === 'open') data = data.filter(t => !String(t.Status || '').toLowerCase().includes('closed')); else if (window.taskFilter === 'overdue') { const today = new Date(); data = data.filter(t => { const due = new Date(t['Due Date']); return due < today && !String(t.Status || '').toLowerCase().includes('closed'); }); } renderSimpleTable('Tickets', data, ['Ticket ID', 'Title', 'Priority', 'Status', 'Department', 'Assigned To', 'Due Date']); }
   async function renderKPIs() { const data = await apiGet('kpis'); renderSimpleTable('KPIs', data, ['KPIName', 'Target Value', 'Actual Value', 'Related Department', 'Frequency']); }
   async function renderSLA() { const data = await apiGet('sla'); renderSimpleTable('SLA', data, ['SLA Name', 'Priority', 'First Response', 'Resolution Target', 'Status']); }
   async function renderBSC() { const data = await apiGet('bscMetrics'); renderSimpleTable('BSC Metrics', data, ['BSC Name', 'Target Score', 'Actual Score', 'Related Department', 'Frequency']); }
   async function renderDivisions() { const data = await apiGet('divisions'); renderSimpleTable('Divisions', data, ['Division ID', 'Division Name', 'Head', 'Region', 'Status']); }
+  async function renderAutomatedTasks() { const data = await apiGet('automatedTasks'); renderSimpleTable('Automated Tasks', data, ['Task Name', 'Frequency', 'Assigned To', 'Department', 'Next Run', 'Status']); }
   
   function renderSimpleTable(title, data, columns) {
     const main = document.getElementById('mainContent');
     const dataArray = Array.isArray(data) ? data : [];
-    main.innerHTML = `
-      <div class="top-bar"><div class="page-title"><h1>${title}</h1><p>Sheet tab: ${title}</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
-      <div class="panel"><div class="panel-header"><h2>📋 ${title}</h2></div><div class="table-wrapper"><table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>
-        ${dataArray.length ? dataArray.map(row => `<tr>${columns.map(c => `<td>${escapeHtml(row[c] || row[c.replace(' ', '')] || '-')}</td>`).join('')}</tr>`).join('') : '<tr><td colspan="' + columns.length + '" style="text-align:center">No data found</td></tr>'}
-      </tbody></table></div></div>
-    `;
-  }
-  
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
+    main.innerHTML = `<div class="top-bar"><div class="page-title"><h1>${title}</h1><p>Sheet tab: ${title}</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div><div class="panel"><div class="panel-header"><h2>📋 ${title}</h2></div><div class="table-wrapper"><tr><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${dataArray.length ? dataArray.map(row => `<tr>${columns.map(c => `<td>${escapeHtml(row[c] || '-')}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${columns.length}" style="text-align:center">No data found</td></tr>`}</tbody></table></div></div>`;
   }
   
   async function loadCurrentSection() {
     requireLogin();
     document.getElementById('mainContent').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading...</p></div>';
-    
     if (currentSection === 'dashboard') await renderDashboard();
     else if (currentSection === 'users') await renderUsers();
     else if (currentSection === 'settings') await renderSettings();
@@ -787,24 +828,13 @@
     else if (currentSection === 'sla') await renderSLA();
     else if (currentSection === 'bsc') await renderBSC();
     else if (currentSection === 'divisions') await renderDivisions();
+    else if (currentSection === 'automatedTasks') await renderAutomatedTasks();
     else await renderDashboard();
-    
-    // Update active nav
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.classList.remove('active');
-      if (link.getAttribute('data-section') === currentSection) link.classList.add('active');
-    });
+    document.querySelectorAll('.nav-link').forEach(link => { link.classList.remove('active'); if (link.getAttribute('data-section') === currentSection) link.classList.add('active'); });
+    window.taskFilter = null;
   }
   
-  // Navigation
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', () => {
-      currentSection = link.getAttribute('data-section');
-      loadCurrentSection();
-    });
-  });
-  
-  // Initial load
+  document.querySelectorAll('.nav-link').forEach(link => { link.addEventListener('click', () => { currentSection = link.getAttribute('data-section'); loadCurrentSection(); }); });
   loadCurrentSection();
 </script>
 </body>
