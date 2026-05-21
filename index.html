@@ -338,6 +338,28 @@
       font-weight: 700;
     }
 
+    .status-pill.offline {
+      background: #fef2f2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+
+    .status-pill.offline .live-dot {
+      background: #ef4444;
+      box-shadow: 0 0 0 6px rgba(239,68,68,0.14);
+    }
+
+    .status-pill.checking {
+      background: #fffbeb;
+      color: #92400e;
+      border-color: #fde68a;
+    }
+
+    .status-pill.checking .live-dot {
+      background: #f59e0b;
+      box-shadow: 0 0 0 6px rgba(245,158,11,0.14);
+    }
+
     .live-dot {
       width: 10px;
       height: 10px;
@@ -490,7 +512,9 @@
 <script>
   // ======================== CONFIGURATION =========================
   // ⚠️ IMPORTANT: REPLACE WITH YOUR ACTUAL APPS SCRIPT WEB APP URL
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwNgBtpDDZMhAjGwXLj5n4JKc3_hjTRAfM5jBw_7jvTds78SIw5nyOVLP-C_1yx1RGC/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2TjfhYprHwUBfS-SnCOoOwtdKWOo_Wlh2lOiju2akZa6WB3tSmVFbs0AlOnTjDqrE/exec';
+  const GOOGLE_SHEET_ID = '1KWYWSUmwGYcBVIuDzh7yo86eTrfnMZX35DuGnRAVNv8';
+  const GOOGLE_SHEET_NAME = 'Quick';
   // ================================================================
 
   let currentSection = 'dashboard';
@@ -507,6 +531,17 @@
     if (json && json.success === false) throw new Error(json.message || json.error || `Could not load ${action}`);
     if (json && Array.isArray(json.data)) return json.data;
     return json || {};
+  }
+
+  async function apiHealth() {
+    try {
+      const res = await fetch(`${SCRIPT_URL}?action=health&_=${Date.now()}`, { method: 'GET', cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return json || {};
+    } catch (e) {
+      return { success: false, status: 'Offline', message: e.message };
+    }
   }
 
   // Helper: API POST
@@ -632,6 +667,7 @@
   // ======================= DASHBOARD ==========================
   async function renderDashboard() {
     try {
+      const health = await apiHealth();
       const data = await apiGet('dashboard');
       const tasks = normalizeList(await apiGet('tasks'));
       const projects = normalizeList(await apiGet('projects'));
@@ -652,7 +688,11 @@
         }
       });
       const pendingApprovals = approvals.filter(a => String(a.Status || '').toLowerCase().includes('pending')).length;
-      const googleSheetsLive = apiConnections.some(c => String(c.Name || c.Connection || '').toLowerCase().includes('google sheet') && String(c.Status || '').toLowerCase().includes('live'));
+      const googleSheetsLive = Boolean(health.success || health.googleSheetsConnected || apiConnections.some(c => String(c.Name || c.Connection || '').toLowerCase().includes('google sheet') && String(c.Status || '').toLowerCase().includes('live')));
+      const connectionText = googleSheetsLive
+        ? `Google Sheet ${GOOGLE_SHEET_NAME} connected · Live`
+        : `Google Sheet ${GOOGLE_SHEET_NAME} offline · ${escapeHtml(health.message || 'Check deployment/access')}`;
+      const connectionClass = googleSheetsLive ? 'status-pill' : 'status-pill offline';
       const taskStatus = countBy(tasks, 'Status');
       const projectStatus = countBy(projects, 'Status');
       const approvalStatus = countBy(approvals, 'Status');
@@ -660,8 +700,8 @@
       const pendingRows = approvals.filter(a => String(a.Status || '').toLowerCase().includes('pending')).slice(0,5).map(a => `<div class="quick-item"><div><strong>${escapeHtml(a.Type || a['Approval Type'])}</strong><small>${escapeHtml(a.Requester || '')} · ${escapeHtml(a.Details || a.Description || '')}</small></div><span class="badge pending">Pending</span></div>`).join('');
       const html = `
         <div class="top-bar">
-          <div class="page-title"><h1>Operations Dashboard</h1><p>Live from Google Sheets · QuickBase style</p></div>
-          <div class="action-row"><span class="status-pill"><span class="live-dot"></span>${googleSheetsLive ? 'Google Sheet connected · Live' : 'Google Sheet status checking'}</span><button class="refresh-btn" onclick="loadCurrentSection()">⟳ Refresh data</button></div>
+          <div class="page-title"><h1>Operations Dashboard</h1><p>Live from Google Sheets · QuickBase style · Sheet ID: ${GOOGLE_SHEET_ID}</p></div>
+          <div class="action-row"><span class="${connectionClass}"><span class="live-dot"></span>${connectionText}</span><button class="refresh-btn" onclick="loadCurrentSection()">⟳ Refresh data</button></div>
         </div>
         <div class="kpi-grid">
           <div class="kpi-card"><div class="kpi-label">📋 Total Tasks</div><div class="kpi-value">${data.totalTasks || tasks.length || 0}</div></div>
@@ -844,8 +884,10 @@
 
   async function renderApiConnections() {
     let connections = [];
+    let health = await apiHealth();
     try { connections = normalizeList(await apiGet('apiConnections')); } catch(e) { connections = []; }
-    document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>API Connections</h1><p>External services and connection health</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div><div class="panel"><div class="panel-header"><h2>🔌 Live Connections</h2></div><div class="api-box">${connections.map(c=>`<div class="api-card"><h3><span class="live-dot"></span> ${escapeHtml(c.Name || c.Connection)}</h3><p>Status: <strong>${escapeHtml(c.Status || 'Live')}</strong></p><p>${escapeHtml(c.Description || '')}</p></div>`).join('') || '<p style="padding:20px">No API connections found</p>'}</div></div>`;
+    const live = Boolean(health.success || health.googleSheetsConnected);
+    document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>API Connections</h1><p>External services and connection health · Sheet ID: ${GOOGLE_SHEET_ID}</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div><div class="panel"><div class="panel-header"><h2>🔌 Live Connections</h2></div><div class="api-box">${connections.map(c=>`<div class="api-card"><h3><span class="live-dot"></span> ${escapeHtml(c.Name || c.Connection || 'Google Sheets')}</h3><p>Status: <strong style="color:${String(c.Status || '').toLowerCase().includes('live') ? '#166534' : '#991b1b'}">${escapeHtml(c.Status || (live ? 'Live' : 'Offline'))}</strong></p><p>${escapeHtml(c.Description || health.message || '')}</p><p><strong>Sheet:</strong> ${GOOGLE_SHEET_NAME}</p><p><strong>ID:</strong> ${GOOGLE_SHEET_ID}</p></div>`).join('') || `<div class="api-card"><h3><span class="live-dot"></span> Google Sheets - ${GOOGLE_SHEET_NAME}</h3><p>Status: <strong>${live ? 'Live' : 'Offline'}</strong></p><p>${escapeHtml(health.message || '')}</p><p><strong>ID:</strong> ${GOOGLE_SHEET_ID}</p></div>`}</div></div>`;
   }
 
   // USERS
