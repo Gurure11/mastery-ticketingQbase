@@ -522,13 +522,25 @@
       .nav-link { text-align: center; font-size: 12px; padding: 10px 4px; }
       .main { padding: 16px; }
     }
-  </style>
+  
+    .summary-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:18px; margin-bottom:26px; }
+    .metric-card { background:white; border:1px solid #e2e8f0; border-radius:22px; padding:18px; box-shadow:0 4px 12px rgba(0,0,0,0.03); }
+    .metric-card h3 { font-size:16px; color:#0f172a; margin-bottom:12px; }
+    .metric-list { display:grid; gap:10px; }
+    .metric-row { display:flex; justify-content:space-between; gap:12px; padding:10px 12px; background:#f8fafc; border-radius:14px; border:1px solid #e2e8f0; font-size:13px; }
+    .score-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:18px; padding:16px; }
+    .score-card h4 { color:#0f172a; margin-bottom:8px; font-size:15px; }
+    .score-card p { color:#475569; font-size:13px; margin-bottom:8px; line-height:1.45; }
+    .score-values { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .score-pill { display:inline-block; background:#eef2ff; color:#1e40af; border-radius:999px; padding:5px 10px; font-size:12px; font-weight:700; }
+</style>
 </head>
 <body>
 <div class="app">
   <aside class="sidebar">
     <div class="brand">Quick<span>Base</span></div>
     <div class="nav">
+      <div class="nav-link" data-section="taskSummary">🎫 Task Summary</div>
       <div class="nav-link active" data-section="dashboard">📊 Dashboard</div>
       <div class="nav-link" data-section="projects">📁 Projects</div>
       <div class="nav-link" data-section="tasks">✅ Tasks</div>
@@ -552,7 +564,7 @@
 <script>
   // ======================== CONFIGURATION =========================
   // ⚠️ IMPORTANT: REPLACE WITH YOUR ACTUAL APPS SCRIPT WEB APP URL
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_F5yZtbB9CS0-BDBNuuxYw6ErEJIFWt3mPTJAJXW39cJoeRCb-lwPOb9D-Gfgq8H9/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby0MFXRyMPAAy6aqmOj94KffRU_8fCnMKNMdJMRwbRp_Mk-ZVXDQnI434Zm0VOBNN1m/exec';
   const GOOGLE_SHEET_ID = '1KWYWSUmwGYcBVIuDzh7yo86eTrfnMZX35DuGnRAVNv8';
   const GOOGLE_SHEET_NAME = 'Quick';
   // ================================================================
@@ -1070,6 +1082,85 @@
     </div>`;
   }
 
+
+  function groupCount(list, key) {
+    const out = {};
+    normalizeList(list).forEach(item => {
+      const val = String(item[key] || 'Unassigned').trim() || 'Unassigned';
+      out[val] = (out[val] || 0) + 1;
+    });
+    return out;
+  }
+
+  function renderCountList(obj) {
+    const entries = Object.entries(obj);
+    if (!entries.length) return '<p style="padding:12px;color:#64748b">No data found</p>';
+    return entries.map(([k,v]) => `<div class="metric-row"><span>${escapeHtml(k)}</span><strong>${v}</strong></div>`).join('');
+  }
+
+  async function renderTaskSummary() {
+    let tickets = [], bsc = [], kpis = [];
+    try { tickets = normalizeList(await apiGet('tickets')); } catch(e) { tickets = []; }
+    try { bsc = normalizeList(await apiGet('bscMetrics')); } catch(e) { bsc = []; }
+    try { kpis = normalizeList(await apiGet('kpiMetrics')); } catch(e) { kpis = []; }
+
+    const byDept = groupCount(tickets, 'Related Department');
+    const byPriority = groupCount(tickets, 'Priority');
+    const assignedByDept = groupCount(tickets, 'Assigned To Department');
+
+    const ticketRows = tickets.map(t => `
+      <tr>
+        <td>${escapeHtml(t['Ticket ID'])}</td>
+        <td><strong>${escapeHtml(t.Title)}</strong></td>
+        <td>${escapeHtml(t.Description)}</td>
+        <td>${escapeHtml(t['Assigned From'])}</td>
+        <td>${escapeHtml(t['Assigned To'])}</td>
+        <td>${escapeHtml(t.Priority)}</td>
+        <td>${escapeHtml(t['SLA Rule - First Response Target'])}</td>
+        <td>${escapeHtml(t['SLA Rule - Resolution Target'])}</td>
+        <td>${escapeHtml(t['Latest Update Summary'])}</td>
+        <td>${fmtDate(t['Last Update Date'])}</td>
+        <td>${escapeHtml(t['Last Updated By'])}</td>
+      </tr>`).join('');
+
+    const bscCards = bsc.map(m => `
+      <div class="score-card">
+        <h4>${escapeHtml(m['BSC Name'])}</h4>
+        <p>${escapeHtml(m['BSC Description'])}</p>
+        <div class="score-values">
+          <span class="score-pill">Target: ${escapeHtml(m['Target Score'])}</span>
+          <span class="score-pill">Actual: ${escapeHtml(m['Actual Score'])}</span>
+          <span class="score-pill">Dept: ${escapeHtml(m['Related Department'])}</span>
+          <span class="score-pill">${escapeHtml(m.Frequency)}</span>
+        </div>
+      </div>`).join('');
+
+    const kpiRows = kpis.map(k => `
+      <tr>
+        <td>${escapeHtml(k.KPIName)}</td>
+        <td>${escapeHtml(k.KPIDescription)}</td>
+        <td>${escapeHtml(k['Target Value'])}</td>
+        <td>${escapeHtml(k['Actual Value'])}</td>
+        <td>${escapeHtml(k['Related Department'])}</td>
+        <td>${escapeHtml(k.Frequency)}</td>
+        <td>${fmtDate(k['Last Updated Date'])}</td>
+        <td>${escapeHtml(k['Department Name'])}</td>
+        <td>${escapeHtml(k['Department Manager'])}</td>
+      </tr>`).join('');
+
+    document.getElementById('mainContent').innerHTML = `
+      <div class="top-bar"><div class="page-title"><h1>Task Summary & BSC Metrics</h1><p>Tickets, SLA rules, department summaries, BSC score cards and KPI metrics</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
+      <div class="summary-grid">
+        <div class="metric-card"><h3>Tickets assigned by departments</h3><div class="metric-list">${renderCountList(byDept)}</div></div>
+        <div class="metric-card"><h3>Summary of Tickets by Priority</h3><div class="metric-list">${renderCountList(byPriority)}</div></div>
+        <div class="metric-card"><h3>Tickets assigned by departments</h3><div class="metric-list">${renderCountList(assignedByDept)}</div></div>
+      </div>
+      <div class="panel"><div class="panel-header"><h2>📊 BSC Metrics by Department</h2></div><div class="module-grid">${bscCards || '<p style="padding:20px">No BSC metrics found</p>'}</div></div>
+      <div class="panel"><div class="panel-header"><h2>🎫 Tickets</h2></div><div class="table-wrapper"><table><thead><tr><th>Ticket ID</th><th>Title</th><th>Description</th><th>Assigned From</th><th>Assigned To</th><th>Priority</th><th>First Response SLA</th><th>Resolution SLA</th><th>Latest Update</th><th>Last Update Date</th><th>Last Updated By</th></tr></thead><tbody>${ticketRows || '<tr><td colspan="11">No tickets found</td></tr>'}</tbody></table></div></div>
+      <div class="panel"><div class="panel-header"><h2>📈 KPI Metrics</h2></div><div class="table-wrapper"><table><thead><tr><th>KPI Name</th><th>KPI Description</th><th>Target Value</th><th>Actual Value</th><th>Related Department</th><th>Frequency</th><th>Last Updated Date</th><th>Department Name</th><th>Department Manager</th></tr></thead><tbody>${kpiRows || '<tr><td colspan="9">No KPI metrics found</td></tr>'}</tbody></table></div></div>`;
+  }
+
+
   async function loadCurrentSection() {
     if (!requireLogin()) return;
     if (!SCRIPT_URL || SCRIPT_URL.includes('PASTE_YOUR')) {
@@ -1077,6 +1168,7 @@
       return;
     }
     if (currentSection === 'dashboard') await renderDashboard();
+    else if (currentSection === 'taskSummary') await renderTaskSummary();
     else if (currentSection === 'projects') await renderProjects();
     else if (currentSection === 'tasks') await renderTasks();
     else if (currentSection === 'automatedTasks') await renderAutomatedTasks();
