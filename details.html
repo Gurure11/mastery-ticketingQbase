@@ -533,6 +533,22 @@
     .score-card p { color:#475569; font-size:13px; margin-bottom:8px; line-height:1.45; }
     .score-values { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
     .score-pill { display:inline-block; background:#eef2ff; color:#1e40af; border-radius:999px; padding:5px 10px; font-size:12px; font-weight:700; }
+
+    .loading-inline {
+      padding: 18px 20px;
+      color: #475569;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      margin-bottom: 18px;
+    }
+    .kpi-card.clickable {
+      cursor: pointer;
+    }
+    .kpi-card.clickable:hover {
+      transform: translateY(-3px);
+      border-color: #3b82f6;
+    }
 </style>
 </head>
 <body>
@@ -566,12 +582,13 @@
 <script>
   // ======================== CONFIGURATION =========================
   // ⚠️ IMPORTANT: REPLACE WITH YOUR ACTUAL APPS SCRIPT WEB APP URL
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDKiPUqNAYrJ3En5xOIPoLpVFsFUbfWwEEXjMd2a4PBBM0WhJFp9wgw2-BTQobjHoD/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwsZa3_0SPLDtTZS04COMgewA_ua0UCd-HLLp16gmfiDFdAPrRFoSxhG2Cah9JPiI8e/exec';
   const GOOGLE_SHEET_ID = '1KWYWSUmwGYcBVIuDzh7yo86eTrfnMZX35DuGnRAVNv8';
   const GOOGLE_SHEET_NAME = 'Quick';
   // ================================================================
 
   let currentSection = 'dashboard';
+  let taskFilterStatus = '';
   let currentUser = null;
   let dashboardCache = null;
   let dashboardCacheTime = 0;
@@ -614,19 +631,29 @@
     return `<span class="user-session-bar">👤 ${escapeHtml(currentUser['Full Name'] || currentUser.FullName || currentUser.Email || 'User')} · ${escapeHtml(currentUser.Role || 'User')} <button class="logout-link" onclick="logout()">Logout</button></span>`;
   }
 
-  // Helper: API GET
+  // Helper: API GET with timeout so the page never freezes
   async function apiGet(action) {
     const userParam = currentUser ? `&userEmail=${encodeURIComponent(currentUser.Email || '')}&userRole=${encodeURIComponent(currentUser.Role || '')}` : '';
     const url = `${SCRIPT_URL}?action=${encodeURIComponent(action)}${userParam}&_=${Date.now()}`;
-    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
 
-    // Supports both direct arrays and wrapped responses like { success:true, data:[...] }
-    if (Array.isArray(json)) return json;
-    if (json && json.success === false) throw new Error(json.message || json.error || `Could not load ${action}`);
-    if (json && Array.isArray(json.data)) return json.data;
-    return json || {};
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+
+    try {
+      const res = await fetch(url, { method: 'GET', cache: 'no-store', signal: controller.signal });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+
+      if (Array.isArray(json)) return json;
+      if (json && json.success === false) throw new Error(json.message || json.error || `Could not load ${action}`);
+      if (json && Array.isArray(json.data)) return json.data;
+      return json || {};
+    } catch (err) {
+      clearTimeout(timer);
+      console.error('apiGet failed:', action, err);
+      throw err;
+    }
   }
 
   async function apiHealth() {
@@ -640,17 +667,28 @@
     }
   }
 
-  // Helper: API POST
+  // Helper: API POST with timeout
   async function apiPost(action, payload) {
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action, payload, user: currentUser || {} })
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    if (json && json.success === false) return json;
-    return json || {};
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, payload, user: currentUser || {} }),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (json && json.success === false) return json;
+      return json || {};
+    } catch (err) {
+      clearTimeout(timer);
+      console.error('apiPost failed:', action, err);
+      throw err;
+    }
   }
 
   async function apiConnectionRun(method, endpoint, payloadText) {
@@ -665,10 +703,39 @@
   async function getFastDashboardData() {
     const now = Date.now();
     if (dashboardCache && (now - dashboardCacheTime) < CACHE_MS) return dashboardCache;
-    const data = await apiGet('bootstrap');
-    dashboardCache = data;
-    dashboardCacheTime = now;
-    return data;
+
+    try {
+      const data = await apiGet('bootstrap');
+      dashboardCache = data;
+      dashboardCacheTime = now;
+      return data;
+    } catch (err) {
+      console.warn('bootstrap failed, loading sections individually', err);
+      const safe = async (action, fallback) => {
+        try { return await apiGet(action); } catch(e) { return fallback; }
+      };
+      const [health, dashboard, tasks, projects, automatedTasks, approvals, scheduledJobs, apiConnections, users, vehicles, tickets, bscMetrics, kpiMetrics, employees, sla] = await Promise.all([
+        apiHealth(),
+        safe('dashboard', {}),
+        safe('tasks', []),
+        safe('projects', []),
+        safe('automatedTasks', []),
+        safe('approvals', []),
+        safe('scheduledJobs', []),
+        safe('apiConnections', []),
+        safe('users', []),
+        safe('vehicles', []),
+        safe('tickets', []),
+        safe('bscMetrics', []),
+        safe('kpiMetrics', []),
+        safe('employees', []),
+        safe('sla', [])
+      ]);
+      const data = { health, dashboard, tasks, projects, automatedTasks, approvals, scheduledJobs, apiConnections, users, vehicles, tickets, bscMetrics, kpiMetrics, employees, sla };
+      dashboardCache = data;
+      dashboardCacheTime = now;
+      return data;
+    }
   }
 
   function showMessage(msg, type, containerId = 'globalMessage') {
@@ -780,7 +847,6 @@
 
   // ======================= DASHBOARD ==========================
   async function renderDashboard() {
-    document.body.style.pointerEvents='none';
     try {
       const boot = await getFastDashboardData();
       const health = boot.health || await apiHealth();
@@ -820,10 +886,10 @@
           <div class="action-row">${userChipHtml()}<span class="${connectionClass}"><span class="live-dot"></span>${connectionText}</span><button class="refresh-btn" onclick="dashboardCache=null; loadCurrentSection()">⟳ Refresh data</button></div>
         </div>
         <div class="kpi-grid">
-          <div class="kpi-card"><div class="kpi-label">📋 Total Tasks</div><div class="kpi-value">${data.totalTasks || tasks.length || 0}</div></div>
-          <div class="kpi-card" onclick="currentSection='tasks';loadCurrentSection()" style="cursor:pointer"><div class="kpi-label">🟠 Open Tasks</div><div class="kpi-value">${openTasks}</div></div>
-          <div class="kpi-card" onclick="currentSection='tasks';loadCurrentSection()" style="cursor:pointer"><div class="kpi-label">✅ Closed Tasks</div><div class="kpi-value">${closedTasks}</div></div>
-          <div class="kpi-card" onclick="currentSection='tasks';loadCurrentSection()" style="cursor:pointer"><div class="kpi-label">⚠️ Overdue</div><div class="kpi-value">${overdue}</div></div>
+          <div class="kpi-card clickable" onclick="taskFilterStatus='';currentSection='tasks';loadCurrentSection()"><div class="kpi-label">📋 Total Tasks</div><div class="kpi-value">${data.totalTasks || tasks.length || 0}</div></div>
+          <div class="kpi-card clickable" onclick="taskFilterStatus='Open';currentSection='tasks';loadCurrentSection()"><div class="kpi-label">🟠 Open Tasks</div><div class="kpi-value">${openTasks}</div></div>
+          <div class="kpi-card clickable" onclick="taskFilterStatus='Closed';currentSection='tasks';loadCurrentSection()"><div class="kpi-label">✅ Closed Tasks</div><div class="kpi-value">${closedTasks}</div></div>
+          <div class="kpi-card clickable" onclick="taskFilterStatus='Overdue';currentSection='tasks';loadCurrentSection()"><div class="kpi-label">⚠️ Overdue</div><div class="kpi-value">${overdue}</div></div>
           <div class="kpi-card"><div class="kpi-label">📁 Projects</div><div class="kpi-value">${projects.length}</div></div>
           <div class="kpi-card"><div class="kpi-label">🛂 Pending Approvals</div><div class="kpi-value">${pendingApprovals}</div></div>
           <div class="kpi-card"><div class="kpi-label">🔁 Automated Tasks</div><div class="kpi-value">${automatedTasks.length}</div></div>
@@ -847,7 +913,6 @@
       drawBarChart('taskStatusChart', Object.keys(taskStatus), Object.values(taskStatus));
       drawBarChart('projectStatusChart', Object.keys(projectStatus), Object.values(projectStatus));
       drawDonutChart('approvalChart', Object.keys(approvalStatus), Object.values(approvalStatus));
-      document.body.style.pointerEvents='auto';
     } catch (err) {
       document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:24px;color:red">⚠️ Error loading dashboard: ${err.message}<br>Check SCRIPT_URL and CORS/WebApp deployment.</div>`;
     }
@@ -862,6 +927,13 @@
     } catch(e) {
       taskLoadError = e.message || 'Could not load Tasks sheet';
       tasks = [];
+    }
+    if (taskFilterStatus) {
+      tasks = tasks.filter(t => {
+        const status = String(t.Status || '').toLowerCase();
+        if (taskFilterStatus.toLowerCase() === 'open') return ['open','in progress','pending'].includes(status);
+        return status.includes(taskFilterStatus.toLowerCase());
+      });
     }
     const taskRows = tasks.map(t => `
       <tr>
@@ -881,7 +953,7 @@
       </tr>
     `).join('');
     const html = `
-      <div class="top-bar"><div class="page-title"><h1>Task Manager</h1><p>Create, track & update tasks</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
+      <div class="top-bar"><div class="page-title"><h1>Task Manager</h1><p>${taskFilterStatus ? taskFilterStatus + ' tasks' : 'Create, track & update tasks'}</p></div><div class="action-row"><button class="refresh-btn" onclick="taskFilterStatus='';loadCurrentSection()">All Tasks</button><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div></div>
       <div class="panel">
         <div class="panel-header"><h2>➕ New Task</h2></div>
         <div class="task-form">
@@ -1057,14 +1129,22 @@
   
   async function renderEmployees() {
     let employees = [];
-    try { employees = normalizeList(await apiGet('employees')); } catch(e) { employees = []; }
+    try {
+      const boot = await getFastDashboardData();
+      employees = normalizeList(boot.employees);
+      if (!employees.length) employees = normalizeList(await apiGet('employees'));
+    } catch(e) { employees = []; }
     const rows = employees.map(e => `<tr><td>${escapeHtml(e['Employee ID'])}</td><td>${escapeHtml(e['Employee Name'])}</td><td>${escapeHtml(e.Department)}</td><td>${escapeHtml(e.Role)}</td><td>${escapeHtml(e.Manager)}</td><td>${escapeHtml(e.Status)}</td></tr>`).join('');
     document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>Employees</h1><p>All employees in the system</p></div></div><div class="panel"><div class="table-wrapper"><table><thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Role</th><th>Manager</th><th>Status</th></tr></thead><tbody>${rows || '<tr><td colspan="6">No employees found</td></tr>'}</tbody></table></div></div>`;
   }
 
   async function renderSLA() {
     let sla = [];
-    try { sla = normalizeList(await apiGet('sla')); } catch(e) { sla = []; }
+    try {
+      const boot = await getFastDashboardData();
+      sla = normalizeList(boot.sla);
+      if (!sla.length) sla = normalizeList(await apiGet('sla'));
+    } catch(e) { sla = []; }
     const rows = sla.map(s => `<tr><td>${escapeHtml(s['SLA Name'])}</td><td>${escapeHtml(s.Description)}</td><td>${escapeHtml(s.Priority)}</td><td>${escapeHtml(s['First Response'])}</td><td>${escapeHtml(s['Resolution Target'])}</td></tr>`).join('');
     document.getElementById('mainContent').innerHTML = `<div class="top-bar"><div class="page-title"><h1>SLA Management</h1><p>Critical operational SLA tracking</p></div></div><div class="panel"><div class="table-wrapper"><table><thead><tr><th>SLA</th><th>Description</th><th>Priority</th><th>First Response</th><th>Resolution Target</th></tr></thead><tbody>${rows || '<tr><td colspan="5">No SLA records found</td></tr>'}</tbody></table></div></div>`;
   }
@@ -1120,9 +1200,15 @@
 
   async function renderTaskSummary() {
     let tickets = [], bsc = [], kpis = [];
-    try { tickets = normalizeList(await apiGet('tickets')); } catch(e) { tickets = []; }
-    try { bsc = normalizeList(await apiGet('bscMetrics')); } catch(e) { bsc = []; }
-    try { kpis = normalizeList(await apiGet('kpiMetrics')); } catch(e) { kpis = []; }
+    try {
+      const boot = await getFastDashboardData();
+      tickets = normalizeList(boot.tickets);
+      bsc = normalizeList(boot.bscMetrics);
+      kpis = normalizeList(boot.kpiMetrics);
+      if (!tickets.length) tickets = normalizeList(await apiGet('tickets'));
+      if (!bsc.length) bsc = normalizeList(await apiGet('bscMetrics'));
+      if (!kpis.length) kpis = normalizeList(await apiGet('kpiMetrics'));
+    } catch(e) { tickets = []; bsc = []; kpis = []; }
 
     const byDept = groupCount(tickets, 'Related Department');
     const byPriority = groupCount(tickets, 'Priority');
@@ -1183,25 +1269,37 @@
 
   async function loadCurrentSection() {
     if (!requireLogin()) return;
+
+    const main = document.getElementById('mainContent');
+    if (main) {
+      main.innerHTML = `<div class="loading-inline">Loading ${escapeHtml(currentSection)}...</div>`;
+    }
+
     if (!SCRIPT_URL || SCRIPT_URL.includes('PASTE_YOUR')) {
       document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:24px;background:#fff0f0"><h2>⚠️ Configuration missing</h2><p>Please replace <code>SCRIPT_URL</code> in the HTML with your actual Google Apps Script Web App URL.</p><p>Make sure you deployed as <strong>"Execute as: Me" + "Who has access: Anyone"</strong> for testing.</p></div>`;
       return;
     }
-    if (currentSection === 'dashboard') await renderDashboard();
-    else if (currentSection === 'taskSummary') await renderTaskSummary();
-    else if (currentSection === 'projects') await renderProjects();
-    else if (currentSection === 'tasks') await renderTasks();
-    else if (currentSection === 'automatedTasks') await renderAutomatedTasks();
-    else if (currentSection === 'approvals') await renderApprovals();
-    else if (currentSection === 'workflows') await renderWorkflows();
-    else if (currentSection === 'reports') await renderReports();
-    else if (currentSection === 'scheduledJobs') await renderScheduledJobs();
-    else if (currentSection === 'apiConnections') await renderApiConnections();
-    else if (currentSection === 'users') await renderUsers();
-    else if (currentSection === 'employees') await renderEmployees();
-    else if (currentSection === 'sla') await renderSLA();
-    else if (currentSection === 'vehicles') await renderVehicles();
-    else if (currentSection === 'modules') renderModules();
+
+    try {
+      if (currentSection === 'dashboard') await renderDashboard();
+      else if (currentSection === 'taskSummary') await renderTaskSummary();
+      else if (currentSection === 'projects') await renderProjects();
+      else if (currentSection === 'tasks') await renderTasks();
+      else if (currentSection === 'automatedTasks') await renderAutomatedTasks();
+      else if (currentSection === 'approvals') await renderApprovals();
+      else if (currentSection === 'workflows') await renderWorkflows();
+      else if (currentSection === 'reports') await renderReports();
+      else if (currentSection === 'scheduledJobs') await renderScheduledJobs();
+      else if (currentSection === 'apiConnections') await renderApiConnections();
+      else if (currentSection === 'users') await renderUsers();
+      else if (currentSection === 'employees') await renderEmployees();
+      else if (currentSection === 'sla') await renderSLA();
+      else if (currentSection === 'vehicles') await renderVehicles();
+      else if (currentSection === 'modules') renderModules();
+    } catch (err) {
+      console.error('Section failed:', currentSection, err);
+      document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:24px;color:#991b1b"><h2>Could not load ${escapeHtml(currentSection)}</h2><p>${escapeHtml(err.message || err)}</p><button class="refresh-btn" onclick="dashboardCache=null;loadCurrentSection()">Try Again</button></div>`;
+    }
   }
 
   // Navigation
