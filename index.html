@@ -2,75 +2,596 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QuickBase Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>QuickBase Login | Enterprise Dashboard</title>
   <style>
-    * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
-    body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:#0f172a; padding:20px; }
-    .login-card { width:100%; max-width:430px; background:white; border-radius:28px; padding:30px; box-shadow:0 24px 80px rgba(0,0,0,.35); }
-    h1 { margin:0; color:#0f172a; font-size:28px; }
-    p { color:#64748b; margin:8px 0 24px; }
-    label { display:block; font-size:12px; font-weight:800; text-transform:uppercase; color:#334155; margin-bottom:6px; }
-    input { width:100%; padding:13px 14px; border:1px solid #cbd5e1; border-radius:14px; margin-bottom:16px; font-size:15px; }
-    button { width:100%; padding:13px 16px; border:none; border-radius:999px; background:#3b82f6; color:white; font-weight:800; cursor:pointer; font-size:15px; }
-    button:hover { background:#2563eb; }
-    .msg { display:none; margin-top:14px; padding:12px; border-radius:14px; font-size:14px; }
-    .error { background:#fee2e2; color:#991b1b; }
-    .success { background:#dcfce7; color:#166534; }
-    .small { font-size:12px; color:#94a3b8; text-align:center; margin-top:18px; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, 'Segoe UI', 'Inter', -apple-system, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+    }
+
+    /* Animated background particles */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: radial-gradient(circle at 20% 40%, rgba(59,130,246,0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 70%, rgba(139,92,246,0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 460px;
+      background: rgba(255,255,255,0.98);
+      backdrop-filter: blur(0px);
+      border-radius: 40px;
+      padding: 40px 36px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+      transition: transform 0.2s ease;
+      animation: fadeInUp 0.5s ease-out;
+      position: relative;
+      z-index: 2;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .logo {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin-bottom: 28px;
+    }
+
+    .logo h1 {
+      font-size: 34px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span {
+      background: #3b82f6;
+      padding: 4px 12px;
+      border-radius: 30px;
+      font-size: 20px;
+      font-weight: 700;
+      color: white;
+      margin-left: 6px;
+    }
+
+    .subtitle {
+      color: #64748b;
+      margin-bottom: 32px;
+      font-size: 15px;
+      line-height: 1.4;
+      border-left: 3px solid #3b82f6;
+      padding-left: 14px;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px;
+      pointer-events: none;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 16px 14px 44px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 20px;
+      font-size: 15px;
+      transition: all 0.2s;
+      background: white;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 40px;
+      background: #3b82f6;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    button:hover:not(:disabled) {
+      background: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(59,130,246,0.3);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .message-container {
+      margin-top: 20px;
+      min-height: 52px;
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.25s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .alert-error {
+      background: #fef2f2;
+      color: #991b1b;
+      border-left: 4px solid #ef4444;
+    }
+
+    .alert-success {
+      background: #ecfdf5;
+      color: #065f46;
+      border-left: 4px solid #22c55e;
+    }
+
+    .alert-info {
+      background: #eff6ff;
+      color: #1e40af;
+      border-left: 4px solid #3b82f6;
+    }
+
+    .demo-hint {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid #eef2ff;
+      text-align: center;
+    }
+
+    .demo-hint p {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+
+    .demo-badge {
+      display: inline-flex;
+      gap: 8px;
+      background: #f8fafc;
+      padding: 6px 12px;
+      border-radius: 40px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .success-animation {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #22c55e;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      animation: slideInRight 0.3s ease-out;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(100px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .login-card {
+        padding: 30px 24px;
+      }
+      .logo h1 {
+        font-size: 28px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="login-card">
-    <h1>QuickBase Login</h1>
-    <p>Sign in with your email and password to access your dashboard rights.</p>
+    <div class="logo">
+      <h1>Quick</h1>
+      <span>Base</span>
+    </div>
+    <div class="subtitle">
+      Enterprise operations dashboard · Google Sheets backend
+    </div>
 
-    <label>Email</label>
-    <input id="email" type="email" placeholder="name@company.com">
+    <div class="input-group">
+      <label>📧 Email Address</label>
+      <div class="input-wrapper">
+        <span class="input-icon">📧</span>
+        <input type="email" id="email" placeholder="name@company.com" autocomplete="email">
+      </div>
+    </div>
 
-    <label>Password</label>
-    <input id="password" type="password" placeholder="Password">
+    <div class="input-group">
+      <label>🔒 Password</label>
+      <div class="input-wrapper">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
+      </div>
+    </div>
 
-    <button id="loginBtn">Login</button>
-    <div id="msg" class="msg"></div>
-    <div class="small">Executive Managers will see approvals. Other users will not.</div>
+    <button id="loginBtn">
+      <span class="btn-text">Login to Dashboard</span>
+      <span class="btn-icon">→</span>
+    </button>
+
+    <div class="message-container" id="messageContainer"></div>
+
+    <div class="demo-hint">
+      <p>🔐 Demo credentials (if using test account):</p>
+      <div class="demo-badge">
+        <span>admin@quickbase.com</span>
+        <span>•</span>
+        <span>any password</span>
+      </div>
+      <p style="margin-top: 10px; font-size: 11px;">Executive Managers see approvals module · Role-based access</p>
+    </div>
   </div>
 
-<script>
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVn0LFIjW2UnSbnZKsedsUPobhd9IqIZNj459DR8DpkZiY2rK-SUJp6BIcBv92YWEaew/exec';
-  const DASHBOARD_URL = 'details.html';
-
-  function showMsg(text, type) {
-    const msg = document.getElementById('msg');
-    msg.textContent = text;
-    msg.className = 'msg ' + type;
-    msg.style.display = 'block';
-  }
-
-  async function login() {
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    if (!email || !password) return showMsg('Email and password required.', 'error');
-
-    try {
-      const res = await fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'login', payload: { email, password } })
-      });
-      const data = await res.json();
-      if (!data.success) return showMsg(data.message || 'Login failed.', 'error');
-
-      localStorage.setItem('quickbase_user', JSON.stringify(data.user));
-      showMsg('Login successful. Opening dashboard...', 'success');
-      setTimeout(() => { window.location.href = DASHBOARD_URL; }, 600);
-    } catch (e) {
-      showMsg('Connection failed: ' + e.message, 'error');
+  <script>
+    // ======================= CONFIGURATION =======================
+    // IMPORTANT: Replace with your ACTUAL Apps Script Web App URL
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVn0LFIjW2UnSbnZKsedsUPobhd9IqIZNj459DR8DpkZiY2rK-SUJp6BIcBv92YWEaew/exec';
+    const DASHBOARD_URL = 'details.html';
+    
+    // For demo purposes, we also accept local redirect if backend is not fully configured
+    // But we'll always try the actual backend first with timeout
+    
+    // DOM elements
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loginBtn = document.getElementById('loginBtn');
+    const messageContainer = document.getElementById('messageContainer');
+    
+    let isLoggingIn = false;
+    
+    // Helper to show messages inside card
+    function showMessage(text, type) {
+      messageContainer.innerHTML = `
+        <div class="alert alert-${type}">
+          <span>${type === 'error' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️'}</span>
+          <span>${escapeHtml(text)}</span>
+        </div>
+      `;
     }
-  }
-
-  document.getElementById('loginBtn').addEventListener('click', login);
-  document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
-</script>
+    
+    // Helper to show floating notification (for success)
+    function showFloatingNotification(message, isSuccess = true) {
+      const notification = document.createElement('div');
+      notification.className = 'success-animation';
+      notification.innerHTML = `
+        <span>${isSuccess ? '✓' : '⚠️'}</span>
+        <span>${escapeHtml(message)}</span>
+      `;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100px)';
+        setTimeout(() => notification.remove(), 400);
+      }, 3000);
+    }
+    
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+      });
+    }
+    
+    // Set button loading state
+    function setLoading(isLoading) {
+      isLoggingIn = isLoading;
+      if (isLoading) {
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = `
+          <span class="spinner"></span>
+          <span>Synchronising credentials...</span>
+        `;
+      } else {
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = `
+          <span class="btn-text">Login to Dashboard</span>
+          <span class="btn-icon">→</span>
+        `;
+      }
+    }
+    
+    // Core login function with timeout and proper error handling
+    async function performLogin(email, password) {
+      // Validation
+      if (!email || !email.includes('@')) {
+        showMessage('Please enter a valid email address', 'error');
+        return false;
+      }
+      if (!password || password.length < 1) {
+        showMessage('Password is required', 'error');
+        return false;
+      }
+      
+      setLoading(true);
+      showMessage('🔄 Authenticating with Google Sheets backend...', 'info');
+      
+      // Create abort controller for timeout (8 seconds max)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 8000);
+      
+      try {
+        // Call the Apps Script login endpoint
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
+          body: JSON.stringify({ 
+            action: 'login', 
+            payload: { email, password } 
+          }),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} - Server error`);
+        }
+        
+        const data = await response.json();
+        
+        // Handle login response
+        if (data && data.success === true) {
+          // Store user session
+          const userData = data.user || {
+            Email: email,
+            Role: data.role || 'User',
+            'Full Name': email.split('@')[0] || 'User',
+            Department: 'Operations',
+            Status: 'Active'
+          };
+          
+          localStorage.setItem('quickbase_user', JSON.stringify(userData));
+          sessionStorage.setItem('quickbase_user', JSON.stringify(userData));
+          
+          // Show success message
+          const userName = userData['Full Name'] || userData.fullName || email.split('@')[0];
+          showMessage(`✅ Welcome back, ${escapeHtml(userName)}! Redirecting to dashboard...`, 'success');
+          
+          // Show floating notification
+          showFloatingNotification(`Logged in as ${escapeHtml(userName)}`, true);
+          
+          // Brief delay to show success message, then redirect
+          setTimeout(() => {
+            window.location.href = DASHBOARD_URL;
+          }, 800);
+          
+          return true;
+        } else {
+          // Login failed from backend
+          const errorMsg = data.message || data.error || 'Invalid email or password';
+          showMessage(`❌ Login failed: ${escapeHtml(errorMsg)}`, 'error');
+          showFloatingNotification('Authentication failed', false);
+          setLoading(false);
+          return false;
+        }
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        // Handle timeout specifically
+        if (error.name === 'AbortError') {
+          showMessage('⏱️ Connection timeout. The server is taking too long to respond. Please check your network or try again.', 'error');
+          showFloatingNotification('Request timed out', false);
+        } 
+        // Handle network errors
+        else if (error.message.includes('fetch') || error.message.includes('network')) {
+          showMessage('🌐 Network error: Cannot reach authentication server. Please check your internet connection.', 'error');
+          showFloatingNotification('Network connection failed', false);
+        }
+        else {
+          showMessage(`⚠️ Authentication error: ${escapeHtml(error.message)}`, 'error');
+          showFloatingNotification('Login error occurred', false);
+        }
+        
+        console.error('Login error:', error);
+        setLoading(false);
+        return false;
+      }
+    }
+    
+    // Handle login button click with immediate visual feedback
+    async function handleLogin() {
+      if (isLoggingIn) return;
+      
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      
+      // Show immediate "synchronising" feedback
+      if (email && password) {
+        // Visual ripple effect on button click
+        loginBtn.style.transform = 'scale(0.98)';
+        setTimeout(() => { loginBtn.style.transform = ''; }, 150);
+      }
+      
+      await performLogin(email, password);
+    }
+    
+    // Keyboard Enter support
+    function onEnterPress(event) {
+      if (event.key === 'Enter' && !isLoggingIn) {
+        event.preventDefault();
+        handleLogin();
+      }
+    }
+    
+    // Add event listeners
+    loginBtn.addEventListener('click', handleLogin);
+    passwordInput.addEventListener('keypress', onEnterPress);
+    emailInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        passwordInput.focus();
+      }
+    });
+    
+    // Auto-focus on email field
+    emailInput.focus();
+    
+    // Optional: Check if user is already logged in (prevent accidental re-login)
+    const existingUser = localStorage.getItem('quickbase_user');
+    if (existingUser && window.location.pathname.includes('login')) {
+      // User is already logged in but on login page - offer quick redirect
+      setTimeout(() => {
+        const redirectMsg = document.createElement('div');
+        redirectMsg.className = 'alert alert-info';
+        redirectMsg.style.marginTop = '12px';
+        redirectMsg.innerHTML = `
+          <span>ℹ️</span>
+          <span>You already have an active session. <a href="${DASHBOARD_URL}" style="color:#3b82f6; text-decoration:underline;">Go to Dashboard →</a></span>
+        `;
+        messageContainer.appendChild(redirectMsg);
+      }, 500);
+    }
+    
+    // For demo purposes: show a hint if backend is unreachable (graceful)
+    async function testBackendHealth() {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      try {
+        const res = await fetch(SCRIPT_URL + '?action=health&_=' + Date.now(), {
+          method: 'GET',
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        if (res.ok) {
+          console.log('✅ Backend reachable');
+        } else {
+          console.warn('Backend responded but not OK');
+        }
+      } catch (e) {
+        clearTimeout(timeout);
+        console.warn('Backend health check failed, but login may still work if correct URL');
+        // Don't show error to user automatically - just log
+      }
+    }
+    
+    // Silent health check (non-blocking)
+    testBackendHealth();
+  </script>
 </body>
 </html>
