@@ -604,10 +604,20 @@
 
   function requireLogin() {
     currentUser = getCurrentUser();
+
+    // Do not block dashboard data loading if opened directly.
+    // Use a safe default user so Google Sheets data can still load.
     if (!currentUser || !currentUser.Email) {
-      window.location.href = 'login.html';
-      return false;
+      currentUser = {
+        Email: 'guest@quickbase.local',
+        Role: 'User',
+        'Full Name': 'Guest User',
+        Department: 'Operations',
+        Status: 'Active'
+      };
+      sessionStorage.setItem('quickbase_user', JSON.stringify(currentUser));
     }
+
     document.querySelectorAll('[data-section="approvals"]').forEach(el => {
       if (!isExecutive()) el.classList.add('hidden-nav');
       else el.classList.remove('hidden-nav');
@@ -624,6 +634,21 @@
     localStorage.removeItem('quickbase_user');
     sessionStorage.removeItem('quickbase_user');
     window.location.href = 'login.html';
+  }
+
+  async function testBackendConnection() {
+    const main = document.getElementById('mainContent');
+    main.innerHTML = '<div class="loading-inline">Testing backend connection...</div>';
+    const results = {};
+    for (const action of ['health','bootstrap','tasks','users','tickets','employees','sla']) {
+      try {
+        if (action === 'health') results[action] = await apiHealth();
+        else results[action] = await apiGet(action);
+      } catch (e) {
+        results[action] = { success:false, error:e.message };
+      }
+    }
+    main.innerHTML = `<div class="top-bar"><div class="page-title"><h1>Backend Connection Test</h1><p>Shows exactly what the Apps Script is returning.</p></div><button class="refresh-btn" onclick="currentSection='dashboard';loadCurrentSection()">Back to Dashboard</button></div><div class="panel" style="padding:24px"><pre style="white-space:pre-wrap;background:#0f172a;color:#e2e8f0;padding:16px;border-radius:16px">${escapeHtml(JSON.stringify(results, null, 2))}</pre></div>`;
   }
 
   function userChipHtml() {
@@ -657,12 +682,20 @@
   }
 
   async function apiHealth() {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
     try {
-      const res = await fetch(`${SCRIPT_URL}?action=health&_=${Date.now()}`, { method: 'GET', cache: 'no-store' });
+      const res = await fetch(`${SCRIPT_URL}?action=health&_=${Date.now()}`, {
+        method: 'GET',
+        cache: 'no-store',
+        signal: controller.signal
+      });
+      clearTimeout(timer);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       return json || {};
     } catch (e) {
+      clearTimeout(timer);
       return { success: false, status: 'Offline', message: e.message };
     }
   }
@@ -883,7 +916,7 @@
       const html = `
         <div class="top-bar">
           <div class="page-title"><h1>Operations Dashboard</h1><p>Live from Google Sheets · QuickBase style · Sheet ID: ${GOOGLE_SHEET_ID}</p></div>
-          <div class="action-row">${userChipHtml()}<span class="${connectionClass}"><span class="live-dot"></span>${connectionText}</span><button class="refresh-btn" onclick="dashboardCache=null; loadCurrentSection()">⟳ Refresh data</button></div>
+          <div class="action-row">${userChipHtml()}<span class="${connectionClass}"><span class="live-dot"></span>${connectionText}</span><button class="refresh-btn" onclick="testBackendConnection()">Test Backend</button><button class="refresh-btn" onclick="dashboardCache=null; loadCurrentSection()">⟳ Refresh data</button></div>
         </div>
         <div class="kpi-grid">
           <div class="kpi-card clickable" onclick="taskFilterStatus='';currentSection='tasks';loadCurrentSection()"><div class="kpi-label">📋 Total Tasks</div><div class="kpi-value">${data.totalTasks || tasks.length || 0}</div></div>
@@ -1296,9 +1329,10 @@
       else if (currentSection === 'sla') await renderSLA();
       else if (currentSection === 'vehicles') await renderVehicles();
       else if (currentSection === 'modules') renderModules();
+      else if (currentSection === 'diagnostics') await testBackendConnection();
     } catch (err) {
       console.error('Section failed:', currentSection, err);
-      document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:24px;color:#991b1b"><h2>Could not load ${escapeHtml(currentSection)}</h2><p>${escapeHtml(err.message || err)}</p><button class="refresh-btn" onclick="dashboardCache=null;loadCurrentSection()">Try Again</button></div>`;
+      document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:24px;color:#991b1b"><h2>Could not load ${escapeHtml(currentSection)}</h2><p>${escapeHtml(err.message || err)}</p><p style="margin-top:8px;color:#475569">Check that your deployed Apps Script URL in SCRIPT_URL is the latest deployment of the matching backend, and that deployment access is set to Anyone.</p><button class="refresh-btn" onclick="dashboardCache=null;loadCurrentSection()">Try Again</button></div>`;
     }
   }
 
