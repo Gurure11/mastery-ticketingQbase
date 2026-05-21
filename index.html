@@ -5,41 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>On Point Group Operations Management</title>
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: Arial, Helvetica, sans-serif;
-    }
+    * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
 
     :root {
-      --qb-blue: #0b66f0;
-      --qb-purple: #7651a6;
-      --qb-border: #d8d8df;
-      --qb-bg: #f6f6f8;
-      --qb-sidebar: #f3f3f6;
-      --qb-text: #1f1f29;
-      --qb-muted: #666673;
-      --qb-card: #ffffff;
-      --qb-shadow: 0 1px 5px rgba(0,0,0,0.18);
+      --blue: #0b66f0;
+      --purple: #7651a6;
+      --border: #d8d8df;
+      --bg: #f6f6f8;
+      --sidebar: #f3f3f6;
+      --text: #1f1f29;
+      --muted: #666673;
+      --card: #ffffff;
+      --shadow: 0 1px 5px rgba(0,0,0,0.18);
     }
 
     body {
       margin: 0;
-      background: var(--qb-bg);
-      color: var(--qb-text);
+      background: var(--bg);
+      color: var(--text);
       overflow-x: hidden;
     }
 
-    button, a {
-      -webkit-tap-highlight-color: transparent;
+    button {
+      font: inherit;
     }
 
     .top-shell {
-      height: 58px;
-      background: #ffffff;
-      border-bottom: 1px solid var(--qb-border);
+      min-height: 58px;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
       padding: 0 10px 0 0;
       position: sticky;
       top: 0;
@@ -49,35 +47,39 @@
     .top-left {
       display: flex;
       align-items: center;
-      height: 100%;
       min-width: 0;
     }
 
-    .waffle {
+    .menu-grid {
       width: 34px;
       display: grid;
       grid-template-columns: repeat(3, 5px);
-      grid-auto-rows: 5px;
       gap: 3px;
       justify-content: center;
       flex: 0 0 auto;
     }
 
-    .waffle span {
+    .menu-grid span {
+      width: 5px;
+      height: 5px;
       background: #4e4e58;
       border-radius: 1px;
     }
 
-    .qb-logo {
+    .logo {
+      width: 220px;
+      min-height: 58px;
+      border: 0;
+      border-right: 1px solid var(--border);
+      background: white;
       display: flex;
       align-items: center;
       gap: 8px;
-      width: 220px;
-      height: 58px;
-      border-right: 1px solid var(--qb-border);
       padding-left: 8px;
+      cursor: pointer;
       font-size: 28px;
       font-weight: 800;
+      color: #263238;
       flex: 0 0 auto;
     }
 
@@ -109,21 +111,20 @@
       min-width: 0;
     }
 
-    .app-title-text {
+    .app-title span:last-child {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     .app-icon {
-      background: var(--qb-purple);
+      background: var(--purple);
       color: white;
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: grid;
+      place-items: center;
       font-size: 19px;
       flex: 0 0 auto;
     }
@@ -131,47 +132,45 @@
     .top-actions {
       display: flex;
       align-items: center;
-      gap: 14px;
-      font-size: 22px;
+      gap: 12px;
+      font-size: 21px;
       color: #4d4d59;
       flex: 0 0 auto;
     }
 
-    .top-action-box {
-      border: 1px solid var(--qb-border);
+    .icon-btn {
+      border: 1px solid var(--border);
+      background: #fff;
       width: 48px;
       height: 44px;
       border-radius: 13px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: white;
+      display: grid;
+      place-items: center;
       cursor: pointer;
-      user-select: none;
+      color: #42424f;
     }
 
-    .top-action-box:hover,
-    .table-link:hover,
-    .side-link:hover,
+    .icon-btn:hover,
+    .nav-btn:hover,
     .tab:hover,
-    .chart-card:hover {
-      filter: brightness(0.98);
+    .chart-card:hover,
+    .tile:hover,
+    .metric-card:hover {
+      background-color: #f8f8fb;
     }
 
-    .profile-circle {
+    .profile {
       background: #efeff0;
       width: 44px;
       height: 44px;
       border-radius: 50%;
+      display: grid;
+      place-items: center;
       font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       color: #111;
-      flex: 0 0 auto;
     }
 
-    .mobile-menu-btn {
+    .mobile-menu {
       display: none;
     }
 
@@ -182,48 +181,47 @@
 
     .sidebar {
       width: 390px;
-      background: var(--qb-sidebar);
-      border-right: 1px solid var(--qb-border);
-      min-height: calc(100vh - 58px);
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
       position: fixed;
       top: 58px;
       bottom: 0;
+      left: 0;
       overflow-y: auto;
       z-index: 25;
-      transition: transform 0.2s ease;
+      transition: transform .2s ease;
     }
 
-    .side-main {
-      border-bottom: 1px solid var(--qb-border);
+    .sidebar-section {
+      border-bottom: 1px solid var(--border);
       padding-bottom: 14px;
     }
 
-    .side-link {
+    .nav-btn {
+      width: 100%;
+      border: 0;
+      background: transparent;
       display: flex;
       align-items: center;
       gap: 14px;
       padding: 14px 18px;
       font-size: 22px;
       color: #171720;
-      text-decoration: none;
       cursor: pointer;
-      border: 0;
-      background: transparent;
-      width: 100%;
       text-align: left;
     }
 
-    .side-link.active {
+    .nav-btn.active {
       background: #e8e8ec;
       font-weight: 700;
       border-top-right-radius: 12px;
       border-bottom-right-radius: 12px;
     }
 
-    .side-icon {
-      width: 20px;
+    .nav-icon {
+      width: 25px;
       text-align: center;
-      font-size: 22px;
+      flex: 0 0 auto;
     }
 
     .tables-head {
@@ -236,34 +234,13 @@
       font-size: 20px;
     }
 
-    .table-link {
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      padding: 10px 16px 10px 0;
-      font-size: 21px;
-      text-decoration: none;
-      color: #20202a;
-      cursor: pointer;
-      border: 0;
-      background: transparent;
-      width: 100%;
-      text-align: left;
-    }
-
-    .table-link.active {
-      background: #e9e9ee;
-      font-weight: 700;
-    }
-
-    .table-link .tbl-icon {
+    .table-icon {
       width: 35px;
       height: 29px;
       border-radius: 6px;
       background: #dfdfe4;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      display: grid;
+      place-items: center;
       border: 1px solid #c9c9d0;
       font-size: 16px;
       flex: 0 0 auto;
@@ -273,13 +250,12 @@
       margin-left: 390px;
       width: calc(100% - 390px);
       min-height: calc(100vh - 58px);
-      transition: margin-left 0.2s ease, width 0.2s ease;
     }
 
     .crumb-bar {
       min-height: 74px;
-      background: #ffffff;
-      border-bottom: 1px solid var(--qb-border);
+      background: #fff;
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -294,61 +270,56 @@
     .crumb-left {
       display: flex;
       align-items: center;
-      gap: 18px;
+      gap: 14px;
       font-size: 21px;
       font-weight: 700;
       min-width: 0;
     }
 
-    .crumb-app-name {
+    .crumb-name {
+      max-width: 290px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      max-width: 290px;
     }
 
-    .round-collapse {
+    .collapse-btn {
       width: 42px;
       height: 42px;
+      border: 0;
       border-radius: 50%;
       background: white;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      box-shadow: 0 3px 10px rgba(0,0,0,.2);
+      display: grid;
+      place-items: center;
       margin-left: -42px;
       cursor: pointer;
       flex: 0 0 auto;
-    }
-
-    .gear {
-      font-size: 23px;
-      color: #52525f;
-      margin-right: 8px;
-    }
-
-    .chev {
-      color: #90909a;
-      font-size: 25px;
+      font-size: 26px;
     }
 
     .crumb-actions {
       display: flex;
       align-items: center;
-      gap: 18px;
-      color: #50505d;
-      font-size: 23px;
-      flex-wrap: wrap;
       justify-content: flex-end;
+      gap: 14px;
+      color: #50505d;
+      flex-wrap: wrap;
     }
 
     .pill-btn {
-      padding: 12px 25px;
+      padding: 11px 22px;
       border: 1px solid #c4c4cc;
       border-radius: 999px;
       background: white;
-      font-size: 20px;
+      font-size: 18px;
       cursor: pointer;
+    }
+
+    .primary {
+      background: var(--blue);
+      color: white;
+      border-color: var(--blue);
     }
 
     .live-pill {
@@ -395,7 +366,7 @@
       font-size: 21px;
       border-top-left-radius: 6px;
       border-top-right-radius: 6px;
-      box-shadow: inset 0 2px 2px rgba(255,255,255,0.8);
+      box-shadow: inset 0 2px 2px rgba(255,255,255,.8);
       cursor: pointer;
       flex: 0 0 auto;
     }
@@ -403,7 +374,7 @@
     .tab.active {
       background: white;
       color: #14141f;
-      border-top: 5px solid #095ff0;
+      border-top: 5px solid var(--blue);
       padding-top: 9px;
       border-bottom-color: white;
     }
@@ -418,28 +389,29 @@
 
     .chart-grid {
       display: grid;
-      grid-template-columns: minmax(450px, 1.15fr) minmax(390px, 0.95fr);
+      grid-template-columns: minmax(430px, 1.15fr) minmax(390px, .95fr);
       gap: 14px;
     }
 
     .chart-card,
-    .qb-panel,
+    .panel,
     .module-panel {
       background: white;
       border: 1px solid #dcdce2;
       border-radius: 9px;
-      box-shadow: var(--qb-shadow);
+      box-shadow: var(--shadow);
     }
 
     .chart-card {
       padding: 24px;
       min-height: 575px;
       cursor: pointer;
+      text-align: left;
     }
 
     .chart-card h2,
-    .module-panel h2,
-    .qb-panel h2 {
+    .panel h2,
+    .module-panel h2 {
       margin: 0 0 12px;
       font-size: 30px;
       font-weight: 500;
@@ -453,9 +425,8 @@
 
     .pie-wrap {
       height: 420px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: grid;
+      place-items: center;
     }
 
     .pie {
@@ -468,12 +439,12 @@
       position: relative;
     }
 
-    .pie:after {
+    .pie::after {
       content: "";
       position: absolute;
       inset: -2px;
       border-radius: 50%;
-      background: repeating-conic-gradient(from 0deg, transparent 0deg 35.5deg, rgba(255,255,255,0.85) 35.5deg 36.2deg);
+      background: repeating-conic-gradient(from 0deg, transparent 0deg 35.5deg, rgba(255,255,255,.85) 35.5deg 36.2deg);
       pointer-events: none;
       mix-blend-mode: screen;
     }
@@ -516,9 +487,9 @@
       border-top: 1px solid #ededf0;
     }
 
-    .gridline.g1 { bottom: 25%; }
-    .gridline.g2 { bottom: 50%; }
-    .gridline.g3 { bottom: 75%; }
+    .g1 { bottom: 25%; }
+    .g2 { bottom: 50%; }
+    .g3 { bottom: 75%; }
 
     .bar-column {
       display: flex;
@@ -534,7 +505,7 @@
 
     .bar {
       width: 68px;
-      background: #0b63ee;
+      background: var(--blue);
       min-height: 3px;
     }
 
@@ -567,13 +538,14 @@
       background: white;
       border: 1px solid #dcdce2;
       border-radius: 9px;
-      box-shadow: var(--qb-shadow);
+      box-shadow: var(--shadow);
       padding: 18px;
       cursor: pointer;
+      text-align: left;
     }
 
     .metric-card span {
-      color: var(--qb-muted);
+      color: var(--muted);
       font-size: 14px;
       font-weight: 700;
       text-transform: uppercase;
@@ -585,7 +557,7 @@
       margin-top: 8px;
     }
 
-    .qb-panel {
+    .panel {
       padding: 22px;
       margin-top: 14px;
     }
@@ -600,7 +572,7 @@
     }
 
     .action-btn {
-      background: #0b66f0;
+      background: var(--blue);
       color: white;
       border: 0;
       border-radius: 8px;
@@ -608,10 +580,6 @@
       font-weight: 800;
       cursor: pointer;
       font-size: 15px;
-    }
-
-    .action-btn:hover {
-      background: #084fb9;
     }
 
     .secondary-btn {
@@ -691,23 +659,9 @@
       font-size: 14px;
     }
 
-    .message.success {
-      display: inline-block;
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .message.error {
-      display: inline-block;
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .message.info {
-      display: inline-block;
-      background: #dbeafe;
-      color: #1d4ed8;
-    }
+    .message.success { display: inline-block; background: #dcfce7; color: #166534; }
+    .message.error { display: inline-block; background: #fee2e2; color: #991b1b; }
+    .message.info { display: inline-block; background: #dbeafe; color: #1d4ed8; }
 
     .data-table-wrap {
       overflow-x: auto;
@@ -737,9 +691,7 @@
       vertical-align: top;
     }
 
-    tr:hover td {
-      background: #fafafa;
-    }
+    tr:hover td { background: #fafafa; }
 
     .status-badge {
       padding: 4px 8px;
@@ -767,132 +719,55 @@
       margin-top: 18px;
     }
 
-    .module-tile {
+    .tile {
       border: 1px solid #dedee5;
       border-radius: 10px;
       background: #fbfbfc;
       padding: 18px;
       cursor: pointer;
+      text-align: left;
     }
 
-    .module-tile:hover {
-      border-color: var(--qb-blue);
-    }
+    .tile h3 { margin: 0 0 8px; }
+    .tile p { margin: 0; color: var(--muted); line-height: 1.45; }
 
-    .module-tile h3 {
-      margin: 0 0 8px;
-    }
-
-    .module-tile p {
-      margin: 0;
-      color: var(--qb-muted);
-      line-height: 1.45;
-    }
-
-    .sidebar-backdrop {
-      display: none;
-    }
+    .backdrop { display: none; }
 
     @media (max-width: 1200px) {
-      .sidebar {
-        width: 300px;
-      }
-
-      .content {
-        margin-left: 300px;
-        width: calc(100% - 300px);
-      }
-
-      .qb-logo {
-        width: 190px;
-      }
-
-      .chart-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .metrics-row {
-        grid-template-columns: repeat(2, minmax(150px, 1fr));
-      }
+      .sidebar { width: 300px; }
+      .content { margin-left: 300px; width: calc(100% - 300px); }
+      .logo { width: 190px; }
+      .chart-grid { grid-template-columns: 1fr; }
+      .metrics-row { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
     }
 
     @media (max-width: 850px) {
-      .top-shell {
-        min-height: 58px;
-        height: auto;
-        padding: 8px;
-      }
-
-      .mobile-menu-btn {
-        display: flex;
-      }
-
-      .waffle {
-        display: none;
-      }
-
-      .qb-logo {
-        width: auto;
-        height: auto;
-        border-right: 0;
-        font-size: 22px;
-        padding-left: 4px;
-      }
-
-      .app-title {
-        padding-left: 10px;
-        font-size: 16px;
-      }
-
-      .top-actions {
-        gap: 6px;
-        font-size: 16px;
-      }
-
-      .top-actions > span {
-        display: none;
-      }
-
-      .top-action-box {
-        width: 39px;
-        height: 37px;
-      }
-
-      .profile-circle {
-        width: 37px;
-        height: 37px;
-        font-size: 14px;
-      }
-
-      .layout {
-        display: block;
-      }
-
+      .top-shell { min-height: 58px; padding: 8px; }
+      .mobile-menu { display: grid; }
+      .menu-grid { display: none; }
+      .logo { width: auto; min-height: auto; border-right: 0; font-size: 22px; padding-left: 4px; }
+      .app-title { padding-left: 10px; font-size: 16px; }
+      .top-actions { gap: 6px; font-size: 16px; }
+      .top-actions > span { display: none; }
+      .icon-btn { width: 39px; height: 37px; }
+      .profile { width: 37px; height: 37px; font-size: 14px; }
+      .layout { display: block; }
       .sidebar {
         transform: translateX(-105%);
         width: min(340px, 86vw);
         top: 58px;
         min-height: calc(100vh - 58px);
-        box-shadow: 4px 0 20px rgba(0,0,0,0.2);
+        box-shadow: 4px 0 20px rgba(0,0,0,.2);
       }
-
-      body.sidebar-open .sidebar {
-        transform: translateX(0);
-      }
-
-      body.sidebar-open .sidebar-backdrop {
+      body.sidebar-open .sidebar { transform: translateX(0); }
+      body.sidebar-open .backdrop {
         display: block;
         position: fixed;
         inset: 58px 0 0 0;
-        background: rgba(0,0,0,0.25);
+        background: rgba(0,0,0,.25);
         z-index: 22;
       }
-
-      .content {
-        margin-left: 0;
-        width: 100%;
-      }
-
+      .content { margin-left: 0; width: 100%; }
       .crumb-bar {
         top: 58px;
         min-height: auto;
@@ -900,182 +775,105 @@
         flex-direction: column;
         padding: 12px;
       }
-
-      .crumb-left {
-        width: 100%;
-        font-size: 17px;
-        gap: 8px;
-      }
-
-      .crumb-app-name {
-        max-width: 170px;
-      }
-
-      .round-collapse {
-        display: none;
-      }
-
-      .crumb-actions {
-        width: 100%;
-        justify-content: flex-start;
-        gap: 8px;
-        font-size: 16px;
-      }
-
-      .pill-btn {
-        padding: 9px 14px;
-        font-size: 14px;
-      }
-
-      .dashboard-area {
-        padding: 18px 10px;
-      }
-
-      .tab {
-        font-size: 16px;
-        padding: 10px 14px;
-      }
-
-      .chart-card {
-        min-height: auto;
-        padding: 16px;
-      }
-
-      .chart-card h2,
-      .module-panel h2,
-      .qb-panel h2 {
-        font-size: 22px;
-      }
-
-      .sub {
-        font-size: 16px;
-      }
-
-      .pie-wrap {
-        height: 300px;
-      }
-
-      .bar-chart {
-        height: 320px;
-        grid-template-columns: 46px 1fr;
-      }
-
-      .y-axis,
-      .bars-area {
-        height: 280px;
-      }
-
-      .bar {
-        width: 48px;
-      }
-
-      .metrics-row {
-        grid-template-columns: 1fr;
-      }
-
-      .qb-panel {
-        padding: 15px;
-      }
+      .crumb-left { width: 100%; font-size: 17px; gap: 8px; }
+      .crumb-name { max-width: 170px; }
+      .collapse-btn { display: none; }
+      .crumb-actions { width: 100%; justify-content: flex-start; gap: 8px; }
+      .pill-btn { padding: 9px 14px; font-size: 14px; }
+      .dashboard-area { padding: 18px 10px; }
+      .tab { font-size: 16px; padding: 10px 14px; }
+      .chart-card { min-height: auto; padding: 16px; }
+      .chart-card h2, .panel h2, .module-panel h2 { font-size: 22px; }
+      .sub { font-size: 16px; }
+      .pie-wrap { height: 300px; }
+      .bar-chart { height: 320px; grid-template-columns: 46px 1fr; }
+      .y-axis, .bars-area { height: 280px; }
+      .bar { width: 48px; }
+      .metrics-row { grid-template-columns: 1fr; }
+      .panel { padding: 15px; }
     }
 
     @media (max-width: 520px) {
-      .app-title-text {
-        display: none;
-      }
-
-      .qb-logo {
-        font-size: 18px;
-      }
-
-      .mark {
-        transform: scale(0.85);
-      }
-
-      .chart-grid {
-        grid-template-columns: 1fr;
-      }
-
-      table {
-        min-width: 880px;
-      }
+      .app-title span:last-child { display: none; }
+      .logo { font-size: 18px; }
+      .mark { transform: scale(.85); }
+      .chart-grid { grid-template-columns: 1fr; }
+      table { min-width: 880px; }
     }
   </style>
 </head>
 <body>
   <header class="top-shell">
     <div class="top-left">
-      <div class="top-action-box mobile-menu-btn" onclick="toggleSidebar()">☰</div>
-      <div class="waffle" aria-hidden="true">
+      <button class="icon-btn mobile-menu" onclick="toggleSidebar()">☰</button>
+      <div class="menu-grid" aria-hidden="true">
         <span></span><span></span><span></span>
         <span></span><span></span><span></span>
         <span></span><span></span><span></span>
       </div>
-      <button class="qb-logo" onclick="showView('summary')" style="border-top:0;border-bottom:0;border-left:0;background:white;cursor:pointer;">
+      <button class="logo" onclick="showView('summary')">
         <div class="mark"><span></span><span></span><span></span></div>
         quickbase
       </button>
-      <div class="app-title"><span class="app-icon">♚</span> <span class="app-title-text">On Point Group Operations Management</span></div>
+      <div class="app-title"><span class="app-icon">♚</span><span>On Point Group Operations Management</span></div>
     </div>
     <div class="top-actions">
-      <div class="top-action-box" onclick="showTaskForm()" title="Create task">+</div>
-      <div class="top-action-box" onclick="loadAllData()" title="Refresh">⌕</div>
+      <button class="icon-btn" onclick="showTaskForm()" title="Create task">+</button>
+      <button class="icon-btn" onclick="loadAllData()" title="Refresh">⌕</button>
       <span>☆</span>
       <span>♟</span>
       <span>?</span>
-      <div class="profile-circle">TM</div>
-      <div class="top-action-box" onclick="showView('dashboards')" title="Dashboards">✦</div>
+      <div class="profile">TM</div>
+      <button class="icon-btn" onclick="showView('dashboards')" title="Dashboards">✦</button>
     </div>
   </header>
 
   <div class="layout">
-    <div class="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
+    <div class="backdrop" onclick="toggleSidebar(false)"></div>
 
     <aside class="sidebar">
-      <div class="side-main">
-        <button class="side-link active" data-view-link="summary" onclick="showView('summary')"><span class="side-icon">⌂</span> App home</button>
-        <button class="side-link" data-view-link="users" onclick="showView('users')"><span class="side-icon">♙</span> Users</button>
-        <button class="side-link" data-view-link="settings" onclick="showView('settings')"><span class="side-icon">⚙</span> App settings</button>
+      <div class="sidebar-section">
+        <button class="nav-btn active" data-view-link="summary" onclick="showView('summary')"><span class="nav-icon">⌂</span>App home</button>
+        <button class="nav-btn" data-view-link="users" onclick="showView('users')"><span class="nav-icon">♙</span>Users</button>
+        <button class="nav-btn" data-view-link="settings" onclick="showView('settings')"><span class="nav-icon">⚙</span>App settings</button>
       </div>
 
-      <div class="tables-head">
-        <span>Tables</span>
-        <span>＋ &nbsp;⌕</span>
-      </div>
+      <div class="tables-head"><span>Tables</span><span>＋ &nbsp;⌕</span></div>
 
-      <button class="table-link" data-view-link="departments" onclick="showView('departments')"><span class="tbl-icon">▣</span>Departments</button>
-      <button class="table-link" data-view-link="employees" onclick="showView('employees')"><span class="tbl-icon">▦</span>Employees</button>
-      <button class="table-link" data-view-link="tickets" onclick="showView('tickets')"><span class="tbl-icon">▤</span>Tickets</button>
-      <button class="table-link" data-view-link="kpis" onclick="showView('kpis')"><span class="tbl-icon">□</span>KPIs</button>
-      <button class="table-link" data-view-link="bsc" onclick="showView('bsc')"><span class="tbl-icon">□</span>BSC</button>
-      <button class="table-link" data-view-link="sla" onclick="showView('sla')"><span class="tbl-icon">□</span>SLA</button>
-      <button class="table-link" data-view-link="dashboards" onclick="showView('dashboards')"><span class="tbl-icon">□</span>Dashboards</button>
-      <button class="table-link" data-view-link="divisions" onclick="showView('divisions')"><span class="tbl-icon">□</span>Divisions</button>
-      <button class="table-link" data-view-link="categories" onclick="showView('categories')"><span class="tbl-icon">▤</span>Categories</button>
-      <button class="table-link" data-view-link="slaRules" onclick="showView('slaRules')"><span class="tbl-icon">□</span>SLA Rules</button>
-      <button class="table-link" data-view-link="projects" onclick="showView('projects')"><span class="tbl-icon">□</span>Projects / Clients</button>
+      <button class="nav-btn" data-view-link="departments" onclick="showView('departments')"><span class="table-icon">▣</span>Departments</button>
+      <button class="nav-btn" data-view-link="employees" onclick="showView('employees')"><span class="table-icon">▦</span>Employees</button>
+      <button class="nav-btn" data-view-link="tickets" onclick="showView('tickets')"><span class="table-icon">▤</span>Tickets</button>
+      <button class="nav-btn" data-view-link="kpis" onclick="showView('kpis')"><span class="table-icon">□</span>KPIs</button>
+      <button class="nav-btn" data-view-link="bsc" onclick="showView('bsc')"><span class="table-icon">□</span>BSC</button>
+      <button class="nav-btn" data-view-link="sla" onclick="showView('sla')"><span class="table-icon">□</span>SLA</button>
+      <button class="nav-btn" data-view-link="dashboards" onclick="showView('dashboards')"><span class="table-icon">□</span>Dashboards</button>
+      <button class="nav-btn" data-view-link="divisions" onclick="showView('divisions')"><span class="table-icon">□</span>Divisions</button>
+      <button class="nav-btn" data-view-link="categories" onclick="showView('categories')"><span class="table-icon">▤</span>Categories</button>
+      <button class="nav-btn" data-view-link="slaRules" onclick="showView('slaRules')"><span class="table-icon">□</span>SLA Rules</button>
+      <button class="nav-btn" data-view-link="projects" onclick="showView('projects')"><span class="table-icon">□</span>Projects / Clients</button>
     </aside>
 
     <main class="content">
       <div class="crumb-bar">
         <div class="crumb-left">
-          <span class="round-collapse" onclick="toggleSidebar()">‹</span>
-          <span class="gear">⚙</span>
-          <span class="crumb-app-name">On Point Group Operation...</span>
-          <span class="chev">›</span>
+          <button class="collapse-btn" onclick="toggleSidebar()">‹</button>
+          <span>⚙</span>
+          <span class="crumb-name">On Point Group Operation...</span>
+          <span style="color:#90909a;">›</span>
           <span id="currentViewTitle">Default dashboard</span>
         </div>
         <div class="crumb-actions">
           <span id="liveStatus" class="live-pill offline">Checking Sheet...</span>
-          <button class="pill-btn" onclick="clearSampleData()">Delete sample data</button>
-          <button class="pill-btn" onclick="showTaskForm()">Create Task</button>
-          <button class="top-action-box" onclick="showView('tickets')" title="Tickets">▣</button>
-          <button class="top-action-box" onclick="showView('dashboards')" title="Share">⌯</button>
-          <button class="top-action-box" onclick="showView('settings')" title="Settings">▢</button>
+          <button class="pill-btn" onclick="clearScreenOnly()">Delete sample data</button>
+          <button class="pill-btn primary" onclick="showTaskForm()">Create Task</button>
+          <button class="icon-btn" onclick="showView('tickets')">▣</button>
+          <button class="icon-btn" onclick="showView('dashboards')">⌯</button>
+          <button class="icon-btn" onclick="showView('settings')">▢</button>
         </div>
       </div>
 
       <section class="dashboard-area">
-        <div class="tabs">
+        <nav class="tabs">
           <button class="tab active" data-tab="summary" onclick="showView('summary')">Summary</button>
           <button class="tab" data-tab="bsc" onclick="showView('bsc')">BSC</button>
           <button class="tab" data-tab="departments" onclick="showView('departments')">Departments</button>
@@ -1084,38 +882,25 @@
           <button class="tab" data-tab="sla" onclick="showView('sla')">SLA</button>
           <button class="tab" data-tab="dashboards" onclick="showView('dashboards')">Dashboards</button>
           <button class="tab" data-tab="employees" onclick="showView('employees')">Employees</button>
-        </div>
+        </nav>
 
         <div id="summary" class="view active">
           <div class="chart-grid">
-            <button class="chart-card" onclick="showView('tickets')" aria-label="Open tickets by priority">
+            <button class="chart-card" onclick="showView('tickets')">
               <h2>Tickets - Tickets by Priority</h2>
               <div class="sub">Shows the number of tickets by priority</div>
-              <div class="pie-wrap">
-                <div id="priorityPie" class="pie"></div>
-              </div>
+              <div class="pie-wrap"><div id="priorityPie" class="pie"></div></div>
             </button>
 
-            <button class="chart-card" onclick="showView('departments')" aria-label="Open tickets by department">
+            <button class="chart-card" onclick="showView('departments')">
               <h2>Tickets - Tickets Assigned by Department</h2>
               <div class="sub">Shows the number of tickets assigned to each department</div>
               <div class="bar-chart">
-                <div class="y-axis">
-                  <span>200</span>
-                  <span>150</span>
-                  <span>100</span>
-                  <span>50</span>
-                  <span>0</span>
-                </div>
+                <div class="y-axis"><span>200</span><span>150</span><span>100</span><span>50</span><span>0</span></div>
                 <div>
                   <div class="bars-area" id="departmentBars">
-                    <div class="gridline g1"></div>
-                    <div class="gridline g2"></div>
-                    <div class="gridline g3"></div>
+                    <div class="gridline g1"></div><div class="gridline g2"></div><div class="gridline g3"></div>
                     <div class="bar-column"><div class="bar" style="height:62%;"></div><span class="bar-label">Operations</span></div>
-                    <div class="bar-column"><div class="bar" style="height:2%;"></div><span class="bar-label">Fleet</span></div>
-                    <div class="bar-column"><div class="bar" style="height:1%;"></div><span class="bar-label">Admin</span></div>
-                    <div class="bar-column"><div class="bar" style="height:1%;"></div><span class="bar-label">HR</span></div>
                   </div>
                   <div class="axis-title">Related Assigned To</div>
                 </div>
@@ -1130,7 +915,7 @@
             <button class="metric-card" onclick="filterTickets('Overdue')"><span>Overdue Tasks</span><strong id="overdueTasksMetric">0</strong></button>
           </div>
 
-          <div class="qb-panel">
+          <div class="panel">
             <div class="panel-toolbar">
               <h2>Tasks / Tickets</h2>
               <button class="action-btn" onclick="showTaskForm()">+ Create Task</button>
@@ -1138,67 +923,16 @@
 
             <div id="taskForm" class="task-form">
               <div class="form-grid">
-                <div>
-                  <label>Task / Ticket Name *</label>
-                  <input id="taskName" placeholder="Enter task name">
-                </div>
-                <div>
-                  <label>Assigned To</label>
-                  <input id="assignedTo" placeholder="Person responsible">
-                </div>
-                <div>
-                  <label>Priority</label>
-                  <select id="priority">
-                    <option>Low</option>
-                    <option selected>Medium</option>
-                    <option>High</option>
-                    <option>Critical</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Status</label>
-                  <select id="status">
-                    <option selected>Open</option>
-                    <option>In Progress</option>
-                    <option>Pending</option>
-                    <option>Closed</option>
-                    <option>Overdue</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Department</label>
-                  <select id="department">
-                    <option value="">Select department</option>
-                    <option>Admin</option>
-                    <option>Business Development</option>
-                    <option>Finance & IT</option>
-                    <option>Fleet</option>
-                    <option>HR</option>
-                    <option>Operations</option>
-                    <option>Procurement</option>
-                    <option>Sales</option>
-                    <option>SHEQ</option>
-                    <option>Tendering</option>
-                    <option>Warehouse</option>
-                  </select>
-                </div>
-                <div>
-                  <label>Due Date</label>
-                  <input id="dueDate" type="date">
-                </div>
-                <div>
-                  <label>Attachment Link</label>
-                  <input id="attachmentLink" placeholder="Paste Drive link if any">
-                </div>
+                <div><label>Task / Ticket Name *</label><input id="taskName" placeholder="Enter task name"></div>
+                <div><label>Assigned To</label><input id="assignedTo" placeholder="Person responsible"></div>
+                <div><label>Priority</label><select id="priority"><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></div>
+                <div><label>Status</label><select id="status"><option selected>Open</option><option>In Progress</option><option>Pending</option><option>Closed</option><option>Overdue</option></select></div>
+                <div><label>Department</label><select id="department"><option value="">Select department</option><option>Admin</option><option>Business Development</option><option>Finance & IT</option><option>Fleet</option><option>HR</option><option>Operations</option><option>Procurement</option><option>Sales</option><option>SHEQ</option><option>Tendering</option><option>Warehouse</option></select></div>
+                <div><label>Due Date</label><input id="dueDate" type="date"></div>
+                <div><label>Attachment Link</label><input id="attachmentLink" placeholder="Paste Drive link if any"></div>
               </div>
-              <div style="margin-top:12px;">
-                <label>Description</label>
-                <textarea id="description" placeholder="Task details"></textarea>
-              </div>
-              <div style="margin-top:12px;">
-                <label>Comments</label>
-                <textarea id="comments" placeholder="Comments"></textarea>
-              </div>
+              <div style="margin-top:12px;"><label>Description</label><textarea id="description" placeholder="Task details"></textarea></div>
+              <div style="margin-top:12px;"><label>Comments</label><textarea id="comments" placeholder="Comments"></textarea></div>
               <div class="save-row">
                 <button id="saveTaskBtn" class="save-task-btn" onclick="saveTask()">Save Task to Google Sheet</button>
                 <button class="secondary-btn" onclick="hideTaskForm()">Cancel</button>
@@ -1208,33 +942,15 @@
 
             <div class="data-table-wrap">
               <table>
-                <thead>
-                  <tr>
-                    <th>Task ID</th>
-                    <th>Date Created</th>
-                    <th>Task Name</th>
-                    <th>Description</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Assigned To</th>
-                    <th>Department</th>
-                    <th>Due Date</th>
-                    <th>Completion Date</th>
-                    <th>Comments</th>
-                    <th>Attachment</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="taskTable">
-                  <tr><td colspan="13">Loading tasks...</td></tr>
-                </tbody>
+                <thead><tr><th>Task ID</th><th>Date Created</th><th>Task Name</th><th>Description</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Department</th><th>Due Date</th><th>Completion Date</th><th>Comments</th><th>Attachment</th><th>Action</th></tr></thead>
+                <tbody id="taskTable"><tr><td colspan="13">Loading tasks...</td></tr></tbody>
               </table>
             </div>
           </div>
         </div>
 
         <div id="tickets" class="view">
-          <div class="qb-panel">
+          <div class="panel">
             <div class="panel-toolbar">
               <h2>Tickets</h2>
               <div>
@@ -1247,112 +963,61 @@
             </div>
             <div class="data-table-wrap">
               <table>
-                <thead>
-                  <tr>
-                    <th>Task ID</th>
-                    <th>Date Created</th>
-                    <th>Task Name</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Assigned To</th>
-                    <th>Department</th>
-                    <th>Due Date</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="ticketsTable">
-                  <tr><td colspan="9">Loading tickets...</td></tr>
-                </tbody>
+                <thead><tr><th>Task ID</th><th>Date Created</th><th>Task Name</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Department</th><th>Due Date</th><th>Action</th></tr></thead>
+                <tbody id="ticketsTable"><tr><td colspan="9">Loading tickets...</td></tr></tbody>
               </table>
             </div>
           </div>
         </div>
 
         <div id="users" class="view">
-          <div class="module-panel">
-            <h2>Users</h2>
-            <div class="data-table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>User ID</th>
-                    <th>Full Name</th>
-                    <th>Email</th>
-                    <th>Department</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="usersTable">
-                  <tr><td colspan="6">Loading users...</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <div class="module-panel"><h2>Users</h2><div class="data-table-wrap"><table><thead><tr><th>User ID</th><th>Full Name</th><th>Email</th><th>Department</th><th>Role</th><th>Status</th></tr></thead><tbody id="usersTable"><tr><td colspan="6">Loading users...</td></tr></tbody></table></div></div>
         </div>
 
-        <div id="departments" class="view">
-          <div class="module-panel">
-            <h2>Departments</h2>
-            <p>Click a department tile to show related tickets.</p>
-            <div id="departmentTiles" class="module-grid"></div>
-          </div>
-        </div>
-
+        <div id="departments" class="view"><div class="module-panel"><h2>Departments</h2><p>Click a department tile to show related tickets.</p><div id="departmentTiles" class="module-grid"></div></div></div>
         <div id="employees" class="view"><div class="module-panel"><h2>Employees</h2><p>Employee records can be maintained in the Users sheet tab.</p><div id="employeeTiles" class="module-grid"></div></div></div>
-        <div id="bsc" class="view"><div class="module-panel"><h2>BSC</h2><p>Balanced scorecard dashboard section.</p><div class="module-grid"><button class="module-tile" onclick="showView('kpis')"><h3>View KPIs</h3><p>Open KPI performance data.</p></button><button class="module-tile" onclick="showView('departments')"><h3>Departments</h3><p>See department performance links.</p></button></div></div></div>
-        <div id="kpis" class="view"><div class="module-panel"><h2>KPIs</h2><p>KPIs dashboard section.</p><div class="module-grid"><button class="module-tile" onclick="showView('tickets')"><h3>Task KPI</h3><p>Use ticket status and priority as operational measures.</p></button><button class="module-tile" onclick="showView('sla')"><h3>SLA KPI</h3><p>Open SLA performance section.</p></button></div></div></div>
-        <div id="sla" class="view"><div class="module-panel"><h2>SLA</h2><p>SLA records and performance monitoring section.</p><div class="module-grid"><button class="module-tile" onclick="showView('slaRules')"><h3>SLA Rules</h3><p>Open SLA rule configuration.</p></button><button class="module-tile" onclick="showView('tickets')"><h3>Tickets</h3><p>Review tickets against SLA targets.</p></button></div></div></div>
-        <div id="dashboards" class="view"><div class="module-panel"><h2>Dashboards</h2><p>Dashboard records and reporting section.</p><div class="module-grid"><button class="module-tile" onclick="showView('summary')"><h3>Default dashboard</h3><p>Return to the summary charts.</p></button><button class="module-tile" onclick="loadAllData()"><h3>Refresh live data</h3><p>Reload Google Sheet records.</p></button></div></div></div>
-        <div id="divisions" class="view"><div class="module-panel"><h2>Divisions</h2><p>Division records section.</p><div class="module-grid"><button class="module-tile" onclick="showView('departments')"><h3>Departments</h3><p>View departments linked to divisions.</p></button></div></div></div>
-        <div id="categories" class="view"><div class="module-panel"><h2>Categories</h2><p>Category records section.</p><div class="module-grid"><button class="module-tile" onclick="filterTickets('Open')"><h3>Open Tickets</h3><p>See open ticket categories.</p></button><button class="module-tile" onclick="filterTickets('Closed')"><h3>Closed Tickets</h3><p>See closed ticket categories.</p></button></div></div></div>
-        <div id="slaRules" class="view"><div class="module-panel"><h2>SLA Rules</h2><p>SLA rules section.</p><div class="module-grid"><button class="module-tile" onclick="showView('sla')"><h3>SLA Summary</h3><p>Return to the SLA section.</p></button></div></div></div>
-        <div id="projects" class="view"><div class="module-panel"><h2>Projects / Clients</h2><p>Projects and clients section.</p><div class="module-grid"><button class="module-tile" onclick="showView('tickets')"><h3>Project Tickets</h3><p>Open tickets connected to projects and clients.</p></button></div></div></div>
-        <div id="settings" class="view"><div class="module-panel"><h2>App settings</h2><p>Use this section for settings. The dashboard remains clickable and connected through the Apps Script URL below.</p><div class="module-grid"><button class="module-tile" onclick="loadAllData()"><h3>Test Google Sheet Connection</h3><p>Reload the live data status indicator.</p></button></div></div></div>
+        <div id="bsc" class="view"><div class="module-panel"><h2>BSC</h2><p>Balanced scorecard dashboard section.</p><div class="module-grid"><button class="tile" onclick="showView('kpis')"><h3>View KPIs</h3><p>Open KPI performance data.</p></button><button class="tile" onclick="showView('departments')"><h3>Departments</h3><p>See department performance links.</p></button></div></div></div>
+        <div id="kpis" class="view"><div class="module-panel"><h2>KPIs</h2><p>KPIs dashboard section.</p><div class="module-grid"><button class="tile" onclick="showView('tickets')"><h3>Task KPI</h3><p>Use ticket status and priority as operational measures.</p></button><button class="tile" onclick="showView('sla')"><h3>SLA KPI</h3><p>Open SLA performance section.</p></button></div></div></div>
+        <div id="sla" class="view"><div class="module-panel"><h2>SLA</h2><p>SLA records and performance monitoring section.</p><div class="module-grid"><button class="tile" onclick="showView('slaRules')"><h3>SLA Rules</h3><p>Open SLA rule configuration.</p></button><button class="tile" onclick="showView('tickets')"><h3>Tickets</h3><p>Review tickets against SLA targets.</p></button></div></div></div>
+        <div id="dashboards" class="view"><div class="module-panel"><h2>Dashboards</h2><p>Dashboard records and reporting section.</p><div class="module-grid"><button class="tile" onclick="showView('summary')"><h3>Default dashboard</h3><p>Return to the summary charts.</p></button><button class="tile" onclick="loadAllData()"><h3>Refresh live data</h3><p>Reload Google Sheet records.</p></button></div></div></div>
+        <div id="divisions" class="view"><div class="module-panel"><h2>Divisions</h2><p>Division records section.</p><div class="module-grid"><button class="tile" onclick="showView('departments')"><h3>Departments</h3><p>View departments linked to divisions.</p></button></div></div></div>
+        <div id="categories" class="view"><div class="module-panel"><h2>Categories</h2><p>Category records section.</p><div class="module-grid"><button class="tile" onclick="filterTickets('Open')"><h3>Open Tickets</h3><p>See open ticket categories.</p></button><button class="tile" onclick="filterTickets('Closed')"><h3>Closed Tickets</h3><p>See closed ticket categories.</p></button></div></div></div>
+        <div id="slaRules" class="view"><div class="module-panel"><h2>SLA Rules</h2><p>SLA rules section.</p><div class="module-grid"><button class="tile" onclick="showView('sla')"><h3>SLA Summary</h3><p>Return to the SLA section.</p></button></div></div></div>
+        <div id="projects" class="view"><div class="module-panel"><h2>Projects / Clients</h2><p>Projects and clients section.</p><div class="module-grid"><button class="tile" onclick="showView('tickets')"><h3>Project Tickets</h3><p>Open tickets connected to projects and clients.</p></button></div></div></div>
+        <div id="settings" class="view"><div class="module-panel"><h2>App settings</h2><p>Use this section for settings and connection checks.</p><div class="module-grid"><button class="tile" onclick="loadAllData()"><h3>Test Google Sheet Connection</h3><p>Reload the live data status indicator.</p></button></div></div></div>
       </section>
     </main>
   </div>
 
   <script>
-    /*
-      IMPORTANT:
-      Replace this URL with your deployed Google Apps Script Web App URL.
-      Example:
-      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxN7pozwlFc9UJzNadz-mhm6p-nnxj1isofGoanyxvGpc13WlxVPVKf5omE3GB8RNf/exec';
-    */
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxN7pozwlFc9UJzNadz-mhm6p-nnxj1isofGoanyxvGpc13WlxVPVKf5omE3GB8RNf/exec';
 
     let allTasks = [];
     let ticketFilter = '';
 
-    document.addEventListener('DOMContentLoaded', function() {
-      loadAllData();
-    });
+    document.addEventListener('DOMContentLoaded', loadAllData);
 
     function toggleSidebar(force) {
-      const shouldOpen = typeof force === 'boolean' ? force : !document.body.classList.contains('sidebar-open');
-      document.body.classList.toggle('sidebar-open', shouldOpen);
+      const open = typeof force === 'boolean' ? force : !document.body.classList.contains('sidebar-open');
+      document.body.classList.toggle('sidebar-open', open);
     }
 
-    function clearSampleData() {
+    function clearScreenOnly() {
       allTasks = [];
       renderAllTaskViews();
       showMessage('Sample display cleared on screen. Google Sheet data was not deleted.', 'info');
     }
 
     function showView(viewId) {
-      document.querySelectorAll('.view').forEach(function(view) {
-        view.classList.remove('active');
-      });
-
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       const target = document.getElementById(viewId);
       if (target) target.classList.add('active');
 
-      document.querySelectorAll('[data-view-link]').forEach(function(link) {
+      document.querySelectorAll('[data-view-link]').forEach(link => {
         link.classList.toggle('active', link.getAttribute('data-view-link') === viewId);
       });
 
-      document.querySelectorAll('.tab').forEach(function(tab) {
+      document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.toggle('active', tab.getAttribute('data-tab') === viewId);
       });
 
@@ -1386,7 +1051,7 @@
       showView('summary');
       const form = document.getElementById('taskForm');
       form.classList.add('open');
-      setTimeout(function() {
+      setTimeout(() => {
         form.scrollIntoView({ behavior: 'smooth', block: 'center' });
         document.getElementById('taskName').focus();
       }, 50);
@@ -1410,17 +1075,13 @@
     function apiPost(action, payload) {
       return fetch(SCRIPT_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
-        },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action, payload })
       }).then(handleResponse);
     }
 
     function handleResponse(response) {
-      if (!response.ok) {
-        throw new Error('Server error: ' + response.status);
-      }
+      if (!response.ok) throw new Error('Server error: ' + response.status);
       return response.json();
     }
 
@@ -1441,14 +1102,14 @@
 
     function loadDashboard() {
       apiGet('dashboard')
-        .then(function(data) {
+        .then(data => {
           setLiveStatus('live', 'Google Sheet Live');
           document.getElementById('totalTasksMetric').textContent = data.totalTasks || 0;
           document.getElementById('openTasksMetric').textContent = data.openTasks || 0;
           document.getElementById('closedTasksMetric').textContent = data.closedTasks || 0;
           document.getElementById('overdueTasksMetric').textContent = data.overdueTasks || 0;
         })
-        .catch(function(error) {
+        .catch(error => {
           setLiveStatus('offline', 'Sheet Offline');
           showMessage(error.message || 'Could not load dashboard.', 'error');
         });
@@ -1456,17 +1117,15 @@
 
     function loadTasks() {
       apiGet('tasks')
-        .then(function(tasks) {
+        .then(tasks => {
           setLiveStatus('live', 'Google Sheet Live');
           allTasks = tasks || [];
           renderAllTaskViews();
         })
-        .catch(function(error) {
+        .catch(error => {
           setLiveStatus('offline', 'Sheet Offline');
-          document.getElementById('taskTable').innerHTML =
-            '<tr><td colspan="13">Could not load tasks: ' + escapeHtml(error.message) + '</td></tr>';
-          document.getElementById('ticketsTable').innerHTML =
-            '<tr><td colspan="9">Could not load tickets: ' + escapeHtml(error.message) + '</td></tr>';
+          document.getElementById('taskTable').innerHTML = '<tr><td colspan="13">Could not load tasks: ' + escapeHtml(error.message) + '</td></tr>';
+          document.getElementById('ticketsTable').innerHTML = '<tr><td colspan="9">Could not load tickets: ' + escapeHtml(error.message) + '</td></tr>';
         });
     }
 
@@ -1481,12 +1140,9 @@
 
     function updateLocalMetrics(tasks) {
       const total = tasks.length;
-      const closed = tasks.filter(function(t) { return String(t['Status'] || '').toLowerCase() === 'closed'; }).length;
-      const overdue = tasks.filter(function(t) { return String(t['Status'] || '').toLowerCase() === 'overdue'; }).length;
-      const open = tasks.filter(function(t) {
-        const s = String(t['Status'] || '').toLowerCase();
-        return s === 'open' || s === 'in progress' || s === 'pending';
-      }).length;
+      const closed = tasks.filter(t => String(t['Status'] || '').toLowerCase() === 'closed').length;
+      const overdue = tasks.filter(t => String(t['Status'] || '').toLowerCase() === 'overdue').length;
+      const open = tasks.filter(t => ['open', 'in progress', 'pending'].includes(String(t['Status'] || '').toLowerCase())).length;
 
       document.getElementById('totalTasksMetric').textContent = total;
       document.getElementById('openTasksMetric').textContent = open;
@@ -1511,25 +1167,22 @@
       const departments = countBy(tasks, 'Department');
       const max = Math.max(1, ...Object.values(departments));
       const entries = Object.entries(departments).slice(0, 8);
-
       const bars = document.getElementById('departmentBars');
       const grid = '<div class="gridline g1"></div><div class="gridline g2"></div><div class="gridline g3"></div>';
 
-      if (entries.length === 0) {
+      if (!entries.length) {
         bars.innerHTML = grid + '<div class="bar-column" onclick="showView(\\'tickets\\')"><div class="bar" style="height:3%;"></div><span class="bar-label">No data</span></div>';
         return;
       }
 
-      bars.innerHTML = grid + entries.map(function(entry) {
-        const label = entry[0] || 'Unassigned';
-        const count = entry[1];
+      bars.innerHTML = grid + entries.map(([label, count]) => {
         const height = Math.max(3, Math.round((count / max) * 85));
-        return '<div class="bar-column" onclick="filterDepartment(\\'' + escapeJs(label) + '\\')"><div class="bar" style="height:' + height + '%;"></div><span class="bar-label">' + escapeHtml(label) + '</span></div>';
+        return '<div class="bar-column" onclick="filterDepartment(\\'' + escapeJs(label) + '\\')"><div class="bar" style="height:' + height + '%;"></div><span class="bar-label">' + escapeHtml(label || 'Unassigned') + '</span></div>';
       }).join('');
     }
 
     function countBy(rows, key) {
-      return rows.reduce(function(acc, row) {
+      return rows.reduce((acc, row) => {
         const value = row[key] || 'Unassigned';
         acc[value] = (acc[value] || 0) + 1;
         return acc;
@@ -1538,18 +1191,14 @@
 
     function renderTaskTable(tasks) {
       const body = document.getElementById('taskTable');
-
-      if (!tasks || tasks.length === 0) {
+      if (!tasks || !tasks.length) {
         body.innerHTML = '<tr><td colspan="13">No tasks found. Click Create Task to add one.</td></tr>';
         return;
       }
 
-      body.innerHTML = tasks.map(function(task) {
+      body.innerHTML = tasks.map(task => {
         const status = task['Status'] || '';
-        const attachment = task['Attachment Link']
-          ? '<a href="' + escapeAttr(task['Attachment Link']) + '" target="_blank">Open</a>'
-          : '';
-
+        const attachment = task['Attachment Link'] ? '<a href="' + escapeAttr(task['Attachment Link']) + '" target="_blank">Open</a>' : '';
         return '<tr>' +
           '<td>' + escapeHtml(task['Task ID']) + '</td>' +
           '<td>' + formatDate(task['Date Created']) + '</td>' +
@@ -1570,9 +1219,7 @@
 
     function getFilteredTasks() {
       if (!ticketFilter) return allTasks;
-      return allTasks.filter(function(task) {
-        return String(task['Status'] || '').toLowerCase() === ticketFilter.toLowerCase();
-      });
+      return allTasks.filter(task => String(task['Status'] || '').toLowerCase() === ticketFilter.toLowerCase());
     }
 
     function filterTickets(status) {
@@ -1583,23 +1230,18 @@
 
     function filterDepartment(department) {
       showView('tickets');
-      const filtered = allTasks.filter(function(task) {
-        return String(task['Department'] || 'Unassigned') === department;
-      });
-      renderTicketsTable(filtered);
+      renderTicketsTable(allTasks.filter(task => String(task['Department'] || 'Unassigned') === department));
     }
 
     function renderTicketsTable(tasks) {
       const body = document.getElementById('ticketsTable');
-
-      if (!tasks || tasks.length === 0) {
+      if (!tasks || !tasks.length) {
         body.innerHTML = '<tr><td colspan="9">No tickets found.</td></tr>';
         return;
       }
 
-      body.innerHTML = tasks.map(function(task) {
+      body.innerHTML = tasks.map(task => {
         const status = task['Status'] || '';
-
         return '<tr>' +
           '<td>' + escapeHtml(task['Task ID']) + '</td>' +
           '<td>' + formatDate(task['Date Created']) + '</td>' +
@@ -1616,59 +1258,42 @@
 
     function renderDepartmentTiles(tasks) {
       const box = document.getElementById('departmentTiles');
-      const departments = countBy(tasks, 'Department');
-      const entries = Object.entries(departments);
-
-      if (entries.length === 0) {
-        box.innerHTML = '<button class="module-tile" onclick="showTaskForm()"><h3>No departments yet</h3><p>Create a task and select a department.</p></button>';
-        return;
-      }
-
-      box.innerHTML = entries.map(function(entry) {
-        return '<button class="module-tile" onclick="filterDepartment(\\'' + escapeJs(entry[0]) + '\\')"><h3>' + escapeHtml(entry[0]) + '</h3><p>' + entry[1] + ' linked ticket(s). Click to view.</p></button>';
-      }).join('');
+      const entries = Object.entries(countBy(tasks, 'Department'));
+      box.innerHTML = entries.length
+        ? entries.map(([name, count]) => '<button class="tile" onclick="filterDepartment(\\'' + escapeJs(name) + '\\')"><h3>' + escapeHtml(name) + '</h3><p>' + count + ' linked ticket(s). Click to view.</p></button>').join('')
+        : '<button class="tile" onclick="showTaskForm()"><h3>No departments yet</h3><p>Create a task and select a department.</p></button>';
     }
 
     function renderEmployeeTiles(tasks) {
       const box = document.getElementById('employeeTiles');
-      const employees = countBy(tasks, 'Assigned To');
-      const entries = Object.entries(employees).filter(function(entry) { return entry[0] && entry[0] !== 'Unassigned'; });
-
-      if (entries.length === 0) {
-        box.innerHTML = '<button class="module-tile" onclick="showTaskForm()"><h3>No employees assigned</h3><p>Create a task and assign it to an employee.</p></button>';
-        return;
-      }
-
-      box.innerHTML = entries.map(function(entry) {
-        return '<button class="module-tile" onclick="showView(\\'tickets\\')"><h3>' + escapeHtml(entry[0]) + '</h3><p>' + entry[1] + ' assigned ticket(s).</p></button>';
-      }).join('');
+      const entries = Object.entries(countBy(tasks, 'Assigned To')).filter(([name]) => name && name !== 'Unassigned');
+      box.innerHTML = entries.length
+        ? entries.map(([name, count]) => '<button class="tile" onclick="showView(\\'tickets\\')"><h3>' + escapeHtml(name) + '</h3><p>' + count + ' assigned ticket(s).</p></button>').join('')
+        : '<button class="tile" onclick="showTaskForm()"><h3>No employees assigned</h3><p>Create a task and assign it to an employee.</p></button>';
     }
 
     function loadUsers() {
       apiGet('users')
-        .then(function(users) {
+        .then(users => {
           setLiveStatus('live', 'Google Sheet Live');
           const body = document.getElementById('usersTable');
 
-          if (!users || users.length === 0) {
+          if (!users || !users.length) {
             body.innerHTML = '<tr><td colspan="6">No users found.</td></tr>';
             return;
           }
 
-          body.innerHTML = users.map(function(user) {
-            return '<tr>' +
-              '<td>' + escapeHtml(user['User ID']) + '</td>' +
-              '<td>' + escapeHtml(user['Full Name']) + '</td>' +
-              '<td>' + escapeHtml(user['Email']) + '</td>' +
-              '<td>' + escapeHtml(user['Department']) + '</td>' +
-              '<td>' + escapeHtml(user['Role']) + '</td>' +
-              '<td>' + escapeHtml(user['Status']) + '</td>' +
-            '</tr>';
-          }).join('');
+          body.innerHTML = users.map(user => '<tr>' +
+            '<td>' + escapeHtml(user['User ID']) + '</td>' +
+            '<td>' + escapeHtml(user['Full Name']) + '</td>' +
+            '<td>' + escapeHtml(user['Email']) + '</td>' +
+            '<td>' + escapeHtml(user['Department']) + '</td>' +
+            '<td>' + escapeHtml(user['Role']) + '</td>' +
+            '<td>' + escapeHtml(user['Status']) + '</td>' +
+          '</tr>').join('');
         })
-        .catch(function(error) {
-          document.getElementById('usersTable').innerHTML =
-            '<tr><td colspan="6">Could not load users: ' + escapeHtml(error.message) + '</td></tr>';
+        .catch(error => {
+          document.getElementById('usersTable').innerHTML = '<tr><td colspan="6">Could not load users: ' + escapeHtml(error.message) + '</td></tr>';
         });
     }
 
@@ -1697,7 +1322,7 @@
       showMessage('Saving task to Google Sheet...', 'info');
 
       apiPost('addTask', data)
-        .then(function(result) {
+        .then(result => {
           if (!result || !result.success) {
             showMessage((result && result.message) || 'Could not create task.', 'error');
             return;
@@ -1709,45 +1334,34 @@
           hideTaskForm();
           loadAllData();
         })
-        .catch(function(error) {
+        .catch(error => {
           setLiveStatus('offline', 'Sheet Offline');
           showMessage(error.message || 'Could not create task.', 'error');
         })
-        .finally(function() {
+        .finally(() => {
           saveBtn.disabled = false;
           saveBtn.textContent = 'Save Task to Google Sheet';
         });
     }
 
     function closeTask(taskId) {
-      apiPost('updateTaskStatus', {
-        taskId: taskId,
-        status: 'Closed'
-      })
-        .then(function(result) {
+      apiPost('updateTaskStatus', { taskId, status: 'Closed' })
+        .then(result => {
           if (!result || !result.success) {
             showMessage((result && result.message) || 'Could not close task.', 'error');
             return;
           }
-
           showMessage('Task closed successfully.', 'success');
           loadAllData();
         })
-        .catch(function(error) {
-          showMessage(error.message || 'Could not close task.', 'error');
-        });
+        .catch(error => showMessage(error.message || 'Could not close task.', 'error'));
     }
 
     function clearTaskForm() {
-      document.getElementById('taskName').value = '';
-      document.getElementById('description').value = '';
+      ['taskName', 'description', 'assignedTo', 'dueDate', 'comments', 'attachmentLink'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('priority').value = 'Medium';
       document.getElementById('status').value = 'Open';
-      document.getElementById('assignedTo').value = '';
       document.getElementById('department').value = '';
-      document.getElementById('dueDate').value = '';
-      document.getElementById('comments').value = '';
-      document.getElementById('attachmentLink').value = '';
     }
 
     function showMessage(text, type) {
@@ -1756,17 +1370,11 @@
       msg.textContent = text;
       msg.className = 'message ' + type;
       msg.style.display = 'inline-block';
-
-      if (type !== 'info') {
-        setTimeout(function() {
-          msg.style.display = 'none';
-        }, 6000);
-      }
+      if (type !== 'info') setTimeout(() => { msg.style.display = 'none'; }, 6000);
     }
 
     function statusClass(status) {
       const value = String(status || '').toLowerCase();
-
       if (value === 'closed') return 'status-closed';
       if (value === 'overdue') return 'status-overdue';
       if (value === 'in progress' || value === 'pending') return 'status-progress';
@@ -1775,10 +1383,8 @@
 
     function formatDate(value) {
       if (!value) return '';
-
       const d = new Date(value);
       if (isNaN(d.getTime())) return escapeHtml(value);
-
       return d.toLocaleDateString();
     }
 
@@ -1791,13 +1397,8 @@
         .replace(/'/g, '&#039;');
     }
 
-    function escapeAttr(value) {
-      return escapeHtml(value);
-    }
-
-    function escapeJs(value) {
-      return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    }
+    function escapeAttr(value) { return escapeHtml(value); }
+    function escapeJs(value) { return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
   </script>
 </body>
 </html>
