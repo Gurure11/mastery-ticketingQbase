@@ -417,6 +417,27 @@
 
     .message-success { background: #dcfce7; color: #166534; border-left: 3px solid #22c55e; }
     .message-error { background: #fee2e2; color: #991b1b; border-left: 3px solid #ef4444; }
+    .message-info { background: #dbeafe; color: #1e3a8a; border-left: 3px solid #3b82f6; }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .sync-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulseSync 0.8s infinite alternate;
+    }
+
+    @keyframes pulseSync {
+      from { opacity: 0.35; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1.1); }
+    }
 
     .task-status-grid {
       display: grid;
@@ -501,12 +522,69 @@
 
 <script>
   // ==================== CONFIGURATION ====================
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyyhRIekK-iOoJa9g1VYxjEmZ0d1XJxqPlGJ-aGO5Wx25C631_wkvqdXU3yqJR62ND7/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyIFG8LNiZFI5hI-s4AAM5owEhisTJgi-cqDqVsqmvmd4uQUDQ01nIDzdHQl-eqMHie/exec';
   const SHEET_ID = '1KWYWSUmwGYcBVIuDzh7yo86eTrfnMZX35DuGnRAVNv8';
   
   let currentUser = null;
   let currentSection = 'dashboard';
   let charts = {};
+
+
+  const SYSTEM_USERS = [
+    'Lameck Chindove', 'Tafadzwa Magejo', 'Bothwell Gurure', 'System Admin',
+    'Stanley Vangiwa', 'Timothy Wamedza', 'George Rusere', 'Kudakwashe Madzikangava',
+    'Dickens Magwaza', 'Brighton Mhande', 'Tawanda Mashanda', 'Leah Phiri',
+    'Andrew Moloisane', 'Johan Hendriks', 'Phillip Shambare', 'Siyanda Dlamini',
+    'Moses Magutse', 'Rayman Mugaramanja', 'Petros M', 'HR Manager',
+    'Retselisitsoe Mohapi', 'Ronald Musengwa', 'Yvette van Rooyen', 'Brian',
+    'Innocent Shongwe'
+  ];
+
+  const SYSTEM_USER_EMAILS = Object.fromEntries(SYSTEM_USERS.map(name => [name, `${name.trim().toLowerCase().replace(/\s+/g, '.')}@onpointontime.co.za`]));
+  let cachedPeopleRows = [];
+
+  function normalizeName(str) {
+    return String(str || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  }
+
+  function userOptionsHtml(selected = '') {
+    return `<option value="">Select assignee</option>` + SYSTEM_USERS.map(name => `<option value="${escapeHtml(name)}" ${name === selected ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('');
+  }
+
+  function findEmailForUser(name) {
+    const wanted = normalizeName(name);
+    if (!wanted) return '';
+    const match = cachedPeopleRows.find(row => normalizeName(row['Full Name'] || row['Employee Name'] || row.Name || row.User) === wanted);
+    return (match && (match.Email || match['Email Address'] || match.WorkEmail || match['Work Email'])) || SYSTEM_USER_EMAILS[name] || '';
+  }
+
+  function wireAssigneeEmail(selectId, emailId) {
+    const select = document.getElementById(selectId);
+    const email = document.getElementById(emailId);
+    if (!select || !email) return;
+    const sync = () => { email.value = findEmailForUser(select.value); };
+    select.addEventListener('change', sync);
+    sync();
+  }
+
+  async function refreshPeopleCache() {
+    try {
+      const [users, employees] = await Promise.all([apiGet('users'), apiGet('employees')]);
+      cachedPeopleRows = [...(Array.isArray(users) ? users : []), ...(Array.isArray(employees) ? employees : [])];
+    } catch(e) {
+      cachedPeopleRows = [];
+    }
+  }
+
+  async function notifyAssignedUser(payload, type) {
+    if (!payload.assignedEmail) return { success: false, message: 'No assignee email found.' };
+    try {
+      return await apiPost('notifyTaskAssignee', { ...payload, type });
+    } catch(e) {
+      console.warn('Notification email could not be sent from the front end. Confirm Apps Script supports notifyTaskAssignee.', e);
+      return { success: false, message: e.message };
+    }
+  }
 
   function getCurrentUser() {
     try {
@@ -549,16 +627,24 @@
 
   async function apiPost(action, payload) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), 20000);
     try {
       const res = await fetch(SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, payload, user: currentUser }),
+        body: JSON.stringify({ action, payload, user: currentUser, sheetId: SHEET_ID }),
         signal: controller.signal
       });
       clearTimeout(timeout);
-      return await res.json();
+      const responseText = await res.text();
+      let json = {};
+      try {
+        json = responseText ? JSON.parse(responseText) : {};
+      } catch(parseErr) {
+        json = { success: res.ok, message: responseText || 'Saved, but server did not return JSON.' };
+      }
+      if (!res.ok) throw new Error(json.message || json.error || `HTTP ${res.status}`);
+      return json;
     } catch(e) {
       clearTimeout(timeout);
       throw e;
@@ -576,7 +662,42 @@
     container.textContent = msg;
     container.className = `message-bar message-${type}`;
     container.style.display = 'block';
-    setTimeout(() => { if(container) container.style.display = 'none'; }, 5000);
+    if (type !== 'info') setTimeout(() => { if(container) container.style.display = 'none'; }, 5000);
+  }
+
+  function setButtonLoading(buttonId, isLoading, loadingText = 'Synchronising...') {
+    const btn = document.getElementById(buttonId);
+    if (!btn) return;
+    if (isLoading) {
+      btn.dataset.originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="sync-dot"></span>${loadingText}`;
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = btn.dataset.originalText || btn.innerHTML;
+    }
+  }
+
+  async function saveWithSync(buttonId, messageId, action, payload, successMessage, options = {}) {
+    setButtonLoading(buttonId, true);
+    showMessage('Synchronising with Google Sheets... Please wait.', 'info', messageId);
+    try {
+      const res = await apiPost(action, payload);
+      const ok = res && (res.success === true || res.status === 'success' || res.saved === true);
+      if (!ok) throw new Error((res && (res.message || res.error)) || 'Save failed. Please try again.');
+      if (options.notifyType) await notifyAssignedUser(payload, options.notifyType);
+      showMessage(successMessage, 'success', messageId);
+      alert(successMessage);
+      if (typeof options.afterSuccess === 'function') options.afterSuccess(res);
+      return res;
+    } catch(e) {
+      const errorMessage = e.message || 'Could not save. Please try again.';
+      showMessage(errorMessage, 'error', messageId);
+      alert(`Save failed: ${errorMessage}`);
+      return { success: false, message: errorMessage };
+    } finally {
+      setButtonLoading(buttonId, false);
+    }
   }
 
   // ==================== DASHBOARD with TASK STATUS SECTION ====================
@@ -726,7 +847,8 @@
             </div>
             <div class="form-row">
               <div class="form-field"><label>Department</label><input id="ticketDept" placeholder="Department"></div>
-              <div class="form-field"><label>Assigned To</label><input id="ticketAssignee" placeholder="Person/Team"></div>
+              <div class="form-field"><label>Assigned To</label><select id="ticketAssignee">${userOptionsHtml()}</select></div>
+              <div class="form-field"><label>Assignee Email</label><input id="ticketAssigneeEmail" readonly placeholder="Auto-filled email"></div>
               <div class="form-field"><label>Due Date</label><input type="date" id="ticketDueDate"></div>
             </div>
             <div class="form-field"><label>Description</label><textarea id="ticketDesc" rows="2" placeholder="Detailed description"></textarea></div>
@@ -742,7 +864,8 @@
             <div class="form-row">
               <div class="form-field"><label>Task Name *</label><input id="autoTaskName" placeholder="e.g., Weekly Report"></div>
               <div class="form-field"><label>Frequency</label><select id="autoFrequency"><option>Daily</option><option>Weekly</option><option>Monthly</option></select></div>
-              <div class="form-field"><label>Assigned To</label><input id="autoAssignee" placeholder="Team member"></div>
+              <div class="form-field"><label>Assigned To</label><select id="autoAssignee">${userOptionsHtml()}</select></div>
+              <div class="form-field"><label>Assignee Email</label><input id="autoAssigneeEmail" readonly placeholder="Auto-filled email"></div>
             </div>
             <div class="form-row">
               <div class="form-field"><label>Department</label><input id="autoDept" placeholder="Department"></div>
@@ -766,6 +889,9 @@
       `;
       
       main.innerHTML = html;
+      await refreshPeopleCache();
+      wireAssigneeEmail('ticketAssignee', 'ticketAssigneeEmail');
+      wireAssigneeEmail('autoAssignee', 'autoAssigneeEmail');
       
       if (typeof Chart !== 'undefined') {
         const pCtx = document.getElementById('priorityChart')?.getContext('2d');
@@ -779,19 +905,15 @@
       }
       
       document.getElementById('createTicketBtn')?.addEventListener('click', async () => {
-        const payload = { title: document.getElementById('ticketTitle').value, priority: document.getElementById('ticketPriority').value, status: document.getElementById('ticketStatus').value, department: document.getElementById('ticketDept').value, assignedTo: document.getElementById('ticketAssignee').value, dueDate: document.getElementById('ticketDueDate').value, description: document.getElementById('ticketDesc').value };
+        const payload = { title: document.getElementById('ticketTitle').value, priority: document.getElementById('ticketPriority').value, status: document.getElementById('ticketStatus').value, department: document.getElementById('ticketDept').value, assignedTo: document.getElementById('ticketAssignee').value, assignedEmail: document.getElementById('ticketAssigneeEmail').value, dueDate: document.getElementById('ticketDueDate').value, description: document.getElementById('ticketDesc').value, sheetId: SHEET_ID, sheetTab: 'Tickets' };
         if (!payload.title) return showMessage('Title required', 'error', 'ticketFormMessage');
-        const res = await apiPost('addTicket', payload);
-        showMessage(res.success ? 'Ticket created!' : (res.message || 'Error'), res.success ? 'success' : 'error', 'ticketFormMessage');
-        if (res.success) setTimeout(() => renderDashboard(), 1000);
+        await saveWithSync('createTicketBtn', 'ticketFormMessage', 'addTicket', payload, 'Ticket saved, synchronised and assignee notified.', { notifyType: 'Ticket', afterSuccess: () => setTimeout(() => renderDashboard(), 1000) });
       });
       
       document.getElementById('createAutoTaskBtn')?.addEventListener('click', async () => {
-        const payload = { taskName: document.getElementById('autoTaskName').value, frequency: document.getElementById('autoFrequency').value, assignedTo: document.getElementById('autoAssignee').value, department: document.getElementById('autoDept').value, nextRun: document.getElementById('autoNextRun').value, status: document.getElementById('autoStatus').value, description: document.getElementById('autoDesc').value };
+        const payload = { taskName: document.getElementById('autoTaskName').value, frequency: document.getElementById('autoFrequency').value, assignedTo: document.getElementById('autoAssignee').value, assignedEmail: document.getElementById('autoAssigneeEmail').value, department: document.getElementById('autoDept').value, nextRun: document.getElementById('autoNextRun').value, status: document.getElementById('autoStatus').value, description: document.getElementById('autoDesc').value, sheetId: SHEET_ID, sheetTab: 'Automated Tasks' };
         if (!payload.taskName) return showMessage('Task name required', 'error', 'autoTaskMessage');
-        const res = await apiPost('addAutomatedTask', payload);
-        showMessage(res.success ? 'Automated task created!' : (res.message || 'Error'), res.success ? 'success' : 'error', 'autoTaskMessage');
-        if (res.success) setTimeout(() => renderDashboard(), 1000);
+        await saveWithSync('createAutoTaskBtn', 'autoTaskMessage', 'addAutomatedTask', payload, 'Automated task saved, synchronised and assignee notified.', { notifyType: 'Automated Task', afterSuccess: () => setTimeout(() => renderDashboard(), 1000) });
       });
       
     } catch (err) {
@@ -803,11 +925,56 @@
   async function renderUsers() { const data = await apiGet('users'); renderSimpleTable('Users', data, ['User ID', 'Full Name', 'Email', 'Department', 'Role', 'Status']); }
   async function renderSettings() { document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:40px"><h2>⚙️ App Settings</h2><p><strong>Sheet ID:</strong> ${SHEET_ID}</p><button class="refresh-btn" onclick="loadCurrentSection()">Refresh</button></div>`; }
   async function renderDepartments() { const data = await apiGet('departments'); renderSimpleTable('Departments', data, ['Department ID', 'Department Name', 'Manager', 'Budget', 'Status']); }
-  async function renderEmployees() { const data = await apiGet('employees'); renderSimpleTable('Employees', data, ['Employee ID', 'Employee Name', 'Department', 'Role', 'Status']); }
+  async function renderEmployees() {
+    const data = await apiGet('employees');
+    renderSimpleTable('Employees', data, ['Employee ID', 'Employee Name', 'Email', 'Department', 'Role', 'Status']);
+    const main = document.getElementById('mainContent');
+    main.insertAdjacentHTML('afterbegin', `
+      <div class="panel">
+        <div class="panel-header"><h2>➕ Enter New Employee</h2></div>
+        <div style="padding:20px">
+          <div class="form-row">
+            <div class="form-field"><label>Employee ID</label><input id="empId" placeholder="Employee ID"></div>
+            <div class="form-field"><label>Employee Name *</label><input id="empName" placeholder="Full name"></div>
+            <div class="form-field"><label>Email *</label><input id="empEmail" type="email" placeholder="email@onpointontime.co.za"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-field"><label>Department</label><input id="empDept" placeholder="Department"></div>
+            <div class="form-field"><label>Role</label><input id="empRole" placeholder="Role"></div>
+            <div class="form-field"><label>Status</label><select id="empStatus"><option>Active</option><option>Inactive</option></select></div>
+          </div>
+          <button class="btn-primary" id="saveEmployeeBtn">💾 Save Employee</button>
+          <div id="employeeFormMessage" class="message-bar"></div>
+        </div>
+      </div>`);
+    document.getElementById('saveEmployeeBtn')?.addEventListener('click', async () => {
+      const payload = {
+        employeeId: document.getElementById('empId').value,
+        employeeName: document.getElementById('empName').value,
+        email: document.getElementById('empEmail').value,
+        department: document.getElementById('empDept').value,
+        role: document.getElementById('empRole').value,
+        status: document.getElementById('empStatus').value,
+        sheetId: SHEET_ID,
+        sheetTab: 'Employees'
+      };
+      if (!payload.employeeName || !payload.email) return showMessage('Employee name and email are required', 'error', 'employeeFormMessage');
+      await saveWithSync('saveEmployeeBtn', 'employeeFormMessage', 'addEmployee', payload, 'Employee saved and synchronised to Google Sheet tab: Employees.', { afterSuccess: () => setTimeout(() => renderEmployees(), 1000) });
+    });
+  }
   async function renderTickets() { let data = await apiGet('tickets'); if (window.taskFilter === 'open') data = data.filter(t => !String(t.Status || '').toLowerCase().includes('closed')); else if (window.taskFilter === 'overdue') { const today = new Date(); data = data.filter(t => { const due = new Date(t['Due Date']); return due < today && !String(t.Status || '').toLowerCase().includes('closed'); }); } renderSimpleTable('Tickets', data, ['Ticket ID', 'Title', 'Priority', 'Status', 'Department', 'Assigned To', 'Due Date']); }
-  async function renderKPIs() { const data = await apiGet('kpis'); renderSimpleTable('KPIs', data, ['KPIName', 'Target Value', 'Actual Value', 'Related Department', 'Frequency']); }
-  async function renderSLA() { const data = await apiGet('sla'); renderSimpleTable('SLA', data, ['SLA Name', 'Description', 'Priority', 'First Response', 'Resolution Target', 'Status'], 'SLA'); }
-  async function renderBSC() { const data = await apiGet('bscMetrics'); renderSimpleTable('BSC Metrics', data, ['BSC Name', 'BSC Description', 'Target Score', 'Actual Score', 'Related Department', 'Frequency'], 'BSC Metrics'); }
+  async function renderKPIs() {
+    const data = await apiGet('kpis');
+    renderDataEntryTable('KPIs', data, ['KPIName', 'Target Value', 'Actual Value', 'Related Department', 'Frequency'], 'kpi');
+  }
+  async function renderSLA() {
+    const data = await apiGet('sla');
+    renderDataEntryTable('SLA', data, ['SLA Name', 'Description', 'Priority', 'First Response', 'Resolution Target', 'Status'], 'sla');
+  }
+  async function renderBSC() {
+    const data = await apiGet('bscMetrics');
+    renderDataEntryTable('BSC Metrics', data, ['BSC Name', 'BSC Description', 'Target Score', 'Actual Score', 'Related Department', 'Frequency'], 'bscMetrics');
+  }
   async function renderDivisions() { const data = await apiGet('divisions'); renderSimpleTable('Divisions', data, ['Division ID', 'Division Name', 'Head', 'Region', 'Status'], 'Divisions'); }
   async function renderAutomatedTasks() { const data = await apiGet('automatedTasks'); renderSimpleTable('Automated Tasks', data, ['Task Name', 'Frequency', 'Assigned To', 'Department', 'Next Run', 'Status']); }
   
@@ -833,6 +1000,33 @@
       if (row[key] !== undefined && row[key] !== null && row[key] !== '') return row[key];
     }
     return '-';
+  }
+
+
+  function renderDataEntryTable(title, data, columns, actionName) {
+    const main = document.getElementById('mainContent');
+    const dataArray = Array.isArray(data) ? data : [];
+    const fieldId = c => `entry_${c.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    main.innerHTML = `
+      <div class="top-bar"><div class="page-title"><h1>${title}</h1><p>Sheet tab: ${title}</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
+      <div class="panel">
+        <div class="panel-header"><h2>➕ Enter New ${title}</h2></div>
+        <div style="padding:20px">
+          <div class="form-row">
+            ${columns.map(c => `<div class="form-field"><label>${escapeHtml(c)}</label>${c === 'Description' || c.includes('Description') ? `<textarea id="${fieldId(c)}" rows="2"></textarea>` : `<input id="${fieldId(c)}" placeholder="${escapeHtml(c)}">`}</div>`).join('')}
+          </div>
+          <button class="btn-primary" id="saveDataEntryBtn">💾 Save ${title}</button>
+          <div id="dataEntryMessage" class="message-bar"></div>
+        </div>
+      </div>
+      <div class="panel"><div class="panel-header"><h2>📋 ${title}</h2></div><div class="table-wrapper"><table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${dataArray.length ? dataArray.map(row => `<tr>${columns.map(c => `<td>${escapeHtml(getCellValue(row, c))}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${columns.length}" style="text-align:center">No data found</td></tr>`}</tbody></table></div></div>`;
+    document.getElementById('saveDataEntryBtn')?.addEventListener('click', async () => {
+      const payload = { sheetId: SHEET_ID, sheetTab: title };
+      columns.forEach(c => { payload[c] = document.getElementById(fieldId(c)).value; });
+      const firstColumn = columns[0];
+      if (!payload[firstColumn]) return showMessage(`${firstColumn} is required`, 'error', 'dataEntryMessage');
+      await saveWithSync('saveDataEntryBtn', 'dataEntryMessage', `add${actionName.charAt(0).toUpperCase()}${actionName.slice(1)}`, payload, `${title} record saved and synchronised.`, { afterSuccess: () => setTimeout(() => loadCurrentSection(), 1000) });
+    });
   }
 
   function renderSimpleTable(title, data, columns, sheetTabName = title) {
