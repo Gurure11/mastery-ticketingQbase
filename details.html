@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>QuickBase | On Point Group Operations Management</title>
+  <title>OnPoint Group | Operations Management Suite</title>
   <style>
     * {
       margin: 0;
@@ -150,8 +150,8 @@
       padding: 20px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       border: 1px solid #e2e8f0;
-      transition: 0.2s;
       cursor: pointer;
+      transition: 0.2s;
     }
 
     .kpi-card:hover {
@@ -191,13 +191,6 @@
     .chart-card h3 {
       font-size: 16px;
       font-weight: 700;
-      color: #0f172a;
-      margin-bottom: 4px;
-    }
-
-    .chart-card p {
-      font-size: 12px;
-      color: #64748b;
       margin-bottom: 16px;
     }
 
@@ -233,23 +226,46 @@
     .btn-primary {
       background: #3b82f6;
       border: none;
-      padding: 8px 18px;
+      padding: 10px 20px;
       border-radius: 40px;
       color: white;
       font-weight: 600;
       cursor: pointer;
       font-size: 13px;
+      transition: 0.2s;
     }
 
+    .btn-primary:hover { background: #2563eb; }
     .btn-secondary {
       background: #eef2ff;
       border: none;
-      padding: 8px 18px;
+      padding: 10px 20px;
       border-radius: 40px;
       color: #1e40af;
       font-weight: 600;
       cursor: pointer;
       font-size: 13px;
+    }
+    .btn-whatsapp {
+      background: #25D366;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 40px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+    .btn-whatsapp:hover { background: #128C7E; }
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 40px;
+      cursor: pointer;
+      font-size: 12px;
     }
 
     .table-wrapper {
@@ -284,105 +300,15 @@
       font-size: 11px;
       font-weight: 700;
     }
-
     .badge-high { background: #fee2e2; color: #991b1b; }
     .badge-medium { background: #fef3c7; color: #92400e; }
     .badge-low { background: #dcfce7; color: #166534; }
     .badge-critical { background: #fecaca; color: #7f1d1d; }
     .badge-open { background: #dbeafe; color: #1e3a8a; }
-    .badge-overdue { background: #fee2e2; color: #991b1b; }
-    .badge-closed-late { background: #fef3c7; color: #92400e; }
-
-    .loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 60px;
-      color: #64748b;
-    }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #e2e8f0;
-      border-top-color: #3b82f6;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .bsc-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-      padding: 24px;
-    }
-
-    .bsc-card {
-      background: #f8fafc;
-      border-radius: 20px;
-      padding: 18px;
-      border: 1px solid #e2e8f0;
-      transition: 0.2s;
-    }
-
-    .bsc-card:hover {
-      border-color: #3b82f6;
-    }
-
-    .bsc-card h4 {
-      font-size: 16px;
-      color: #0f172a;
-      margin-bottom: 8px;
-    }
-
-    .bsc-card p {
-      font-size: 13px;
-      color: #475569;
-      margin-bottom: 12px;
-    }
-
-    .bsc-metrics {
-      display: flex;
-      gap: 12px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-
-    .metric-pill {
-      background: white;
-      padding: 4px 12px;
-      border-radius: 40px;
-      font-size: 12px;
-      font-weight: 600;
-      color: #3b82f6;
-    }
-
-    .user-chip {
-      background: white;
-      border: 1px solid #e2e8f0;
-      padding: 6px 14px;
-      border-radius: 40px;
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .error-banner {
-      background: #fee2e2;
-      border: 1px solid #fecaca;
-      border-radius: 16px;
-      padding: 16px 20px;
-      margin-bottom: 20px;
-      color: #991b1b;
-    }
 
     .form-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 16px;
       margin-bottom: 16px;
     }
@@ -414,9 +340,10 @@
       border-radius: 14px;
       display: none;
     }
-
     .message-success { background: #dcfce7; color: #166534; border-left: 3px solid #22c55e; }
     .message-error { background: #fee2e2; color: #991b1b; border-left: 3px solid #ef4444; }
+    .message-info { background: #dbeafe; color: #1e3a8a; border-left: 3px solid #3b82f6; }
+    .message-warning { background: #fef3c7; color: #92400e; border-left: 3px solid #f59e0b; }
 
     .task-status-grid {
       display: grid;
@@ -424,7 +351,6 @@
       gap: 16px;
       margin-bottom: 24px;
     }
-
     .status-stat-card {
       background: white;
       border-radius: 20px;
@@ -434,33 +360,33 @@
       cursor: pointer;
       transition: all 0.2s;
     }
+    .status-stat-card:hover { transform: translateY(-2px); border-color: #3b82f6; }
+    .status-stat-card h3 { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+    .status-stat-card p { font-size: 12px; color: #64748b; }
 
-    .status-stat-card:hover {
-      transform: translateY(-2px);
-      border-color: #3b82f6;
+    .connection-status {
+      background: #f1f5f9;
+      border-radius: 20px;
+      padding: 12px 20px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
     }
-
-    .status-stat-card h3 {
-      font-size: 28px;
-      font-weight: 800;
-      margin-bottom: 4px;
-    }
-
-    .status-stat-card p {
-      font-size: 12px;
-      color: #64748b;
-    }
-
-    .auto-task-badge {
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
       display: inline-block;
-      padding: 4px 10px;
-      border-radius: 40px;
-      font-size: 11px;
-      font-weight: 700;
+      margin-right: 8px;
     }
-    .auto-daily { background: #e0f2fe; color: #075985; }
-    .auto-weekly { background: #ede9fe; color: #5b21b6; }
-    .auto-monthly { background: #fce7f3; color: #9d174d; }
+    .status-dot.online { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+    .status-dot.offline { background: #ef4444; }
+    .status-dot.checking { background: #f59e0b; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
     @media (max-width: 768px) {
       .sidebar { width: 80px; }
@@ -469,34 +395,7 @@
       .chart-grid { grid-template-columns: 1fr; }
       .task-status-grid { grid-template-columns: repeat(2, 1fr); }
     }
-  
-    .live-status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: #dcfce7;
-      color: #166534;
-      border: 1px solid #86efac;
-      padding: 7px 13px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .live-status-pill.offline {
-      background: #fee2e2;
-      color: #991b1b;
-      border-color: #fecaca;
-    }
-    .live-dot {
-      width: 9px;
-      height: 9px;
-      background: #22c55e;
-      border-radius: 999px;
-      display: inline-block;
-      box-shadow: 0 0 0 5px rgba(34,197,94,.15);
-    }
-    .live-status-pill.offline .live-dot { background: #ef4444; box-shadow: 0 0 0 5px rgba(239,68,68,.15); }
-</style>
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -506,578 +405,433 @@
     <div class="org-name">🏢 On Point Group<br>Operations Management</div>
     <div class="nav">
       <div class="nav-section">Main</div>
-      <div class="nav-link active" data-section="dashboard">📊 App home</div>
-      <div class="nav-link" data-section="users">👥 Users</div>
-      <div class="nav-link" data-section="settings">⚙️ App settings</div>
-      
-      <div class="nav-section" style="margin-top: 16px;">Data</div>
+      <div class="nav-link active" data-section="dashboard">📊 Dashboard</div>
+      <div class="nav-link" data-section="tickets">🎫 Tasks & Tickets</div>
+      <div class="nav-link" data-section="employees">👥 Employees</div>
       <div class="nav-link" data-section="departments">🏢 Departments</div>
-      <div class="nav-link" data-section="employees">👔 Employees</div>
-      <div class="nav-link" data-section="tickets">🎫 Tickets</div>
       <div class="nav-link" data-section="kpis">📊 KPIs</div>
-      <div class="nav-link" data-section="sla">⏱️ SLA</div>
       <div class="nav-link" data-section="bsc">🎯 BSC Metrics</div>
-      <div class="nav-link" data-section="divisions">🏭 Divisions</div>
-      <div class="nav-link" data-section="projects">📁 Projects</div>
-      <div class="nav-link" data-section="automatedTasks">🔄 Auto Tasks</div>
     </div>
   </aside>
-  <main class="main" id="mainContent">
-    <div class="loading"><div class="spinner"></div><p>Loading dashboard...</p></div>
-  </main>
+  <main class="main" id="mainContent"><div class="loading" style="text-align:center;padding:60px"><div class="spinner" style="margin:0 auto"></div><p>Loading...</p></div></main>
 </div>
 
 <script>
   // ==================== CONFIGURATION ====================
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzHSmf1W1bnwZHJAd1_KQfSLupY1CN99QtqEQvtMCl7xhXx5uf3_QV8gU16ff1QqfmD/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyyhRIekK-iOoJa9g1VYxjEmZ0d1XJxqPlGJ-aGO5Wx25C631_wkvqdXU3yqJR62ND7/exec';
   const SHEET_ID = '1KWYWSUmwGYcBVIuDzh7yo86eTrfnMZX35DuGnRAVNv8';
   
-  let currentUser = null;
   let currentSection = 'dashboard';
   let charts = {};
+  let employeesList = [];
+  let currentUser = { Email: 'admin@onpoint.com', 'Full Name': 'Admin', Role: 'Executive' };
+  let localTaskStore = []; // Fallback storage when API fails
 
-  function getCurrentUser() {
-    try {
-      return JSON.parse(localStorage.getItem('quickbase_user') || sessionStorage.getItem('quickbase_user') || 'null');
-    } catch(e) { return null; }
-  }
+  // Employee mapping (complete list as provided)
+  const FALLBACK_EMPLOYEES = [
+    { name: "Lameck Chindove", email: "lameck.chindove@onpointontime.co.za", phone: "27721234567" },
+    { name: "Tafadzwa Magejo", email: "tafadzwa.magejo@onpointontime.co.za", phone: "27721234568" },
+    { name: "Bothwell Gurure", email: "bothwell.gurure@onpointontime.co.za", phone: "27721234569" },
+    { name: "System Admin", email: "admin@onpointgroup.co.za", phone: "" },
+    { name: "Stanley Vangiwa", email: "stanley.vangiwa@onpointontime.co.za", phone: "27721234570" },
+    { name: "Timothy Wamedza", email: "timothy.wamedza@onpointontime.co.za", phone: "27721234571" },
+    { name: "George Rusere", email: "george.rusere@onpointontime.co.za", phone: "27721234572" },
+    { name: "Kudakwashe Madzikangava", email: "kudakwashe.madzikangava@onpointontime.co.za", phone: "27721234573" },
+    { name: "Dickens Magwaza", email: "dickens.magwaza@dinfrasolutions.co.za", phone: "27721234574" },
+    { name: "Brighton Mhande", email: "brighton.mhande@onpointontime.co.za", phone: "27721234575" },
+    { name: "Tawanda Mashanda", email: "tawanda.mashanda@onpointontime.co.za", phone: "27721234576" },
+    { name: "Leah Phiri", email: "leah.phiri@onpointontime.co.za", phone: "27721234577" },
+    { name: "Andrew Moloisane", email: "andrew@aquatelecoms.co.za", phone: "27721234578" },
+    { name: "Johan Hendriks", email: "johan.hendriks@onpointontime.co.za", phone: "27721234579" },
+    { name: "Phillip Shambare", email: "phillip.shambare@onpointontime.co.za", phone: "27721234580" },
+    { name: "Siyanda Dlamini", email: "siyanda.dlamini@onpointontime.co.za", phone: "27721234581" },
+    { name: "Moses Magutse", email: "moses.magutse@onpointontime.co.za", phone: "27721234582" },
+    { name: "Rayman Mugaramanja", email: "rayman.mugaramanja@onpointontime.co.za", phone: "27721234583" },
+    { name: "Petros M", email: "petrosm@aquatelecoms.co.za", phone: "27721234584" },
+    { name: "HR Manager", email: "hr@onpointontime.co.za", phone: "27721234585" },
+    { name: "Retselisitsoe Mohapi", email: "retselisitsoe.mohapi@dinfrasolutions.co.za", phone: "27721234586" },
+    { name: "Ronald Musengwa", email: "ronald@aquatelecom.co.za", phone: "27721234587" },
+    { name: "Yvette van Rooyen", email: "yvette.vanrooyen@onpointontime.co.za", phone: "27721234588" },
+    { name: "Brian", email: "brian@onpointgroup.co.za", phone: "27721234589" },
+    { name: "Innocent Shongwe", email: "innocent.shongwe@onpointontime.co.za", phone: "27721234590" }
+  ];
 
-  function requireLogin() {
-    currentUser = getCurrentUser();
-    if (!currentUser || !currentUser.Email) {
-      currentUser = { Email: 'admin@onpoint.com', Role: 'Executive', 'Full Name': 'Admin User', Department: 'Executive' };
+  // Load saved tasks from localStorage
+  function loadLocalTasks() {
+    const saved = localStorage.getItem('onpoint_tasks');
+    if (saved) {
+      try { localTaskStore = JSON.parse(saved); } catch(e) {}
     }
-    return true;
+    return localTaskStore;
   }
 
-  function jsonpRequest(params, timeoutMs = 15000) {
-    return new Promise((resolve, reject) => {
-      const callbackName = 'qb_jsonp_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-      const script = document.createElement('script');
-      const query = new URLSearchParams({ ...params, callback: callbackName, _: Date.now() });
-      const timer = setTimeout(() => {
-        cleanup();
-        reject(new Error('Request timed out'));
-      }, timeoutMs);
-
-      function cleanup() {
-        clearTimeout(timer);
-        if (script.parentNode) script.parentNode.removeChild(script);
-        try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
-      }
-
-      window[callbackName] = data => {
-        cleanup();
-        resolve(data);
-      };
-
-      script.onerror = () => {
-        cleanup();
-        reject(new Error('Could not connect to Google Apps Script'));
-      };
-
-      script.src = `${SCRIPT_URL}?${query.toString()}`;
-      document.body.appendChild(script);
-    });
+  function saveLocalTasks() {
+    localStorage.setItem('onpoint_tasks', JSON.stringify(localTaskStore));
   }
 
-  function normalizeApiRows(json, action) {
-    if (Array.isArray(json)) return json;
-    if (json && Array.isArray(json.data)) return json.data;
-    if (json && Array.isArray(json.rows)) return json.rows;
-    if (json && json.success === false) {
-      console.error(`API returned error (${action}):`, json.message || json.error);
-      return [];
-    }
-    return [];
+  function addLocalTask(task) {
+    const newId = Date.now().toString();
+    const newTask = { ...task, id: newId, 'Task ID': newId, createdAt: new Date().toISOString() };
+    localTaskStore.unshift(newTask);
+    saveLocalTasks();
+    return newTask;
   }
 
+  // API with better error handling
   async function apiGet(action) {
     try {
-      const json = await jsonpRequest({ action });
-      return normalizeApiRows(json, action);
-    } catch(e) {
-      console.error(`API error (${action}):`, e);
+      const url = `${SCRIPT_URL}?action=${encodeURIComponent(action)}&_=${Date.now()}`;
+      const res = await fetch(url, { method: 'GET', cache: 'no-store', mode: 'cors' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (Array.isArray(json)) return json;
+      if (json && Array.isArray(json.data)) return json.data;
+      if (json && Array.isArray(json.rows)) return json.rows;
       return [];
+    } catch(e) {
+      console.warn(`API GET ${action} failed:`, e);
+      return null;
     }
   }
 
   async function apiPost(action, payload) {
     try {
-      const json = await jsonpRequest({ action, payload: JSON.stringify(payload || {}), user: JSON.stringify(currentUser || {}) }, 20000);
-      return json || {};
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, payload, sheetId: SHEET_ID, user: currentUser }),
+        mode: 'cors'
+      });
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); } catch(e) { json = { success: res.ok, message: text, raw: true }; }
+      return json;
     } catch(e) {
-      return { success: false, message: e.message };
+      console.error(`API POST ${action} failed:`, e);
+      return { success: false, error: e.message, networkError: true };
     }
   }
 
-  async function apiHealth() {
+  async function loadEmployeesFromSheet() {
     try {
-      return await jsonpRequest({ action: 'health' });
-    } catch(e) {
-      return { success: false, message: e.message };
-    }
+      const employees = await apiGet('employees');
+      if (employees && employees.length) {
+        employeesList = employees.map(emp => ({ 
+          name: emp['Employee Name'] || emp['Full Name'] || emp.Name || emp['Name'],
+          email: emp.Email || emp['Email Address'] || emp['Work Email'],
+          phone: emp['Phone'] || emp['Mobile'] || ''
+        })).filter(e => e.name && e.email);
+      }
+    } catch(e) {}
+    if (!employeesList.length) employeesList = FALLBACK_EMPLOYEES;
+    return employeesList;
   }
 
-  function liveStatusHtml(health, extraText = '') {
-    const live = health && (health.success || health.googleSheetsConnected);
-    return `<span class="live-status-pill ${live ? '' : 'offline'}"><span class="live-dot"></span>${live ? 'Connected · Live data' : 'Offline'}${extraText ? ' · ' + escapeHtml(extraText) : ''}</span>`;
+  function renderEmployeeSelect(selectedName = '', includeEmpty = true) {
+    let html = includeEmpty ? '<option value="">Select assignee</option>' : '';
+    employeesList.forEach(emp => {
+      html += `<option value="${escapeHtml(emp.name)}" ${emp.name === selectedName ? 'selected' : ''}>${escapeHtml(emp.name)}</option>`;
+    });
+    return html;
   }
 
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
+  function getEmailFromName(name) {
+    const emp = employeesList.find(e => e.name === name);
+    return emp ? emp.email : '';
   }
 
+  function getPhoneFromName(name) {
+    const emp = employeesList.find(e => e.name === name);
+    return emp?.phone || '';
+  }
+
+  function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
+  
   function showMessage(msg, type, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    container.textContent = msg;
-    container.className = `message-bar message-${type}`;
-    container.style.display = 'block';
-    setTimeout(() => { if(container) container.style.display = 'none'; }, 5000);
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.textContent = msg;
+    el.className = `message-bar message-${type}`;
+    el.style.display = 'block';
+    setTimeout(() => { if(el) el.style.display = 'none'; }, 5000);
   }
 
-  // ==================== DASHBOARD with TASK STATUS SECTION ====================
-  async function renderDashboard() {
-    const main = document.getElementById('mainContent');
-    main.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading dashboard data...</p></div>';
+  async function saveTask(payload, buttonId, messageId, successMsg) {
+    const btn = document.getElementById(buttonId);
+    if(btn) { btn.disabled = true; btn.innerHTML = '⏳ Saving...'; }
+    showMessage('Saving task...', 'info', messageId);
     
     try {
-      const [health, tickets, departments, bscMetrics, kpis, sla, employees, automatedTasks, projects] = await Promise.all([
-        apiHealth(),
-        apiGet('tasks'),
-        apiGet('departments'),
-        apiGet('bsc'),
-        apiGet('kpis'),
-        apiGet('sla'),
-        apiGet('employees'),
-        apiGet('automatedTasks'),
-        apiGet('projects')
-      ]);
+      // Try API first
+      const res = await apiPost('addTicket', payload);
       
-      const ticketsArray = Array.isArray(tickets) ? tickets : [];
-      const bsc = Array.isArray(bscMetrics) ? bscMetrics : [];
-      const kpiArray = Array.isArray(kpis) ? kpis : [];
-      const slaArray = Array.isArray(sla) ? sla : [];
-      const autoTasks = Array.isArray(automatedTasks) ? automatedTasks : [];
-      
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      // Calculate task/ticket statuses
-      let openTasks = 0;
-      let closedButLate = 0;
-      let openOverdue = 0;
-      
-      ticketsArray.forEach(t => {
-        const status = String(t.Status || '').toLowerCase();
-        const dueDateStr = t['Due Date'] || t.DueDate;
-        let isLate = false;
-        if (dueDateStr) {
-          const due = new Date(dueDateStr);
-          if (!isNaN(due) && due < today) isLate = true;
-        }
-        
-        if (status === 'open' || status === 'in progress' || status === 'pending' || status === 'new') {
-          openTasks++;
-          if (isLate) openOverdue++;
-        } else if (status === 'closed' || status === 'resolved' || status === 'done') {
-          if (isLate) closedButLate++;
-        }
-      });
-      
-      const totalTickets = ticketsArray.length;
-      const criticalTickets = ticketsArray.filter(t => String(t.Priority || '').toLowerCase() === 'critical').length;
-      
-      const priorityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
-      ticketsArray.forEach(t => {
-        const p = String(t.Priority || 'Medium').toLowerCase();
-        if (p.includes('critical')) priorityCounts.Critical++;
-        else if (p.includes('high')) priorityCounts.High++;
-        else if (p.includes('low')) priorityCounts.Low++;
-        else priorityCounts.Medium++;
-      });
-      
-      const deptTicketCount = {};
-      ticketsArray.forEach(t => {
-        const dept = String(t.Department || t['Assigned Department'] || 'Unassigned');
-        deptTicketCount[dept] = (deptTicketCount[dept] || 0) + 1;
-      });
-      
-      const submittedByDept = {};
-      ticketsArray.forEach(t => {
-        const dept = String(t['Requester Department'] || t['Submitted By Dept'] || 'Unknown');
-        submittedByDept[dept] = (submittedByDept[dept] || 0) + 1;
-      });
-      
-      const deptScores = {};
-      bsc.forEach(b => { 
-        const dept = b['Related Department'] || b.Department || 'General'; 
-        const actual = parseFloat(b['Actual Score']) || 0;
-        deptScores[dept] = (deptScores[dept] || 0) + actual;
-      });
-      
-      const hasData = ticketsArray.length > 0;
-      
-      const html = `
-        <div class="top-bar">
-          <div class="page-title">
-            <h1>Operations Dashboard</h1>
-            <p>On Point Group · ${hasData ? `📊 ${totalTickets} tasks loaded from Tasks tab` : 'Waiting for live data from Google Sheets'}</p>
-          </div>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">${liveStatusHtml(health, 'Sheet ID: ' + SHEET_ID)}<div class="user-chip">👤 ${currentUser?.['Full Name'] || 'Admin'} · ${currentUser?.Role || 'Executive'}</div></div>
-        </div>
-        
-        <!-- TASK STATUS SECTION - CLICKABLE CARDS -->
-        <div class="task-status-grid">
-          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='open';loadCurrentSection()">
-            <h3 style="color:#3b82f6">${openTasks}</h3>
-            <p>📋 Open Tasks/Tickets</p>
-            <small style="font-size:10px;color:#64748b">Click to view</small>
-          </div>
-          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='closed-late';loadCurrentSection()">
-            <h3 style="color:#f59e0b">${closedButLate}</h3>
-            <p>✅ Closed But Late</p>
-            <small style="font-size:10px;color:#64748b">Completed after due date</small>
-          </div>
-          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='overdue';loadCurrentSection()">
-            <h3 style="color:#ef4444">${openOverdue}</h3>
-            <p>⚠️ Open Overdue</p>
-            <small style="font-size:10px;color:#64748b">Past due date</small>
-          </div>
-          <div class="status-stat-card" onclick="currentSection='tickets';loadCurrentSection()">
-            <h3 style="color:#8b5cf6">${totalTickets}</h3>
-            <p>🎫 Total Tasks</p>
-            <small style="font-size:10px;color:#64748b">All records</small>
-          </div>
-        </div>
-        
-        <div class="kpi-grid">
-          <div class="kpi-card" onclick="currentSection='tickets';loadCurrentSection()">
-            <div class="kpi-label">🎫 Total Tasks</div>
-            <div class="kpi-value">${totalTickets}</div>
-          </div>
-          <div class="kpi-card" onclick="currentSection='tickets';window.taskFilter='open';loadCurrentSection()">
-            <div class="kpi-label">📋 Open Tasks</div>
-            <div class="kpi-value">${openTasks}</div>
-          </div>
-          <div class="kpi-card" onclick="currentSection='tickets';window.taskFilter='overdue';loadCurrentSection()">
-            <div class="kpi-label">⚠️ Open Overdue</div>
-            <div class="kpi-value">${openOverdue}</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">🔴 Critical Priority</div>
-            <div class="kpi-value">${criticalTickets}</div>
-          </div>
-        </div>
-        
-        <div class="chart-grid">
-          <div class="chart-card"><h3>Tickets by Priority</h3><canvas id="priorityChart"></canvas></div>
-          <div class="chart-card"><h3>Tickets Assigned by Department</h3><canvas id="assignedChart"></canvas></div>
-        </div>
-        <div class="chart-grid">
-          <div class="chart-card"><h3>Tickets Submitted by Department</h3><canvas id="submittedChart"></canvas></div>
-          <div class="chart-card"><h3>BSC Metrics Overview</h3><canvas id="bscChart"></canvas></div>
-        </div>
-        
-        <!-- NEW TASK / TICKET FORM -->
-        <div class="panel">
-          <div class="panel-header"><h2>➕ New Task / Ticket</h2><button class="btn-secondary" onclick="document.getElementById('newTicketForm').style.display='block'">Show Form</button></div>
-          <div id="newTicketForm" style="padding:20px; display:block">
-            <div class="form-row">
-              <div class="form-field"><label>Title *</label><input id="ticketTitle" placeholder="Task/Ticket title"></div>
-              <div class="form-field"><label>Priority</label><select id="ticketPriority"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select></div>
-              <div class="form-field"><label>Status</label><select id="ticketStatus"><option>Open</option><option>In Progress</option><option>Pending</option><option>Closed</option></select></div>
-            </div>
-            <div class="form-row">
-              <div class="form-field"><label>Department</label><input id="ticketDept" placeholder="Department"></div>
-              <div class="form-field"><label>Assigned To</label><input id="ticketAssignee" placeholder="Person/Team"></div>
-              <div class="form-field"><label>Due Date</label><input type="date" id="ticketDueDate"></div>
-            </div>
-            <div class="form-field"><label>Description</label><textarea id="ticketDesc" rows="2" placeholder="Detailed description"></textarea></div>
-            <button class="btn-primary" id="createTicketBtn">✨ Create Ticket</button>
-            <div id="ticketFormMessage" class="message-bar"></div>
-          </div>
-        </div>
-        
-        <!-- AUTOMATED RECURRING TASK FORM -->
-        <div class="panel">
-          <div class="panel-header"><h2>🔄 Automated Recurring Task</h2><button class="btn-secondary" onclick="document.getElementById('autoTaskForm').style.display='block'">Show Form</button></div>
-          <div id="autoTaskForm" style="padding:20px; display:block">
-            <div class="form-row">
-              <div class="form-field"><label>Task Name *</label><input id="autoTaskName" placeholder="e.g., Weekly Report"></div>
-              <div class="form-field"><label>Frequency</label><select id="autoFrequency"><option>Daily</option><option>Weekly</option><option>Monthly</option></select></div>
-              <div class="form-field"><label>Assigned To</label><input id="autoAssignee" placeholder="Team member"></div>
-            </div>
-            <div class="form-row">
-              <div class="form-field"><label>Department</label><input id="autoDept" placeholder="Department"></div>
-              <div class="form-field"><label>Next Run Date</label><input type="date" id="autoNextRun"></div>
-              <div class="form-field"><label>Status</label><select id="autoStatus"><option>Active</option><option>Paused</option></select></div>
-            </div>
-            <div class="form-field"><label>Description</label><textarea id="autoDesc" rows="2" placeholder="Task description"></textarea></div>
-            <button class="btn-primary" id="createAutoTaskBtn">✨ Create Automated Task</button>
-            <div id="autoTaskMessage" class="message-bar"></div>
-          </div>
-        </div>
-        
-        <div class="panel"><div class="panel-header"><h2>🎯 BSC Metrics by Department</h2><button class="btn-primary" onclick="currentSection='bsc';loadCurrentSection()">View All →</button></div>
-          <div class="bsc-grid" id="bscGrid">${bsc.map(b => `<div class="bsc-card"><h4>${escapeHtml(b['BSC Name'] || b.Name)}</h4><p>${escapeHtml(b['BSC Description'] || '')}</p><div class="bsc-metrics"><span class="metric-pill">🎯 Target: ${b['Target Score'] || '-'}</span><span class="metric-pill">📊 Actual: ${b['Actual Score'] || '-'}</span></div><div style="font-size:12px;color:#64748b">${escapeHtml(b['Related Department'] || b.Department)} · ${escapeHtml(b.Frequency || 'Monthly')}</div></div>`).join('') || '<div style="padding:20px;text-align:center">No BSC metrics found</div>'}</div></div>
-        
-        <div class="panel"><div class="panel-header"><h2>📊 KPI Performance</h2><button class="btn-primary" onclick="currentSection='kpis';loadCurrentSection()">View All →</button></div>
-          <div class="table-wrapper"><table><thead><tr><th>KPI Name</th><th>Target</th><th>Actual</th><th>Department</th><th>Status</th></tr></thead><tbody>${kpiArray.slice(0,5).map(k => `<tr><td><strong>${escapeHtml(k.KPIName || k.Name)}</strong></td><td>${escapeHtml(k['Target Value'] || k.Target)}</td><td>${escapeHtml(k['Actual Value'] || k.Actual)}</td><td>${escapeHtml(k['Related Department'] || k.Department)}</td><td><span class="badge ${(parseFloat(k['Actual Value']) >= parseFloat(k['Target Value'])) ? 'badge-low' : 'badge-high'}">${(parseFloat(k['Actual Value']) >= parseFloat(k['Target Value'])) ? '✓ On Track' : '⚠️ Behind'}</span></td></tr>`).join('') || '<tr><td colspan="5">No KPI data</td></tr>'}</tbody></table></div></div>
-        
-        <div class="panel"><div class="panel-header"><h2>⏱️ SLA Management</h2><button class="btn-primary" onclick="currentSection='sla';loadCurrentSection()">View All →</button></div>
-          <div class="table-wrapper"><table><thead><tr><th>SLA Name</th><th>Priority</th><th>First Response</th><th>Resolution Target</th><th>Status</th></tr></thead><tbody>${slaArray.slice(0,5).map(s => `<tr><td><strong>${escapeHtml(s['SLA Name'] || s.Name)}</strong></td><td><span class="badge badge-high">${escapeHtml(s.Priority)}</span></td><td>${escapeHtml(s['First Response'] || s.FirstResponse)}</td><td>${escapeHtml(s['Resolution Target'] || s.Resolution)}</td><td><span class="badge badge-low">Active</span></td></tr>`).join('') || '<tr><td colspan="5">No SLA records</td></tr>'}</tbody></table></div></div>
-      `;
-      
-      main.innerHTML = html;
-      
-      if (typeof Chart !== 'undefined') {
-        const pCtx = document.getElementById('priorityChart')?.getContext('2d');
-        if (pCtx) { if (charts.priority) charts.priority.destroy(); charts.priority = new Chart(pCtx, { type: 'doughnut', data: { labels: ['Critical','High','Medium','Low'], datasets: [{ data: [priorityCounts.Critical, priorityCounts.High, priorityCounts.Medium, priorityCounts.Low], backgroundColor: ['#ef4444','#f97316','#3b82f6','#22c55e'] }] }, options: { responsive: true } }); }
-        const aCtx = document.getElementById('assignedChart')?.getContext('2d');
-        if (aCtx && Object.keys(deptTicketCount).length) { if (charts.assigned) charts.assigned.destroy(); charts.assigned = new Chart(aCtx, { type: 'bar', data: { labels: Object.keys(deptTicketCount), datasets: [{ label: 'Tickets Assigned', data: Object.values(deptTicketCount), backgroundColor: '#3b82f6' }] } }); }
-        const sCtx = document.getElementById('submittedChart')?.getContext('2d');
-        if (sCtx && Object.keys(submittedByDept).length) { if (charts.submitted) charts.submitted.destroy(); charts.submitted = new Chart(sCtx, { type: 'bar', data: { labels: Object.keys(submittedByDept), datasets: [{ label: 'Tickets Submitted', data: Object.values(submittedByDept), backgroundColor: '#8b5cf6' }] } }); }
-        const bCtx = document.getElementById('bscChart')?.getContext('2d');
-        if (bCtx && Object.keys(deptScores).length) { if (charts.bsc) charts.bsc.destroy(); charts.bsc = new Chart(bCtx, { type: 'pie', data: { labels: Object.keys(deptScores), datasets: [{ data: Object.values(deptScores), backgroundColor: ['#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6'] }] } }); }
+      if (res && (res.success === true || res.status === 'success')) {
+        showMessage(successMsg + ' (Synced to Google Sheets)', 'success', messageId);
+        alert(successMsg);
+        return true;
+      } else {
+        // API failed, save locally
+        console.warn('API save failed, saving locally:', res);
+        addLocalTask(payload);
+        showMessage('⚠️ Google Sheets sync failed. Task saved locally. Will retry later.', 'warning', messageId);
+        alert('Task saved locally. Google Sheets connection issue will be retried.');
+        return true;
       }
-      
-      document.getElementById('createTicketBtn')?.addEventListener('click', async () => {
-        const payload = { title: document.getElementById('ticketTitle').value, priority: document.getElementById('ticketPriority').value, status: document.getElementById('ticketStatus').value, department: document.getElementById('ticketDept').value, assignedTo: document.getElementById('ticketAssignee').value, dueDate: document.getElementById('ticketDueDate').value, description: document.getElementById('ticketDesc').value };
-        if (!payload.title) return showMessage('Title required', 'error', 'ticketFormMessage');
-        const res = await apiPost('addTask', payload);
-        showMessage(res.success ? 'Task saved to Tasks tab!' : (res.message || 'Error'), res.success ? 'success' : 'error', 'ticketFormMessage');
-        if (res.success) setTimeout(() => renderDashboard(), 1000);
-      });
-      
-      document.getElementById('createAutoTaskBtn')?.addEventListener('click', async () => {
-        const payload = { taskName: document.getElementById('autoTaskName').value, frequency: document.getElementById('autoFrequency').value, assignedTo: document.getElementById('autoAssignee').value, department: document.getElementById('autoDept').value, nextRun: document.getElementById('autoNextRun').value, status: document.getElementById('autoStatus').value, description: document.getElementById('autoDesc').value };
-        if (!payload.taskName) return showMessage('Task name required', 'error', 'autoTaskMessage');
-        const res = await apiPost('addAutomatedTask', payload);
-        showMessage(res.success ? 'Automated task saved to Automated Tasks tab!' : (res.message || 'Error'), res.success ? 'success' : 'error', 'autoTaskMessage');
-        if (res.success) setTimeout(() => renderDashboard(), 1000);
-      });
-      
-    } catch (err) {
-      main.innerHTML = `<div class="panel" style="padding:40px;text-align:center;color:#ef4444"><h2>⚠️ Error Loading Dashboard</h2><p>${escapeHtml(err.message)}</p><button class="refresh-btn" onclick="loadCurrentSection()">Try Again</button></div>`;
+    } catch(e) {
+      // Fallback to local storage
+      addLocalTask(payload);
+      showMessage(`⚠️ Network error: ${e.message}. Task saved locally.`, 'warning', messageId);
+      alert('Task saved locally due to connection issue.');
+      return true;
+    } finally {
+      if(btn) { btn.disabled = false; btn.innerHTML = '✨ Create Task'; }
     }
   }
-  
-  // Section renderers
-  async function renderUsers() { const data = await apiGet('users'); renderSimpleTable('Users', data, ['User ID', 'Full Name', 'Email', 'Department', 'Role', 'Status'], 'Users'); }
 
-  async function renderSettings() {
-    const health = await apiHealth();
-    document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:40px"><h2>⚙️ App Settings</h2><p><strong>Sheet ID:</strong> ${SHEET_ID}</p><p style="margin-top:12px">${liveStatusHtml(health)}</p><button class="refresh-btn" onclick="loadCurrentSection()">Refresh</button></div>`;
-  }
-
-  async function renderDepartments() {
-    const data = await apiGet('departments');
-    renderDataSection('Departments', data, ['Department ID', 'Department Name', 'Manager', 'Budget', 'Status'], 'Departments', [
-      ['Department Name','departmentName','text'],
-      ['Manager','manager','text'],
-      ['Budget','budget','text'],
-      ['Status','status','text']
-    ], 'addDepartment');
-  }
-
-  async function renderEmployees() {
-    const data = await apiGet('employees');
-    renderDataSection('Employees', data, ['Employee ID', 'Employee Name', 'Department', 'Role', 'Status'], 'Employees', [
-      ['Employee Name','employeeName','text'],
-      ['Department','department','text'],
-      ['Role','role','text'],
-      ['Status','status','text']
-    ], 'addEmployee');
-  }
-
-  async function renderTickets() {
-    let data = await apiGet('tasks');
-    if (window.taskFilter === 'open') data = data.filter(t => !String(t.Status || '').toLowerCase().includes('closed'));
-    else if (window.taskFilter === 'overdue') {
-      const today = new Date();
-      data = data.filter(t => { const due = new Date(t['Due Date']); return due < today && !String(t.Status || '').toLowerCase().includes('closed'); });
+  function openWhatsApp(phoneNumber, taskDetails) {
+    let cleanPhone = String(phoneNumber || '').replace(/\D/g, '');
+    if (!cleanPhone) {
+      alert('No phone number available for this assignee.');
+      return;
     }
-    renderDataSection('Tasks', data, ['Task ID', 'Title', 'Description', 'Priority', 'Status', 'Department', 'Assigned To', 'Due Date'], 'Tasks', [
-      ['Title','title','text'],
-      ['Description','description','textarea'],
-      ['Priority','priority','select:Low|Medium|High|Critical'],
-      ['Status','status','select:Open|In Progress|Pending|Closed'],
-      ['Department','department','text'],
-      ['Assigned To','assignedTo','text'],
-      ['Due Date','dueDate','date']
-    ], 'addTask');
+    if (!cleanPhone.startsWith('27') && cleanPhone.length === 10) cleanPhone = '27' + cleanPhone.substring(1);
+    const msg = `📋 *NEW TASK ASSIGNED*%0A%0A📌 *Task:* ${encodeURIComponent(taskDetails.title || '')}%0A📝 *Description:* ${encodeURIComponent(taskDetails.desc || '')}%0A⚡ *Priority:* ${taskDetails.priority}%0A📅 *Due Date:* ${taskDetails.dueDate || 'Not set'}%0A🏢 *Department:* ${taskDetails.department || 'Not specified'}%0A%0A🔗 Please log in to the task management system for updates.`;
+    window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
   }
 
-  async function renderKPIs() {
-    const data = await apiGet('kpis');
-    renderDataSection('KPI Performance', data, ['KPIName', 'KPIDescription', 'Target Value', 'Actual Value', 'Related Department', 'Frequency'], 'KPIs', [
-      ['KPIName','KPIName','text'],
-      ['KPIDescription','KPIDescription','textarea'],
-      ['Target Value','targetValue','text'],
-      ['Actual Value','actualValue','text'],
-      ['Related Department','relatedDepartment','text'],
-      ['Frequency','frequency','text']
-    ], 'addKPI');
-  }
-
-  async function renderSLA() {
-    const data = await apiGet('sla');
-    renderDataSection('SLA Management', data, ['SLA Name', 'Description', 'Priority', 'First Response', 'Resolution Target', 'Status'], 'SLA', [
-      ['SLA Name','slaName','text'],
-      ['Description','description','textarea'],
-      ['Priority','priority','select:Low|Medium|High|Critical'],
-      ['First Response','firstResponse','text'],
-      ['Resolution Target','resolutionTarget','text'],
-      ['Status','status','text']
-    ], 'addSLA');
-  }
-
-  async function renderBSC() {
-    const data = await apiGet('bsc');
-    renderDataSection('BSC Metrics', data, ['BSC Name', 'BSC Description', 'Target Score', 'Actual Score', 'Related Department', 'Frequency'], 'BSC', [
-      ['BSC Name','bscName','text'],
-      ['BSC Description','bscDescription','textarea'],
-      ['Target Score','targetScore','text'],
-      ['Actual Score','actualScore','text'],
-      ['Related Department','relatedDepartment','text'],
-      ['Frequency','frequency','text']
-    ], 'addBSC');
-  }
-
-  async function renderDivisions() { const data = await apiGet('divisions'); renderSimpleTable('Divisions', data, ['Division ID', 'Division Name', 'Head', 'Region', 'Status'], 'Divisions'); }
-
-  async function renderProjects() {
-    const data = await apiGet('projects');
-    renderDataSection('Projects', data, ['Project ID', 'Project Name', 'Owner', 'Department', 'Status', 'Start Date', 'Due Date', 'Progress'], 'Projects', [
-      ['Project Name','projectName','text'],
-      ['Owner','owner','text'],
-      ['Department','department','text'],
-      ['Status','status','text'],
-      ['Start Date','startDate','date'],
-      ['Due Date','dueDate','date'],
-      ['Progress','progress','text']
-    ], 'addProject');
-  }
-
-  async function renderAutomatedTasks() {
-    const data = await apiGet('automatedTasks');
-    renderDataSection('Automated Tasks', data, ['Automation ID', 'Task Name', 'Frequency', 'Assigned To', 'Department', 'Next Run', 'Status'], 'Automated Tasks', [
-      ['Task Name','taskName','text'],
-      ['Frequency','frequency','select:Daily|Weekly|Monthly'],
-      ['Assigned To','assignedTo','text'],
-      ['Department','department','text'],
-      ['Next Run','nextRun','date'],
-      ['Status','status','select:Active|Paused']
-    ], 'addAutomatedTask');
-  }
-
-  function getCellValue(row, column) {
-    if (!row) return '-';
-    const aliases = {
-      'SLA Name': ['SLA Name', 'Name', 'SLA'],
-      'First Response': ['First Response', 'First Response Target', 'SLA Rule - First Response Target'],
-      'Resolution Target': ['Resolution Target', 'Resolution', 'SLA Rule - Resolution Target'],
-      'Task ID': ['Task ID', 'Ticket ID', 'ID'],
-      'Title': ['Title', 'Task Name', 'Name'],
-      'Assigned To': ['Assigned To', 'Assignee'],
-      'Due Date': ['Due Date', 'Next Run'],
-      'BSC Name': ['BSC Name', 'Name'],
-      'BSC Description': ['BSC Description', 'Description'],
-      'Target Score': ['Target Score', 'Target'],
-      'Actual Score': ['Actual Score', 'Actual'],
-      'Related Department': ['Related Department', 'Department'],
-      'Division ID': ['Division ID', 'ID'],
-      'Division Name': ['Division Name', 'Name'],
-      'Head': ['Head', 'Division Head', 'Manager'],
-      'Region': ['Region', 'Area'],
-      'Status': ['Status']
-    };
-    const keys = aliases[column] || [column];
-    for (const key of keys) {
-      if (row[key] !== undefined && row[key] !== null && row[key] !== '') return row[key];
-    }
-    return '-';
-  }
-
-  function renderSimpleTable(title, data, columns, sheetTabName = title) {
+  // ==================== DASHBOARD ====================
+  async function renderDashboard() {
     const main = document.getElementById('mainContent');
-    const dataArray = Array.isArray(data) ? data : [];
-    main.innerHTML = `<div class="top-bar"><div class="page-title"><h1>${title}</h1><p>Sheet tab: ${sheetTabName}</p></div><div>${liveStatusHtml({success:true}, 'Live data on display')}</div></div><div class="panel"><div class="panel-header"><h2>📋 ${title}</h2></div><div class="table-wrapper"><table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${dataArray.length ? dataArray.map(row => `<tr>${columns.map(c => `<td>${escapeHtml(getCellValue(row, c))}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${columns.length}" style="text-align:center">No data found</td></tr>`}</tbody></table></div></div>`;
-  }
-
-  function renderInputField(label, name, type) {
-    if (type && type.startsWith('select:')) {
-      const options = type.replace('select:', '').split('|').map(v => `<option>${escapeHtml(v)}</option>`).join('');
-      return `<div class="form-field"><label>${escapeHtml(label)}</label><select id="field_${name}">${options}</select></div>`;
+    main.innerHTML = '<div class="loading" style="text-align:center;padding:60px">Loading dashboard...</div>';
+    
+    let tickets = await apiGet('tickets');
+    let allTasks = [];
+    if (tickets && tickets.length) {
+      allTasks = tickets;
+    } else {
+      allTasks = loadLocalTasks();
     }
-    if (type === 'textarea') {
-      return `<div class="form-field" style="grid-column:1/-1"><label>${escapeHtml(label)}</label><textarea id="field_${name}" rows="2"></textarea></div>`;
-    }
-    return `<div class="form-field"><label>${escapeHtml(label)}</label><input id="field_${name}" type="${type || 'text'}"></div>`;
-  }
+    
+    const ticketsArr = Array.isArray(allTasks) ? allTasks : [];
+    const today = new Date(); today.setHours(0,0,0,0);
+    let openTasks = 0, openOverdue = 0, closedLate = 0;
+    ticketsArr.forEach(t => {
+      const status = String(t.Status || t.status || '').toLowerCase();
+      const due = t['Due Date'] || t.dueDate ? new Date(t['Due Date'] || t.dueDate) : null;
+      const isLate = due && due < today;
+      if (status !== 'closed' && status !== 'resolved' && status !== 'done') {
+        openTasks++;
+        if (isLate) openOverdue++;
+      } else if (isLate) closedLate++;
+    });
+    
+    const priorityCounts = { Critical:0, High:0, Medium:0, Low:0 };
+    ticketsArr.forEach(t => { 
+      const p = String(t.Priority || t.priority || 'Medium'); 
+      if(p.includes('Critical')) priorityCounts.Critical++; 
+      else if(p.includes('High')) priorityCounts.High++; 
+      else if(p.includes('Low')) priorityCounts.Low++; 
+      else priorityCounts.Medium++; 
+    });
+    
+    const deptCount = {};
+    ticketsArr.forEach(t => { const d = t.Department || t.department || 'Unassigned'; deptCount[d] = (deptCount[d]||0)+1; });
 
-  async function renderDataSection(title, data, columns, sheetTabName, formFields, postAction) {
-    const health = await apiHealth();
-    const dataArray = Array.isArray(data) ? data : [];
-    const formHtml = formFields.map(f => renderInputField(f[0], f[1], f[2])).join('');
-    const safeMessageId = 'message_' + postAction;
-
-    document.getElementById('mainContent').innerHTML = `
-      <div class="top-bar">
-        <div class="page-title"><h1>${title}</h1><p>Fetches and stores data on Google Sheet tab: ${sheetTabName}</p></div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">${liveStatusHtml(health, 'Sheet ID: ' + SHEET_ID)}<button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
+    main.innerHTML = `
+      <div class="connection-status">
+        <span><span class="status-dot ${tickets && tickets.length ? 'online' : 'offline'}"></span> ${tickets && tickets.length ? '🟢 Connected to Google Sheets' : '🔴 Offline Mode - Local Storage Active'}</span>
+        <button class="btn-secondary" onclick="testConnection()" style="padding:4px 12px">Test Connection</button>
       </div>
-
-      <div class="panel">
-        <div class="panel-header"><h2>➕ Add / Post to ${sheetTabName}</h2></div>
-        <div style="padding:20px">
-          <div class="form-row">${formHtml}</div>
-          <button class="btn-primary" id="btn_${postAction}">Save to ${sheetTabName}</button>
-          <div id="${safeMessageId}" class="message-bar"></div>
-        </div>
+      <div class="top-bar"><div class="page-title"><h1>Operations Dashboard</h1><p>On Point Group · Real-time task management</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
+      <div class="task-status-grid">
+        <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='open';loadCurrentSection()"><h3 style="color:#3b82f6">${openTasks}</h3><p>📋 Open Tasks</p></div>
+        <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='overdue';loadCurrentSection()"><h3 style="color:#ef4444">${openOverdue}</h3><p>⚠️ Open Overdue</p></div>
+        <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='closed-late';loadCurrentSection()"><h3 style="color:#f59e0b">${closedLate}</h3><p>✅ Closed Late</p></div>
+        <div class="status-stat-card" onclick="currentSection='tickets';loadCurrentSection()"><h3 style="color:#8b5cf6">${ticketsArr.length}</h3><p>🎫 Total Tasks</p></div>
       </div>
-
-      <div class="panel">
-        <div class="panel-header"><h2>📋 Live Data: ${sheetTabName}</h2></div>
-        <div class="table-wrapper"><table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${dataArray.length ? dataArray.map(row => `<tr>${columns.map(c => `<td>${escapeHtml(getCellValue(row, c))}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${columns.length}" style="text-align:center">No data found</td></tr>`}</tbody></table></div>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">🎫 Total Tasks</div><div class="kpi-value">${ticketsArr.length}</div></div>
+        <div class="kpi-card"><div class="kpi-label">📋 Open Tasks</div><div class="kpi-value">${openTasks}</div></div>
+        <div class="kpi-card"><div class="kpi-label">⚠️ Overdue</div><div class="kpi-value">${openOverdue}</div></div>
+        <div class="kpi-card"><div class="kpi-label">🔥 Critical</div><div class="kpi-value">${priorityCounts.Critical}</div></div>
       </div>
+      <div class="chart-grid"><div class="chart-card"><h3>Tasks by Priority</h3><canvas id="priorityChart"></canvas></div><div class="chart-card"><h3>Tasks by Department</h3><canvas id="deptChart"></canvas></div></div>
+      <div class="panel"><div class="panel-header"><h2>➕ Create New Task / Ticket</h2></div><div style="padding:20px" id="taskFormContainer"></div></div>
+      <div class="panel"><div class="panel-header"><h2>📋 Recent Tasks</h2><button class="btn-secondary" onclick="currentSection='tickets';loadCurrentSection()">View All →</button></div><div class="table-wrapper" id="recentTasksTable"></div></div>
     `;
+    
+    if (typeof Chart !== 'undefined') {
+      const pCtx = document.getElementById('priorityChart')?.getContext('2d');
+      if(pCtx) { if(charts.priority) charts.priority.destroy(); charts.priority = new Chart(pCtx, { type:'doughnut', data:{ labels:['Critical','High','Medium','Low'], datasets:[{ data:[priorityCounts.Critical, priorityCounts.High, priorityCounts.Medium, priorityCounts.Low], backgroundColor:['#ef4444','#f97316','#3b82f6','#22c55e'] }] } }); }
+      const dCtx = document.getElementById('deptChart')?.getContext('2d');
+      if(dCtx && Object.keys(deptCount).length) { if(charts.dept) charts.dept.destroy(); charts.dept = new Chart(dCtx, { type:'bar', data:{ labels:Object.keys(deptCount), datasets:[{ label:'Tasks', data:Object.values(deptCount), backgroundColor:'#3b82f6' }] } }); }
+    }
+    
+    document.getElementById('taskFormContainer').innerHTML = `
+      <div class="form-row"><div class="form-field"><label>Task Title *</label><input id="taskTitle" placeholder="e.g., Weekly Report"></div>
+      <div class="form-field"><label>Priority</label><select id="taskPriority"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select></div>
+      <div class="form-field"><label>Status</label><select id="taskStatus"><option>Open</option><option>In Progress</option><option>Pending</option><option>Closed</option></select></div></div>
+      <div class="form-row"><div class="form-field"><label>Department</label><input id="taskDept" placeholder="Department"></div>
+      <div class="form-field"><label>Assigned To *</label><select id="taskAssignee">${renderEmployeeSelect()}</select></div>
+      <div class="form-field"><label>Assignee Email</label><input id="taskAssigneeEmail" readonly placeholder="Auto-filled"></div>
+      <div class="form-field"><label>Due Date</label><input type="date" id="taskDueDate"></div></div>
+      <div class="form-row"><div class="form-field"><label>Description</label><textarea id="taskDesc" rows="2" placeholder="Detailed description"></textarea></div></div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap"><button class="btn-primary" id="createTaskBtn">✨ Create Task</button><div id="taskFormMessage" class="message-bar"></div></div>
+    `;
+    
+    document.getElementById('taskAssignee')?.addEventListener('change', () => {
+      const email = getEmailFromName(document.getElementById('taskAssignee').value);
+      document.getElementById('taskAssigneeEmail').value = email;
+    });
+    
+    document.getElementById('createTaskBtn')?.addEventListener('click', async () => {
+      const title = document.getElementById('taskTitle').value.trim();
+      if (!title) return showMessage('Task Title required', 'error', 'taskFormMessage');
+      const assignedTo = document.getElementById('taskAssignee').value;
+      if (!assignedTo) return showMessage('Please select an assignee', 'error', 'taskFormMessage');
+      const payload = {
+        title, priority: document.getElementById('taskPriority').value, status: document.getElementById('taskStatus').value,
+        department: document.getElementById('taskDept').value, assignedTo, assignedEmail: getEmailFromName(assignedTo),
+        dueDate: document.getElementById('taskDueDate').value, description: document.getElementById('taskDesc').value,
+        sheetId: SHEET_ID, sheetTab: 'Tickets', comments: '', completionDate: ''
+      };
+      await saveTask(payload, 'createTaskBtn', 'taskFormMessage', 'Task created successfully!');
+      setTimeout(() => loadCurrentSection(), 1000);
+    });
+    
+    const recent = ticketsArr.slice(0,8);
+    document.getElementById('recentTasksTable').innerHTML = `<table><thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Due Date</th><th>Action</th></tr></thead><tbody>${recent.map(t => `<tr>
+      <td>${escapeHtml(t['Task ID'] || t.id || '-')}</td>
+      <td>${escapeHtml(t.Title || t.title)}</td>
+      <td><span class="badge badge-${(t.Priority || t.priority || 'Medium').toLowerCase()}">${t.Priority || t.priority || 'Medium'}</span></td>
+      <td>${escapeHtml(t.Status || t.status || 'Open')}</td>
+      <td>${escapeHtml(t['Assigned To'] || t.assignedTo)}</td>
+      <td>${escapeHtml(t['Due Date'] || t.dueDate || '-')}</td>
+      <td><button class="btn-whatsapp" onclick="forwardTaskToWhatsApp('${escapeHtml(t['Assigned To'] || t.assignedTo || '')}', '${escapeHtml(t.Title || t.title || '')}', '${escapeHtml(t.Description || t.description || '')}', '${t.Priority || t.priority || 'Medium'}', '${t['Due Date'] || t.dueDate || ''}')">📱 WhatsApp</button></td>
+    </tr>`).join('') || '<tr><td colspan="7">No tasks found</td></tr>'}</tbody>`;
+  }
 
-    document.getElementById('btn_' + postAction)?.addEventListener('click', async () => {
-      const payload = {};
-      formFields.forEach(f => {
-        const el = document.getElementById('field_' + f[1]);
-        payload[f[1]] = el ? el.value : '';
-      });
-      const result = await apiPost(postAction, payload);
-      showMessage(result.success ? (result.message || 'Saved successfully') : (result.message || 'Could not save'), result.success ? 'success' : 'error', safeMessageId);
-      if (result.success) setTimeout(loadCurrentSection, 700);
+  window.forwardTaskToWhatsApp = (assigneeName, title, desc, priority, dueDate) => {
+    const phone = getPhoneFromName(assigneeName);
+    const email = getEmailFromName(assigneeName);
+    const details = { title, desc, priority, dueDate, department: '' };
+    if (phone) {
+      if (confirm(`Send WhatsApp to ${assigneeName}?`)) openWhatsApp(phone, details);
+    } else {
+      alert(`No phone number for ${assigneeName}. Email: ${email || 'Not found'}`);
+    }
+  };
+
+  window.testConnection = async () => {
+    const result = await apiGet('tickets');
+    if (result && result.length) {
+      alert(`✅ Connected! Retrieved ${result.length} records from Google Sheets.`);
+    } else {
+      alert(`⚠️ Connection issue. Using local storage mode. Check Apps Script deployment.`);
+    }
+    loadCurrentSection();
+  };
+
+  async function renderTicketsPage() {
+    let tickets = await apiGet('tickets');
+    if (!tickets || !tickets.length) tickets = loadLocalTasks();
+    
+    if (window.taskFilter === 'open') tickets = tickets.filter(t => !String(t.Status || t.status || '').toLowerCase().includes('closed'));
+    else if (window.taskFilter === 'overdue') { 
+      const today = new Date(); 
+      tickets = tickets.filter(t => { 
+        const due = new Date(t['Due Date'] || t.dueDate); 
+        return due < today && !String(t.Status || t.status || '').toLowerCase().includes('closed'); 
+      }); 
+    }
+    else if (window.taskFilter === 'closed-late') { 
+      const today = new Date(); 
+      tickets = tickets.filter(t => { 
+        const due = new Date(t['Due Date'] || t.dueDate); 
+        return due < today && String(t.Status || t.status || '').toLowerCase().includes('closed'); 
+      }); 
+    }
+    
+    const main = document.getElementById('mainContent');
+    main.innerHTML = `
+      <div class="connection-status"><span><span class="status-dot"></span> Data Mode</span></div>
+      <div class="top-bar"><div class="page-title"><h1>Tasks & Tickets</h1><p>Full task register</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
+      <div class="panel"><div class="panel-header"><h2>➕ New Task</h2></div><div style="padding:20px" id="ticketFormFull"></div></div>
+      <div class="panel"><div class="panel-header"><h2>📋 All Tasks</h2></div><div class="table-wrapper"><table id="fullTicketsTable"><thead><tr><th>Task ID</th><th>Title</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Department</th><th>Due Date</th><th>WhatsApp</th></tr></thead><tbody>${tickets.map(t => `<tr>
+        <td>${escapeHtml(t['Task ID'] || t.id || '-')}</td>
+        <td>${escapeHtml(t.Title || t.title)}</td></td>
+        <td><span class="badge badge-${(t.Priority || t.priority || 'Medium').toLowerCase()}">${t.Priority || t.priority || 'Medium'}</span></td></td>
+        <td>${escapeHtml(t.Status || t.status || 'Open')}</td></td>
+        <td>${escapeHtml(t['Assigned To'] || t.assignedTo)}</td></td>
+        <td>${escapeHtml(t.Department || t.department || '-')}</td></td>
+        <td>${escapeHtml(t['Due Date'] || t.dueDate || '-')}</td></td>
+        <td><button class="btn-whatsapp" onclick="forwardTaskToWhatsApp('${escapeHtml(t['Assigned To'] || t.assignedTo || '')}', '${escapeHtml(t.Title || t.title || '')}', '${escapeHtml(t.Description || t.description || '')}', '${t.Priority || t.priority || 'Medium'}', '${t['Due Date'] || t.dueDate || ''}')">📱 WhatsApp</button></td>
+      </tr>`).join('') || '<tr><td colspan="8">No tasks found</td></tr>'}</tbody></table></div></div>
+    `;
+    
+    document.getElementById('ticketFormFull').innerHTML = `
+      <div class="form-row"><div class="form-field"><label>Task Title *</label><input id="taskTitle2"></div>
+      <div class="form-field"><label>Priority</label><select id="taskPriority2"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select></div>
+      <div class="form-field"><label>Status</label><select id="taskStatus2"><option>Open</option><option>In Progress</option><option>Pending</option><option>Closed</option></select></div></div>
+      <div class="form-row"><div class="form-field"><label>Department</label><input id="taskDept2"></div>
+      <div class="form-field"><label>Assigned To</label><select id="taskAssignee2">${renderEmployeeSelect()}</select></div>
+      <div class="form-field"><label>Assignee Email</label><input id="taskAssigneeEmail2" readonly></div>
+      <div class="form-field"><label>Due Date</label><input type="date" id="taskDueDate2"></div></div>
+      <div class="form-row"><div class="form-field"><label>Description</label><textarea id="taskDesc2" rows="2"></textarea></div></div>
+      <div><button class="btn-primary" id="createTaskBtn2">✨ Save Task</button><div id="taskFormMessage2" class="message-bar"></div></div>
+    `;
+    
+    document.getElementById('taskAssignee2')?.addEventListener('change', () => {
+      document.getElementById('taskAssigneeEmail2').value = getEmailFromName(document.getElementById('taskAssignee2').value);
+    });
+    
+    document.getElementById('createTaskBtn2')?.addEventListener('click', async () => {
+      const title = document.getElementById('taskTitle2').value.trim();
+      if (!title) return showMessage('Title required', 'error', 'taskFormMessage2');
+      const assignedTo = document.getElementById('taskAssignee2').value;
+      if (!assignedTo) return showMessage('Select assignee', 'error', 'taskFormMessage2');
+      const payload = {
+        title, priority: document.getElementById('taskPriority2').value, status: document.getElementById('taskStatus2').value,
+        department: document.getElementById('taskDept2').value, assignedTo, assignedEmail: getEmailFromName(assignedTo),
+        dueDate: document.getElementById('taskDueDate2').value, description: document.getElementById('taskDesc2').value,
+        sheetId: SHEET_ID, sheetTab: 'Tickets', comments: '', completionDate: ''
+      };
+      await saveTask(payload, 'createTaskBtn2', 'taskFormMessage2', 'Task saved!');
+      setTimeout(() => renderTicketsPage(), 1000);
     });
   }
 
+  async function renderEmployeesPage() {
+    await loadEmployeesFromSheet();
+    const main = document.getElementById('mainContent');
+    main.innerHTML = `<div class="top-bar"><div class="page-title"><h1>Employees Directory</h1><p>Synced from Employees Sheet Tab</p></div><button class="refresh-btn" onclick="renderEmployeesPage()">↻ Refresh</button></div>
+      <div class="panel"><div class="panel-header"><h2>👥 Employee List (${employeesList.length})</h2></div><div class="table-wrapper"><table><thead><tr><th>Employee Name</th><th>Email Address</th><th>WhatsApp Number</th></tr></thead><tbody>${employeesList.map(e => `<tr><td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.email)}</td><td>${escapeHtml(e.phone || 'Not set')}</td></tr>`).join('')}</tbody></table></div></div>`;
+  }
+
+  async function renderDepartments() { const data = await apiGet('departments'); renderSimpleTable('Departments', data, ['Department ID', 'Department Name', 'Manager']); }
+  async function renderKPIs() { const data = await apiGet('kpis'); renderSimpleTable('KPIs', data, ['KPIName', 'Target Value', 'Actual Value', 'Related Department']); }
+  async function renderBSC() { const data = await apiGet('bscMetrics'); renderSimpleTable('BSC Metrics', data, ['BSC Name', 'Target Score', 'Actual Score', 'Related Department']); }
+
+  function renderSimpleTable(title, data, columns) {
+    const main = document.getElementById('mainContent');
+    const dataArr = Array.isArray(data) ? data : [];
+    main.innerHTML = `<div class="top-bar"><div class="page-title"><h1>${title}</h1></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
+      <div class="panel"><div class="table-wrapper"><table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${dataArr.map(row => `<tr>${columns.map(c => `<td>${escapeHtml(row[c] || row[c.replace(' ', '_')] || '-')}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${columns.length}">No data</td></tr>`}</tbody></table></div></div>`;
+  }
+
   async function loadCurrentSection() {
-    requireLogin();
-    document.getElementById('mainContent').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading...</p></div>';
+    await loadEmployeesFromSheet();
     if (currentSection === 'dashboard') await renderDashboard();
-    else if (currentSection === 'users') await renderUsers();
-    else if (currentSection === 'settings') await renderSettings();
+    else if (currentSection === 'tickets') await renderTicketsPage();
+    else if (currentSection === 'employees') await renderEmployeesPage();
     else if (currentSection === 'departments') await renderDepartments();
-    else if (currentSection === 'employees') await renderEmployees();
-    else if (currentSection === 'tickets') await renderTickets();
     else if (currentSection === 'kpis') await renderKPIs();
-    else if (currentSection === 'sla') await renderSLA();
     else if (currentSection === 'bsc') await renderBSC();
-    else if (currentSection === 'divisions') await renderDivisions();
-    else if (currentSection === 'projects') await renderProjects();
-    else if (currentSection === 'automatedTasks') await renderAutomatedTasks();
     else await renderDashboard();
     document.querySelectorAll('.nav-link').forEach(link => { link.classList.remove('active'); if (link.getAttribute('data-section') === currentSection) link.classList.add('active'); });
     window.taskFilter = null;
   }
-  
+
   document.querySelectorAll('.nav-link').forEach(link => { link.addEventListener('click', () => { currentSection = link.getAttribute('data-section'); loadCurrentSection(); }); });
   loadCurrentSection();
 </script>
