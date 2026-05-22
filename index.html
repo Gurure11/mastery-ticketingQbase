@@ -520,43 +520,17 @@
   </main>
 </div>
 
+
 <script>
   // ==================== CONFIGURATION ====================
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzHSmf1W1bnwZHJAd1_KQfSLupY1CN99QtqEQvtMCl7xhXx5uf3_QV8gU16ff1QqfmD/exec';
+  const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4FOBFZL12zXJKhLrolWkzVnieN2gwsSJSuEWriC1p-kOcYEGEGlci0bLJeflBPDf0/exec';
   const SHEET_ID = '1KWYWSUmwGYcBVIuDzh7yo86eTrfnMZX35DuGnRAVNv8';
-  
+
+  let SCRIPT_URL = localStorage.getItem('quickbase_api_url') || DEFAULT_SCRIPT_URL;
   let currentUser = null;
   let currentSection = 'dashboard';
   let charts = {};
-
-
-  const SYSTEM_USERS = [
-    'Lameck Chindove',
-    'Tafadzwa Magejo',
-    'Bothwell Gurure',
-    'System Admin',
-    'Stanley Vangiwa',
-    'Timothy Wamedza',
-    'George Rusere',
-    'Kudakwashe Madzikangava',
-    'Dickens Magwaza',
-    'Brighton Mhande',
-    'Tawanda Mashanda',
-    'Leah Phiri',
-    'Andrew Moloisane',
-    'Johan Hendriks',
-    'Phillip Shambare',
-    'Siyanda Dlamini',
-    'Moses Magutse',
-    'Rayman Mugaramanja',
-    'Petros M',
-    'HR Manager',
-    'Retselisitsoe Mohapi',
-    'Ronald Musengwa',
-    'Yvette van Rooyen',
-    'Brian',
-    'Innocent Shongwe'
-  ];
+  let cachedPeopleRows = [];
 
   const SYSTEM_USER_EMAILS = {
     'Lameck Chindove': 'lameck.chindove@onpointontime.co.za',
@@ -586,55 +560,16 @@
     'Innocent Shongwe': 'innocent.shongwe@onpointontime.co.za'
   };
 
-  let cachedPeopleRows = [];
+  const FALLBACK_USERS = Object.keys(SYSTEM_USER_EMAILS);
+  let SYSTEM_USERS = [...FALLBACK_USERS];
+
+  function escapeHtml(str) {
+    if (str === undefined || str === null) return '';
+    return String(str).replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  }
 
   function normalizeName(str) {
     return String(str || '').trim().replace(/\s+/g, ' ').toLowerCase();
-  }
-
-  function userOptionsHtml(selected = '') {
-    return `<option value="">Select assignee</option>` + SYSTEM_USERS.map(name => `<option value="${escapeHtml(name)}" ${name === selected ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('');
-  }
-
-  function findEmailForUser(name) {
-    const wanted = normalizeName(name);
-    if (!wanted) return '';
-
-    if (SYSTEM_USER_EMAILS[name]) return SYSTEM_USER_EMAILS[name];
-
-    const systemName = SYSTEM_USERS.find(userName => normalizeName(userName) === wanted);
-    if (systemName && SYSTEM_USER_EMAILS[systemName]) return SYSTEM_USER_EMAILS[systemName];
-
-    const match = cachedPeopleRows.find(row => normalizeName(row['Full Name'] || row['Employee Name'] || row.Name || row.User) === wanted);
-    return (match && (match.Email || match['Email Address'] || match.WorkEmail || match['Work Email'])) || '';
-  }
-
-  function wireAssigneeEmail(selectId, emailId) {
-    const select = document.getElementById(selectId);
-    const email = document.getElementById(emailId);
-    if (!select || !email) return;
-    const sync = () => { email.value = findEmailForUser(select.value); };
-    select.addEventListener('change', sync);
-    sync();
-  }
-
-  async function refreshPeopleCache() {
-    try {
-      const [users, employees] = await Promise.all([apiGet('users'), apiGet('employees')]);
-      cachedPeopleRows = [...(Array.isArray(users) ? users : []), ...(Array.isArray(employees) ? employees : [])];
-    } catch(e) {
-      cachedPeopleRows = [];
-    }
-  }
-
-  async function notifyAssignedUser(payload, type) {
-    if (!payload.assignedEmail) return { success: false, message: 'No assignee email found.' };
-    try {
-      return await apiPost('notifyTaskAssignee', { ...payload, type });
-    } catch(e) {
-      console.warn('Notification email could not be sent from the front end. Confirm Apps Script supports notifyTaskAssignee.', e);
-      return { success: false, message: e.message };
-    }
   }
 
   function getCurrentUser() {
@@ -651,69 +586,13 @@
     return true;
   }
 
-  async function apiGet(action) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    try {
-      const url = `${SCRIPT_URL}?action=${encodeURIComponent(action)}&_=${Date.now()}`;
-      const res = await fetch(url, { method: 'GET', signal: controller.signal, cache: 'no-store' });
-      clearTimeout(timeout);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-
-      if (Array.isArray(json)) return json;
-      if (json && Array.isArray(json.data)) return json.data;
-      if (json && Array.isArray(json.rows)) return json.rows;
-      if (json && json.success === false) {
-        console.error(`API returned error (${action}):`, json.message || json.error);
-        return [];
-      }
-      return [];
-    } catch(e) {
-      clearTimeout(timeout);
-      console.error(`API error (${action}):`, e);
-      return [];
-    }
-  }
-
-  async function apiPost(action, payload) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
-    try {
-      const res = await fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, payload, user: currentUser, sheetId: SHEET_ID }),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      const responseText = await res.text();
-      let json = {};
-      try {
-        json = responseText ? JSON.parse(responseText) : {};
-      } catch(parseErr) {
-        json = { success: res.ok, message: responseText || 'Saved, but server did not return JSON.' };
-      }
-      if (!res.ok) throw new Error(json.message || json.error || `HTTP ${res.status}`);
-      return json;
-    } catch(e) {
-      clearTimeout(timeout);
-      throw e;
-    }
-  }
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;');
-  }
-
   function showMessage(msg, type, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.textContent = msg;
     container.className = `message-bar message-${type}`;
     container.style.display = 'block';
-    if (type !== 'info') setTimeout(() => { if(container) container.style.display = 'none'; }, 5000);
+    if (type !== 'info') setTimeout(() => { if(container) container.style.display = 'none'; }, 6000);
   }
 
   function setButtonLoading(buttonId, isLoading, loadingText = 'Synchronising...') {
@@ -729,20 +608,65 @@
     }
   }
 
+  async function apiGet(action) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+    try {
+      const url = `${SCRIPT_URL}?action=${encodeURIComponent(action)}&sheetId=${encodeURIComponent(SHEET_ID)}&_=${Date.now()}`;
+      const res = await fetch(url, { method: 'GET', signal: controller.signal, cache: 'no-store', redirect: 'follow' });
+      clearTimeout(timeout);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const json = text ? JSON.parse(text) : [];
+      if (Array.isArray(json)) return json;
+      if (json && Array.isArray(json.data)) return json.data;
+      if (json && Array.isArray(json.rows)) return json.rows;
+      if (json && json.success === false) throw new Error(json.message || json.error || 'API returned an error');
+      return [];
+    } catch(e) {
+      clearTimeout(timeout);
+      console.error(`API error (${action}):`, e);
+      throw e;
+    }
+  }
+
+  async function apiPost(action, payload) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, payload, user: currentUser, sheetId: SHEET_ID }),
+        signal: controller.signal,
+        redirect: 'follow'
+      });
+      clearTimeout(timeout);
+      const text = await res.text();
+      let json = {};
+      try { json = text ? JSON.parse(text) : {}; }
+      catch(parseErr) { json = { success: res.ok, message: text || 'Saved, but server did not return JSON.' }; }
+      if (!res.ok) throw new Error(json.message || json.error || `HTTP ${res.status}`);
+      if (json && json.success === false) throw new Error(json.message || json.error || 'Save failed');
+      return json;
+    } catch(e) {
+      clearTimeout(timeout);
+      if (e.name === 'AbortError') throw new Error('Request timed out. Check the Apps Script deployment URL and access permissions.');
+      throw e;
+    }
+  }
+
   async function saveWithSync(buttonId, messageId, action, payload, successMessage, options = {}) {
     setButtonLoading(buttonId, true);
-    showMessage('Synchronising with Google Sheets... Please wait.', 'info', messageId);
+    showMessage('Synchronising with Google Sheets...', 'info', messageId);
     try {
       const res = await apiPost(action, payload);
-      const ok = res && (res.success === true || res.status === 'success' || res.saved === true);
-      if (!ok) throw new Error((res && (res.message || res.error)) || 'Save failed. Please try again.');
-      if (options.notifyType) await notifyAssignedUser(payload, options.notifyType);
       showMessage(successMessage, 'success', messageId);
       alert(successMessage);
       if (typeof options.afterSuccess === 'function') options.afterSuccess(res);
       return res;
     } catch(e) {
-      const errorMessage = e.message || 'Could not save. Please try again.';
+      const errorMessage = e.message || 'Fetch failed. Check API deployment and access.';
       showMessage(errorMessage, 'error', messageId);
       alert(`Save failed: ${errorMessage}`);
       return { success: false, message: errorMessage };
@@ -751,287 +675,53 @@
     }
   }
 
-  // ==================== DASHBOARD with TASK STATUS SECTION ====================
-  async function renderDashboard() {
-    const main = document.getElementById('mainContent');
-    main.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading dashboard data...</p></div>';
-    
+  function userOptionsHtml(selected = '') {
+    const names = [...new Set([...SYSTEM_USERS, ...FALLBACK_USERS])].filter(Boolean);
+    return `<option value="">Select assignee</option>` + names.map(name => `<option value="${escapeHtml(name)}" ${name === selected ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('');
+  }
+
+  function findEmailForUser(name) {
+    const wanted = normalizeName(name);
+    if (!wanted) return '';
+    const exactKey = Object.keys(SYSTEM_USER_EMAILS).find(k => normalizeName(k) === wanted);
+    if (exactKey) return SYSTEM_USER_EMAILS[exactKey];
+    const match = cachedPeopleRows.find(row => normalizeName(row['Full Name'] || row['Employee Name'] || row.Name || row.User) === wanted);
+    return (match && (match.Email || match['Email Address'] || match.WorkEmail || match['Work Email'])) || '';
+  }
+
+  function wireAssigneeEmail(selectId, emailId) {
+    const select = document.getElementById(selectId);
+    const email = document.getElementById(emailId);
+    if (!select || !email) return;
+    const sync = () => { email.value = findEmailForUser(select.value); };
+    select.addEventListener('change', sync);
+    sync();
+  }
+
+  async function refreshPeopleCache() {
     try {
-      const [tickets, departments, bscMetrics, kpis, sla, employees, automatedTasks] = await Promise.all([
-        apiGet('tickets'), apiGet('departments'), apiGet('bscMetrics'),
-        apiGet('kpis'), apiGet('sla'), apiGet('employees'), apiGet('automatedTasks')
-      ]);
-      
-      const ticketsArray = Array.isArray(tickets) ? tickets : [];
-      const bsc = Array.isArray(bscMetrics) ? bscMetrics : [];
-      const kpiArray = Array.isArray(kpis) ? kpis : [];
-      const slaArray = Array.isArray(sla) ? sla : [];
-      const autoTasks = Array.isArray(automatedTasks) ? automatedTasks : [];
-      
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      // Calculate task/ticket statuses
-      let openTasks = 0;
-      let closedButLate = 0;
-      let openOverdue = 0;
-      
-      ticketsArray.forEach(t => {
-        const status = String(t.Status || '').toLowerCase();
-        const dueDateStr = t['Due Date'] || t.DueDate;
-        let isLate = false;
-        if (dueDateStr) {
-          const due = new Date(dueDateStr);
-          if (!isNaN(due) && due < today) isLate = true;
-        }
-        
-        if (status === 'open' || status === 'in progress' || status === 'pending' || status === 'new') {
-          openTasks++;
-          if (isLate) openOverdue++;
-        } else if (status === 'closed' || status === 'resolved' || status === 'done') {
-          if (isLate) closedButLate++;
-        }
-      });
-      
-      const totalTickets = ticketsArray.length;
-      const criticalTickets = ticketsArray.filter(t => String(t.Priority || '').toLowerCase() === 'critical').length;
-      
-      const priorityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
-      ticketsArray.forEach(t => {
-        const p = String(t.Priority || 'Medium').toLowerCase();
-        if (p.includes('critical')) priorityCounts.Critical++;
-        else if (p.includes('high')) priorityCounts.High++;
-        else if (p.includes('low')) priorityCounts.Low++;
-        else priorityCounts.Medium++;
-      });
-      
-      const deptTicketCount = {};
-      ticketsArray.forEach(t => {
-        const dept = String(t.Department || t['Assigned Department'] || 'Unassigned');
-        deptTicketCount[dept] = (deptTicketCount[dept] || 0) + 1;
-      });
-      
-      const submittedByDept = {};
-      ticketsArray.forEach(t => {
-        const dept = String(t['Requester Department'] || t['Submitted By Dept'] || 'Unknown');
-        submittedByDept[dept] = (submittedByDept[dept] || 0) + 1;
-      });
-      
-      const deptScores = {};
-      bsc.forEach(b => { 
-        const dept = b['Related Department'] || b.Department || 'General'; 
-        const actual = parseFloat(b['Actual Score']) || 0;
-        deptScores[dept] = (deptScores[dept] || 0) + actual;
-      });
-      
-      const hasData = ticketsArray.length > 0;
-      
-      const html = `
-        <div class="top-bar">
-          <div class="page-title">
-            <h1>Operations Dashboard</h1>
-            <p>On Point Group · ${hasData ? `📊 ${totalTickets} tickets loaded` : 'Waiting for data from Google Sheets'}</p>
-          </div>
-          <div class="user-chip">👤 ${currentUser?.['Full Name'] || 'Admin'} · ${currentUser?.Role || 'Executive'}</div>
-        </div>
-        
-        <!-- TASK STATUS SECTION - CLICKABLE CARDS -->
-        <div class="task-status-grid">
-          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='open';loadCurrentSection()">
-            <h3 style="color:#3b82f6">${openTasks}</h3>
-            <p>📋 Open Tasks/Tickets</p>
-            <small style="font-size:10px;color:#64748b">Click to view</small>
-          </div>
-          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='closed-late';loadCurrentSection()">
-            <h3 style="color:#f59e0b">${closedButLate}</h3>
-            <p>✅ Closed But Late</p>
-            <small style="font-size:10px;color:#64748b">Completed after due date</small>
-          </div>
-          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='overdue';loadCurrentSection()">
-            <h3 style="color:#ef4444">${openOverdue}</h3>
-            <p>⚠️ Open Overdue</p>
-            <small style="font-size:10px;color:#64748b">Past due date</small>
-          </div>
-          <div class="status-stat-card" onclick="currentSection='tickets';loadCurrentSection()">
-            <h3 style="color:#8b5cf6">${totalTickets}</h3>
-            <p>🎫 Total Tickets</p>
-            <small style="font-size:10px;color:#64748b">All records</small>
-          </div>
-        </div>
-        
-        <div class="kpi-grid">
-          <div class="kpi-card" onclick="currentSection='tickets';loadCurrentSection()">
-            <div class="kpi-label">🎫 Total Tickets</div>
-            <div class="kpi-value">${totalTickets}</div>
-          </div>
-          <div class="kpi-card" onclick="currentSection='tickets';window.taskFilter='open';loadCurrentSection()">
-            <div class="kpi-label">📋 Open Tickets</div>
-            <div class="kpi-value">${openTasks}</div>
-          </div>
-          <div class="kpi-card" onclick="currentSection='tickets';window.taskFilter='overdue';loadCurrentSection()">
-            <div class="kpi-label">⚠️ Open Overdue</div>
-            <div class="kpi-value">${openOverdue}</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">🔴 Critical Priority</div>
-            <div class="kpi-value">${criticalTickets}</div>
-          </div>
-        </div>
-        
-        <div class="chart-grid">
-          <div class="chart-card"><h3>Tickets by Priority</h3><canvas id="priorityChart"></canvas></div>
-          <div class="chart-card"><h3>Tickets Assigned by Department</h3><canvas id="assignedChart"></canvas></div>
-        </div>
-        <div class="chart-grid">
-          <div class="chart-card"><h3>Tickets Submitted by Department</h3><canvas id="submittedChart"></canvas></div>
-          <div class="chart-card"><h3>BSC Metrics Overview</h3><canvas id="bscChart"></canvas></div>
-        </div>
-        
-        <!-- NEW TASK / TICKET FORM -->
-        <div class="panel">
-          <div class="panel-header"><h2>➕ New Task / Ticket</h2><button class="btn-secondary" onclick="document.getElementById('newTicketForm').style.display='block'">Show Form</button></div>
-          <div id="newTicketForm" style="padding:20px; display:block">
-            <div class="form-row">
-              <div class="form-field"><label>Title *</label><input id="ticketTitle" placeholder="Task/Ticket title"></div>
-              <div class="form-field"><label>Priority</label><select id="ticketPriority"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select></div>
-              <div class="form-field"><label>Status</label><select id="ticketStatus"><option>Open</option><option>In Progress</option><option>Pending</option><option>Closed</option></select></div>
-            </div>
-            <div class="form-row">
-              <div class="form-field"><label>Department</label><input id="ticketDept" placeholder="Department"></div>
-              <div class="form-field"><label>Assigned To</label><select id="ticketAssignee">${userOptionsHtml()}</select></div>
-              <div class="form-field"><label>Assignee Email</label><input id="ticketAssigneeEmail" readonly placeholder="Auto-filled email"></div>
-              <div class="form-field"><label>Due Date</label><input type="date" id="ticketDueDate"></div>
-            </div>
-            <div class="form-field"><label>Description</label><textarea id="ticketDesc" rows="2" placeholder="Detailed description"></textarea></div>
-            <button class="btn-primary" id="createTicketBtn">✨ Create Ticket</button>
-            <div id="ticketFormMessage" class="message-bar"></div>
-          </div>
-        </div>
-        
-        <!-- AUTOMATED RECURRING TASK FORM -->
-        <div class="panel">
-          <div class="panel-header"><h2>🔄 Automated Recurring Task</h2><button class="btn-secondary" onclick="document.getElementById('autoTaskForm').style.display='block'">Show Form</button></div>
-          <div id="autoTaskForm" style="padding:20px; display:block">
-            <div class="form-row">
-              <div class="form-field"><label>Task Name *</label><input id="autoTaskName" placeholder="e.g., Weekly Report"></div>
-              <div class="form-field"><label>Frequency</label><select id="autoFrequency"><option>Daily</option><option>Weekly</option><option>Monthly</option></select></div>
-              <div class="form-field"><label>Assigned To</label><select id="autoAssignee">${userOptionsHtml()}</select></div>
-              <div class="form-field"><label>Assignee Email</label><input id="autoAssigneeEmail" readonly placeholder="Auto-filled email"></div>
-            </div>
-            <div class="form-row">
-              <div class="form-field"><label>Department</label><input id="autoDept" placeholder="Department"></div>
-              <div class="form-field"><label>Next Run Date</label><input type="date" id="autoNextRun"></div>
-              <div class="form-field"><label>Status</label><select id="autoStatus"><option>Active</option><option>Paused</option></select></div>
-            </div>
-            <div class="form-field"><label>Description</label><textarea id="autoDesc" rows="2" placeholder="Task description"></textarea></div>
-            <button class="btn-primary" id="createAutoTaskBtn">✨ Create Automated Task</button>
-            <div id="autoTaskMessage" class="message-bar"></div>
-          </div>
-        </div>
-        
-        <div class="panel"><div class="panel-header"><h2>🎯 BSC Metrics by Department</h2><button class="btn-primary" onclick="currentSection='bsc';loadCurrentSection()">View All →</button></div>
-          <div class="bsc-grid" id="bscGrid">${bsc.map(b => `<div class="bsc-card"><h4>${escapeHtml(b['BSC Name'] || b.Name)}</h4><p>${escapeHtml(b['BSC Description'] || '')}</p><div class="bsc-metrics"><span class="metric-pill">🎯 Target: ${b['Target Score'] || '-'}</span><span class="metric-pill">📊 Actual: ${b['Actual Score'] || '-'}</span></div><div style="font-size:12px;color:#64748b">${escapeHtml(b['Related Department'] || b.Department)} · ${escapeHtml(b.Frequency || 'Monthly')}</div></div>`).join('') || '<div style="padding:20px;text-align:center">No BSC metrics found</div>'}</div></div>
-        
-        <div class="panel"><div class="panel-header"><h2>📊 KPI Performance</h2><button class="btn-primary" onclick="currentSection='kpis';loadCurrentSection()">View All →</button></div>
-          <div class="table-wrapper"><table><thead><tr><th>KPI Name</th><th>Target</th><th>Actual</th><th>Department</th><th>Status</th></tr></thead><tbody>${kpiArray.slice(0,5).map(k => `<tr><td><strong>${escapeHtml(k.KPIName || k.Name)}</strong></td><td>${escapeHtml(k['Target Value'] || k.Target)}</td><td>${escapeHtml(k['Actual Value'] || k.Actual)}</td><td>${escapeHtml(k['Related Department'] || k.Department)}</td><td><span class="badge ${(parseFloat(k['Actual Value']) >= parseFloat(k['Target Value'])) ? 'badge-low' : 'badge-high'}">${(parseFloat(k['Actual Value']) >= parseFloat(k['Target Value'])) ? '✓ On Track' : '⚠️ Behind'}</span></td></tr>`).join('') || '<tr><td colspan="5">No KPI data</td></tr>'}</tbody></table></div></div>
-        
-        <div class="panel"><div class="panel-header"><h2>⏱️ SLA Management</h2><button class="btn-primary" onclick="currentSection='sla';loadCurrentSection()">View All →</button></div>
-          <div class="table-wrapper"><table><thead><tr><th>SLA Name</th><th>Priority</th><th>First Response</th><th>Resolution Target</th><th>Status</th></tr></thead><tbody>${slaArray.slice(0,5).map(s => `<tr><td><strong>${escapeHtml(s['SLA Name'] || s.Name)}</strong></td><td><span class="badge badge-high">${escapeHtml(s.Priority)}</span></td><td>${escapeHtml(s['First Response'] || s.FirstResponse)}</td><td>${escapeHtml(s['Resolution Target'] || s.Resolution)}</td><td><span class="badge badge-low">Active</span></td></tr>`).join('') || '<tr><td colspan="5">No SLA records</td></tr>'}</tbody></table></div></div>
-      `;
-      
-      main.innerHTML = html;
-      await refreshPeopleCache();
-      wireAssigneeEmail('ticketAssignee', 'ticketAssigneeEmail');
-      wireAssigneeEmail('autoAssignee', 'autoAssigneeEmail');
-      
-      if (typeof Chart !== 'undefined') {
-        const pCtx = document.getElementById('priorityChart')?.getContext('2d');
-        if (pCtx) { if (charts.priority) charts.priority.destroy(); charts.priority = new Chart(pCtx, { type: 'doughnut', data: { labels: ['Critical','High','Medium','Low'], datasets: [{ data: [priorityCounts.Critical, priorityCounts.High, priorityCounts.Medium, priorityCounts.Low], backgroundColor: ['#ef4444','#f97316','#3b82f6','#22c55e'] }] }, options: { responsive: true } }); }
-        const aCtx = document.getElementById('assignedChart')?.getContext('2d');
-        if (aCtx && Object.keys(deptTicketCount).length) { if (charts.assigned) charts.assigned.destroy(); charts.assigned = new Chart(aCtx, { type: 'bar', data: { labels: Object.keys(deptTicketCount), datasets: [{ label: 'Tickets Assigned', data: Object.values(deptTicketCount), backgroundColor: '#3b82f6' }] } }); }
-        const sCtx = document.getElementById('submittedChart')?.getContext('2d');
-        if (sCtx && Object.keys(submittedByDept).length) { if (charts.submitted) charts.submitted.destroy(); charts.submitted = new Chart(sCtx, { type: 'bar', data: { labels: Object.keys(submittedByDept), datasets: [{ label: 'Tickets Submitted', data: Object.values(submittedByDept), backgroundColor: '#8b5cf6' }] } }); }
-        const bCtx = document.getElementById('bscChart')?.getContext('2d');
-        if (bCtx && Object.keys(deptScores).length) { if (charts.bsc) charts.bsc.destroy(); charts.bsc = new Chart(bCtx, { type: 'pie', data: { labels: Object.keys(deptScores), datasets: [{ data: Object.values(deptScores), backgroundColor: ['#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6'] }] } }); }
-      }
-      
-      document.getElementById('createTicketBtn')?.addEventListener('click', async () => {
-        const payload = { title: document.getElementById('ticketTitle').value, priority: document.getElementById('ticketPriority').value, status: document.getElementById('ticketStatus').value, department: document.getElementById('ticketDept').value, assignedTo: document.getElementById('ticketAssignee').value, assignedEmail: document.getElementById('ticketAssigneeEmail').value, dueDate: document.getElementById('ticketDueDate').value, description: document.getElementById('ticketDesc').value, sheetId: SHEET_ID, sheetTab: 'Tickets' };
-        if (!payload.title) return showMessage('Title required', 'error', 'ticketFormMessage');
-        await saveWithSync('createTicketBtn', 'ticketFormMessage', 'addTicket', payload, 'Ticket saved, synchronised and assignee notified.', { notifyType: 'Ticket', afterSuccess: () => setTimeout(() => renderDashboard(), 1000) });
-      });
-      
-      document.getElementById('createAutoTaskBtn')?.addEventListener('click', async () => {
-        const payload = { taskName: document.getElementById('autoTaskName').value, frequency: document.getElementById('autoFrequency').value, assignedTo: document.getElementById('autoAssignee').value, assignedEmail: document.getElementById('autoAssigneeEmail').value, department: document.getElementById('autoDept').value, nextRun: document.getElementById('autoNextRun').value, status: document.getElementById('autoStatus').value, description: document.getElementById('autoDesc').value, sheetId: SHEET_ID, sheetTab: 'Automated Tasks' };
-        if (!payload.taskName) return showMessage('Task name required', 'error', 'autoTaskMessage');
-        await saveWithSync('createAutoTaskBtn', 'autoTaskMessage', 'addAutomatedTask', payload, 'Automated task saved, synchronised and assignee notified.', { notifyType: 'Automated Task', afterSuccess: () => setTimeout(() => renderDashboard(), 1000) });
-      });
-      
-    } catch (err) {
-      main.innerHTML = `<div class="panel" style="padding:40px;text-align:center;color:#ef4444"><h2>⚠️ Error Loading Dashboard</h2><p>${escapeHtml(err.message)}</p><button class="refresh-btn" onclick="loadCurrentSection()">Try Again</button></div>`;
+      const employees = await apiGet('employees');
+      cachedPeopleRows = Array.isArray(employees) ? employees : [];
+      const sheetNames = cachedPeopleRows.map(row => row['Employee Name'] || row['Full Name'] || row.Name || '').filter(Boolean);
+      SYSTEM_USERS = [...new Set([...sheetNames, ...FALLBACK_USERS])];
+    } catch(e) {
+      cachedPeopleRows = [];
+      SYSTEM_USERS = [...FALLBACK_USERS];
+      console.warn('Employee fetch failed, using built-in assignee list:', e.message);
     }
   }
-  
-  // Section renderers
-  async function renderUsers() { const data = await apiGet('users'); renderSimpleTable('Users', data, ['User ID', 'Full Name', 'Email', 'Department', 'Role', 'Status']); }
-  async function renderSettings() { document.getElementById('mainContent').innerHTML = `<div class="panel" style="padding:40px"><h2>⚙️ App Settings</h2><p><strong>Sheet ID:</strong> ${SHEET_ID}</p><button class="refresh-btn" onclick="loadCurrentSection()">Refresh</button></div>`; }
-  async function renderDepartments() { const data = await apiGet('departments'); renderSimpleTable('Departments', data, ['Department ID', 'Department Name', 'Manager', 'Budget', 'Status']); }
-  async function renderEmployees() {
-    const data = await apiGet('employees');
-    renderSimpleTable('Employees', data, ['Employee ID', 'Employee Name', 'Email', 'Department', 'Role', 'Status']);
-    const main = document.getElementById('mainContent');
-    main.insertAdjacentHTML('afterbegin', `
-      <div class="panel">
-        <div class="panel-header"><h2>➕ Enter New Employee</h2></div>
-        <div style="padding:20px">
-          <div class="form-row">
-            <div class="form-field"><label>Employee ID</label><input id="empId" placeholder="Employee ID"></div>
-            <div class="form-field"><label>Employee Name *</label><input id="empName" placeholder="Full name"></div>
-            <div class="form-field"><label>Email *</label><input id="empEmail" type="email" placeholder="email@onpointontime.co.za"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-field"><label>Department</label><input id="empDept" placeholder="Department"></div>
-            <div class="form-field"><label>Role</label><input id="empRole" placeholder="Role"></div>
-            <div class="form-field"><label>Status</label><select id="empStatus"><option>Active</option><option>Inactive</option></select></div>
-          </div>
-          <button class="btn-primary" id="saveEmployeeBtn">💾 Save Employee</button>
-          <div id="employeeFormMessage" class="message-bar"></div>
-        </div>
-      </div>`);
-    document.getElementById('saveEmployeeBtn')?.addEventListener('click', async () => {
-      const payload = {
-        employeeId: document.getElementById('empId').value,
-        employeeName: document.getElementById('empName').value,
-        email: document.getElementById('empEmail').value,
-        department: document.getElementById('empDept').value,
-        role: document.getElementById('empRole').value,
-        status: document.getElementById('empStatus').value,
-        sheetId: SHEET_ID,
-        sheetTab: 'Employees'
-      };
-      if (!payload.employeeName || !payload.email) return showMessage('Employee name and email are required', 'error', 'employeeFormMessage');
-      await saveWithSync('saveEmployeeBtn', 'employeeFormMessage', 'addEmployee', payload, 'Employee saved and synchronised to Google Sheet tab: Employees.', { afterSuccess: () => setTimeout(() => renderEmployees(), 1000) });
-    });
-  }
-  async function renderTickets() { let data = await apiGet('tickets'); if (window.taskFilter === 'open') data = data.filter(t => !String(t.Status || '').toLowerCase().includes('closed')); else if (window.taskFilter === 'overdue') { const today = new Date(); data = data.filter(t => { const due = new Date(t['Due Date']); return due < today && !String(t.Status || '').toLowerCase().includes('closed'); }); } renderSimpleTable('Tickets', data, ['Ticket ID', 'Title', 'Priority', 'Status', 'Department', 'Assigned To', 'Due Date']); }
-  async function renderKPIs() {
-    const data = await apiGet('kpis');
-    renderDataEntryTable('KPIs', data, ['KPIName', 'Target Value', 'Actual Value', 'Related Department', 'Frequency'], 'kpi');
-  }
-  async function renderSLA() {
-    const data = await apiGet('sla');
-    renderDataEntryTable('SLA', data, ['SLA Name', 'Description', 'Priority', 'First Response', 'Resolution Target', 'Status'], 'sla');
-  }
-  async function renderBSC() {
-    const data = await apiGet('bscMetrics');
-    renderDataEntryTable('BSC Metrics', data, ['BSC Name', 'BSC Description', 'Target Score', 'Actual Score', 'Related Department', 'Frequency'], 'bscMetrics');
-  }
-  async function renderDivisions() { const data = await apiGet('divisions'); renderSimpleTable('Divisions', data, ['Division ID', 'Division Name', 'Head', 'Region', 'Status'], 'Divisions'); }
-  async function renderAutomatedTasks() { const data = await apiGet('automatedTasks'); renderSimpleTable('Automated Tasks', data, ['Task Name', 'Frequency', 'Assigned To', 'Department', 'Next Run', 'Status']); }
-  
+
   function getCellValue(row, column) {
     if (!row) return '-';
     const aliases = {
+      'Ticket ID': ['Ticket ID', 'Task ID', 'ID'],
+      'Title': ['Title', 'Task Name', 'Name'],
+      'Task Name': ['Task Name', 'Title', 'Name'],
+      'Due Date': ['Due Date', 'DueDate', 'Next Run'],
+      'Completion Date': ['Completion Date', 'CompletionDate', 'Closed Date'],
+      'Employee ID': ['Employee ID', 'ID'],
+      'Employee Name': ['Employee Name', 'Full Name', 'Name'],
+      'Created Date': ['Created Date', 'Date Created', 'CreatedAt'],
       'SLA Name': ['SLA Name', 'Name', 'SLA'],
       'First Response': ['First Response', 'First Response Target', 'SLA Rule - First Response Target'],
       'Resolution Target': ['Resolution Target', 'Resolution', 'SLA Rule - Resolution Target'],
@@ -1053,6 +743,427 @@
     return '-';
   }
 
+  function destroyChart(name) {
+    if (charts[name]) {
+      charts[name].destroy();
+      charts[name] = null;
+    }
+  }
+
+  async function renderDashboard() {
+    const main = document.getElementById('mainContent');
+    main.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading dashboard data...</p></div>';
+
+    try {
+      await refreshPeopleCache();
+      const [tickets, departments, bscMetrics, kpis, sla, employees, automatedTasks] = await Promise.all([
+        apiGet('tickets').catch(() => []), apiGet('departments').catch(() => []), apiGet('bscMetrics').catch(() => []),
+        apiGet('kpis').catch(() => []), apiGet('sla').catch(() => []), apiGet('employees').catch(() => []), apiGet('automatedTasks').catch(() => [])
+      ]);
+
+      const ticketsArray = Array.isArray(tickets) ? tickets : [];
+      const bsc = Array.isArray(bscMetrics) ? bscMetrics : [];
+      const kpiArray = Array.isArray(kpis) ? kpis : [];
+      const slaArray = Array.isArray(sla) ? sla : [];
+
+      const ticketStats = calculateTicketStats(ticketsArray);
+      const priorityCounts = groupCount(ticketsArray, t => getPriority(t));
+      const deptTicketCount = groupCount(ticketsArray, t => getDepartment(t));
+      const submittedByDept = groupCount(ticketsArray, t => String(t['Requester Department'] || t['Submitted By Dept'] || t.Department || 'Unknown'));
+      const deptScores = {};
+      bsc.forEach(b => {
+        const dept = b['Related Department'] || b.Department || 'General';
+        deptScores[dept] = (deptScores[dept] || 0) + (parseFloat(b['Actual Score'] || b.Actual) || 0);
+      });
+
+      main.innerHTML = `
+        <div class="top-bar">
+          <div class="page-title">
+            <h1>Operations Dashboard</h1>
+            <p>On Point Group · 📊 ${ticketsArray.length} tickets loaded</p>
+          </div>
+          <div class="user-chip">👤 ${escapeHtml(currentUser?.['Full Name'] || 'Admin')} · ${escapeHtml(currentUser?.Role || 'Executive')}</div>
+        </div>
+
+        <div class="task-status-grid">
+          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='open';loadCurrentSection()" style="border-top:4px solid #3b82f6"><h3 style="color:#3b82f6">${ticketStats.open.length}</h3><p>📋 Tickets Open</p></div>
+          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='closed';loadCurrentSection()" style="border-top:4px solid #22c55e"><h3 style="color:#22c55e">${ticketStats.closed.length}</h3><p>✅ Tickets Closed</p></div>
+          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='overdue';loadCurrentSection()" style="border-top:4px solid #ef4444"><h3 style="color:#ef4444">${ticketStats.openLate.length}</h3><p>⚠️ Open Tickets But Late</p></div>
+          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='closed-on-time';loadCurrentSection()" style="border-top:4px solid #10b981"><h3 style="color:#10b981">${ticketStats.closedOnTime.length}</h3><p>🟢 Closed On Time</p></div>
+        </div>
+
+        <div class="task-status-grid">
+          <div class="status-stat-card" onclick="currentSection='tickets';window.taskFilter='closed-late';loadCurrentSection()" style="border-top:4px solid #f59e0b"><h3 style="color:#f59e0b">${ticketStats.closedLate.length}</h3><p>🟠 Closed But Late</p></div>
+          <div class="status-stat-card" onclick="currentSection='tickets';loadCurrentSection()" style="border-top:4px solid #8b5cf6"><h3 style="color:#8b5cf6">${ticketsArray.length}</h3><p>🎫 Total Tickets</p></div>
+          <div class="status-stat-card" style="border-top:4px solid #0ea5e9"><h3 style="color:#0ea5e9">${Object.keys(priorityCounts).length}</h3><p>🏷️ Tickets by Priority</p></div>
+          <div class="status-stat-card" style="border-top:4px solid #6366f1"><h3 style="color:#6366f1">${Object.keys(deptTicketCount).length}</h3><p>🏢 Tickets by Department</p></div>
+        </div>
+
+        <div class="chart-grid">
+          <div class="chart-card"><h3>Tickets by Priority</h3><canvas id="priorityChart"></canvas></div>
+          <div class="chart-card"><h3>Tickets Assigned by Department</h3><canvas id="assignedChart"></canvas></div>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-card"><h3>Tickets Submitted by Department</h3><canvas id="submittedChart"></canvas></div>
+          <div class="chart-card"><h3>BSC Metrics Overview</h3><canvas id="bscChart"></canvas></div>
+        </div>
+
+        ${renderNewTicketForm()}
+        ${renderAutomatedTaskForm()}
+
+        <div class="panel"><div class="panel-header"><h2>🎯 BSC Metrics by Department</h2><button class="btn-primary" onclick="currentSection='bsc';loadCurrentSection()">View All →</button></div>
+          <div class="bsc-grid">${bsc.map(b => `<div class="bsc-card"><h4>${escapeHtml(getCellValue(b, 'BSC Name'))}</h4><p>${escapeHtml(getCellValue(b, 'BSC Description'))}</p><div class="bsc-metrics"><span class="metric-pill">🎯 Target: ${escapeHtml(getCellValue(b, 'Target Score'))}</span><span class="metric-pill">📊 Actual: ${escapeHtml(getCellValue(b, 'Actual Score'))}</span></div><div style="font-size:12px;color:#64748b">${escapeHtml(getCellValue(b, 'Related Department'))} · ${escapeHtml(b.Frequency || 'Monthly')}</div></div>`).join('') || '<div style="padding:20px;text-align:center">No BSC metrics found</div>'}</div>
+        </div>
+
+        <div class="panel"><div class="panel-header"><h2>📊 KPI Performance</h2><button class="btn-primary" onclick="currentSection='kpis';loadCurrentSection()">View All →</button></div>
+          <div class="table-wrapper"><table><thead><tr><th>KPI Name</th><th>Target</th><th>Actual</th><th>Department</th><th>Status</th></tr></thead><tbody>${kpiArray.slice(0,5).map(k => `<tr><td><strong>${escapeHtml(k.KPIName || k.Name || '')}</strong></td><td>${escapeHtml(k['Target Value'] || k.Target || '')}</td><td>${escapeHtml(k['Actual Value'] || k.Actual || '')}</td><td>${escapeHtml(k['Related Department'] || k.Department || '')}</td><td><span class="badge ${(parseFloat(k['Actual Value'] || k.Actual) >= parseFloat(k['Target Value'] || k.Target)) ? 'badge-low' : 'badge-high'}">${(parseFloat(k['Actual Value'] || k.Actual) >= parseFloat(k['Target Value'] || k.Target)) ? '✓ On Track' : '⚠️ Behind'}</span></td></tr>`).join('') || '<tr><td colspan="5">No KPI data</td></tr>'}</tbody></table></div>
+        </div>
+
+        <div class="panel"><div class="panel-header"><h2>⏱️ SLA Management</h2><button class="btn-primary" onclick="currentSection='sla';loadCurrentSection()">View All →</button></div>
+          <div class="table-wrapper"><table><thead><tr><th>SLA Name</th><th>Priority</th><th>First Response</th><th>Resolution Target</th><th>Status</th></tr></thead><tbody>${slaArray.slice(0,5).map(s => `<tr><td><strong>${escapeHtml(getCellValue(s, 'SLA Name'))}</strong></td><td><span class="badge badge-high">${escapeHtml(s.Priority || '')}</span></td><td>${escapeHtml(getCellValue(s, 'First Response'))}</td><td>${escapeHtml(getCellValue(s, 'Resolution Target'))}</td><td><span class="badge badge-low">${escapeHtml(s.Status || 'Active')}</span></td></tr>`).join('') || '<tr><td colspan="5">No SLA records</td></tr>'}</tbody></table></div>
+        </div>`;
+
+      wireDashboardForms();
+      renderDashboardCharts(priorityCounts, deptTicketCount, submittedByDept, deptScores);
+    } catch (err) {
+      main.innerHTML = `<div class="panel" style="padding:40px;text-align:center;color:#ef4444"><h2>⚠️ Error Loading Dashboard</h2><p>${escapeHtml(err.message)}</p><button class="refresh-btn" onclick="loadCurrentSection()">Try Again</button></div>`;
+    }
+  }
+
+  function renderNewTicketForm() {
+    return `<div class="panel">
+      <div class="panel-header"><h2>➕ New Task / Ticket</h2><button class="btn-secondary" onclick="document.getElementById('newTicketForm').style.display='block'">Show Form</button></div>
+      <div id="newTicketForm" style="padding:20px; display:block">
+        <div class="form-row">
+          <div class="form-field"><label>Title *</label><input id="ticketTitle" placeholder="Task/Ticket title"></div>
+          <div class="form-field"><label>Priority</label><select id="ticketPriority"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select></div>
+          <div class="form-field"><label>Status</label><select id="ticketStatus"><option>Open</option><option>In Progress</option><option>Pending</option><option>Closed</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Department</label><input id="ticketDept" placeholder="Department"></div>
+          <div class="form-field"><label>Assigned To</label><select id="ticketAssignee">${userOptionsHtml()}</select></div>
+          <div class="form-field"><label>Assignee Email</label><input id="ticketAssigneeEmail" readonly placeholder="Auto-filled email"></div>
+          <div class="form-field"><label>Due Date</label><input type="date" id="ticketDueDate"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Description</label><textarea id="ticketDesc" rows="2" placeholder="Detailed description"></textarea></div>
+          <div class="form-field"><label>Comments</label><textarea id="ticketComments" rows="2" placeholder="Optional comments"></textarea></div>
+          <div class="form-field"><label>Attachment Link</label><input id="ticketAttachment" placeholder="https://..."></div>
+        </div>
+        <button class="btn-primary" id="createTicketBtn">✨ Create Ticket</button>
+        <div id="ticketFormMessage" class="message-bar"></div>
+      </div>
+    </div>`;
+  }
+
+  function renderAutomatedTaskForm() {
+    return `<div class="panel">
+      <div class="panel-header"><h2>🔄 Automated Recurring Task</h2><button class="btn-secondary" onclick="document.getElementById('autoTaskForm').style.display='block'">Show Form</button></div>
+      <div id="autoTaskForm" style="padding:20px; display:block">
+        <div class="form-row">
+          <div class="form-field"><label>Task Name *</label><input id="autoTaskName" placeholder="e.g., Weekly Report"></div>
+          <div class="form-field"><label>Frequency</label><select id="autoFrequency"><option>Daily</option><option>Weekly</option><option>Monthly</option></select></div>
+          <div class="form-field"><label>Assigned To</label><select id="autoAssignee">${userOptionsHtml()}</select></div>
+          <div class="form-field"><label>Assignee Email</label><input id="autoAssigneeEmail" readonly placeholder="Auto-filled email"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Department</label><input id="autoDept" placeholder="Department"></div>
+          <div class="form-field"><label>Next Run Date</label><input type="date" id="autoNextRun"></div>
+          <div class="form-field"><label>Status</label><select id="autoStatus"><option>Active</option><option>Paused</option></select></div>
+        </div>
+        <div class="form-field"><label>Description</label><textarea id="autoDesc" rows="2" placeholder="Task description"></textarea></div>
+        <button class="btn-primary" id="createAutoTaskBtn">✨ Create Automated Task</button>
+        <div id="autoTaskMessage" class="message-bar"></div>
+      </div>
+    </div>`;
+  }
+
+  function wireDashboardForms() {
+    wireAssigneeEmail('ticketAssignee', 'ticketAssigneeEmail');
+    wireAssigneeEmail('autoAssignee', 'autoAssigneeEmail');
+
+    document.getElementById('createTicketBtn')?.addEventListener('click', async () => {
+      const payload = {
+        title: document.getElementById('ticketTitle').value,
+        taskName: document.getElementById('ticketTitle').value,
+        priority: document.getElementById('ticketPriority').value,
+        status: document.getElementById('ticketStatus').value,
+        department: document.getElementById('ticketDept').value,
+        assignedTo: document.getElementById('ticketAssignee').value,
+        assignedEmail: document.getElementById('ticketAssigneeEmail').value,
+        dueDate: document.getElementById('ticketDueDate').value,
+        description: document.getElementById('ticketDesc').value,
+        comments: document.getElementById('ticketComments').value,
+        attachmentLink: document.getElementById('ticketAttachment').value,
+        sheetTab: 'Tickets'
+      };
+      if (!payload.title) return showMessage('Title required', 'error', 'ticketFormMessage');
+      await saveWithSync('createTicketBtn', 'ticketFormMessage', 'addTicket', payload, 'Ticket saved, synchronised and assignee notified.', { afterSuccess: () => setTimeout(() => renderDashboard(), 1000) });
+    });
+
+    document.getElementById('createAutoTaskBtn')?.addEventListener('click', async () => {
+      const payload = {
+        taskName: document.getElementById('autoTaskName').value,
+        title: document.getElementById('autoTaskName').value,
+        frequency: document.getElementById('autoFrequency').value,
+        assignedTo: document.getElementById('autoAssignee').value,
+        assignedEmail: document.getElementById('autoAssigneeEmail').value,
+        department: document.getElementById('autoDept').value,
+        nextRun: document.getElementById('autoNextRun').value,
+        status: document.getElementById('autoStatus').value,
+        description: document.getElementById('autoDesc').value,
+        sheetTab: 'Automated Tasks'
+      };
+      if (!payload.taskName) return showMessage('Task name required', 'error', 'autoTaskMessage');
+      await saveWithSync('createAutoTaskBtn', 'autoTaskMessage', 'addAutomatedTask', payload, 'Automated task saved, synchronised and assignee notified.', { afterSuccess: () => setTimeout(() => renderDashboard(), 1000) });
+    });
+  }
+
+  function renderDashboardCharts(priorityCounts, deptTicketCount, submittedByDept, deptScores) {
+    if (typeof Chart === 'undefined') return;
+    const pCtx = document.getElementById('priorityChart')?.getContext('2d');
+    if (pCtx) {
+      destroyChart('priority');
+      charts.priority = new Chart(pCtx, { type: 'doughnut', data: { labels: Object.keys(priorityCounts), datasets: [{ data: Object.values(priorityCounts), backgroundColor: ['#ef4444','#f97316','#3b82f6','#22c55e','#8b5cf6'] }] }, options: { responsive: true } });
+    }
+    const aCtx = document.getElementById('assignedChart')?.getContext('2d');
+    if (aCtx) {
+      destroyChart('assigned');
+      charts.assigned = new Chart(aCtx, { type: 'bar', data: { labels: Object.keys(deptTicketCount), datasets: [{ label: 'Tickets Assigned', data: Object.values(deptTicketCount), backgroundColor: '#3b82f6' }] }, options: { responsive: true } });
+    }
+    const sCtx = document.getElementById('submittedChart')?.getContext('2d');
+    if (sCtx) {
+      destroyChart('submitted');
+      charts.submitted = new Chart(sCtx, { type: 'bar', data: { labels: Object.keys(submittedByDept), datasets: [{ label: 'Tickets Submitted', data: Object.values(submittedByDept), backgroundColor: '#8b5cf6' }] }, options: { responsive: true } });
+    }
+    const bCtx = document.getElementById('bscChart')?.getContext('2d');
+    if (bCtx) {
+      destroyChart('bsc');
+      charts.bsc = new Chart(bCtx, { type: 'pie', data: { labels: Object.keys(deptScores), datasets: [{ data: Object.values(deptScores), backgroundColor: ['#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6'] }] }, options: { responsive: true } });
+    }
+  }
+
+  function groupCount(rows, getter) {
+    const result = {};
+    rows.forEach(row => {
+      const key = String(getter(row) || 'Unassigned');
+      result[key] = (result[key] || 0) + 1;
+    });
+    return result;
+  }
+
+  function getStatus(t) { return String(t.Status || t.status || '').trim().toLowerCase(); }
+  function getPriority(t) { return String(t.Priority || t.priority || 'Medium').trim() || 'Medium'; }
+  function getDepartment(t) { return String(t.Department || t['Assigned Department'] || t.department || 'Unassigned').trim() || 'Unassigned'; }
+  function getDueDate(t) { return t['Due Date'] || t.DueDate || t.dueDate || ''; }
+  function getCompletionDate(t) { return t['Completion Date'] || t.CompletionDate || t['Closed Date'] || t.closedDate || ''; }
+
+  function isClosedTicket(t) {
+    const status = getStatus(t);
+    return ['closed', 'resolved', 'done', 'completed', 'complete'].some(s => status === s || status.includes(s));
+  }
+
+  function calculateTicketStats(rows) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isLateOpen = t => {
+      if (isClosedTicket(t)) return false;
+      const due = new Date(getDueDate(t));
+      if (isNaN(due)) return false;
+      due.setHours(0, 0, 0, 0);
+      return due < today;
+    };
+    const isClosedLate = t => {
+      if (!isClosedTicket(t)) return false;
+      const due = new Date(getDueDate(t));
+      if (isNaN(due)) return false;
+      due.setHours(0, 0, 0, 0);
+      const completedRaw = getCompletionDate(t);
+      if (completedRaw) {
+        const completed = new Date(completedRaw);
+        if (!isNaN(completed)) {
+          completed.setHours(0, 0, 0, 0);
+          return completed > due;
+        }
+      }
+      return due < today;
+    };
+    const closed = rows.filter(isClosedTicket);
+    const closedLate = rows.filter(isClosedLate);
+    return {
+      open: rows.filter(t => !isClosedTicket(t)),
+      closed,
+      openLate: rows.filter(isLateOpen),
+      closedLate,
+      closedOnTime: closed.filter(t => !isClosedLate(t))
+    };
+  }
+
+  async function renderUsers() { const data = await safeGet('users'); renderSimpleTable('Users', data, ['Employee ID', 'Employee Name', 'Department', 'Role', 'Status', 'Created Date']); }
+
+  async function renderSettings() {
+    document.getElementById('mainContent').innerHTML = `
+      <div class="top-bar"><div class="page-title"><h1>App Settings</h1><p>API connection and Google Sheet configuration</p></div></div>
+      <div class="panel">
+        <div class="panel-header"><h2>🔌 API Connection</h2></div>
+        <div style="padding:20px">
+          <div class="form-field" style="margin-bottom:16px">
+            <label>Google Apps Script Web App URL</label>
+            <input id="apiUrlInput" value="${escapeHtml(SCRIPT_URL)}" placeholder="Paste your /exec Web App URL here">
+          </div>
+          <p style="font-size:13px;color:#64748b;margin-bottom:12px"><strong>Sheet ID:</strong> ${SHEET_ID}</p>
+          <button class="btn-primary" id="saveApiBtn">💾 Save API URL</button>
+          <button class="btn-secondary" id="testApiBtn">🔄 Test Connection</button>
+          <button class="btn-secondary" id="resetApiBtn">↩ Reset Default</button>
+          <div id="apiSettingsMessage" class="message-bar"></div>
+        </div>
+      </div>`;
+
+    document.getElementById('saveApiBtn').addEventListener('click', () => {
+      const value = document.getElementById('apiUrlInput').value.trim();
+      if (!value) return showMessage('API URL is required', 'error', 'apiSettingsMessage');
+      SCRIPT_URL = value;
+      localStorage.setItem('quickbase_api_url', value);
+      showMessage('API URL saved.', 'success', 'apiSettingsMessage');
+    });
+
+    document.getElementById('resetApiBtn').addEventListener('click', () => {
+      SCRIPT_URL = DEFAULT_SCRIPT_URL;
+      localStorage.removeItem('quickbase_api_url');
+      document.getElementById('apiUrlInput').value = SCRIPT_URL;
+      showMessage('API URL reset to default.', 'success', 'apiSettingsMessage');
+    });
+
+    document.getElementById('testApiBtn').addEventListener('click', async () => {
+      setButtonLoading('testApiBtn', true, 'Testing...');
+      showMessage('Testing API connection...', 'info', 'apiSettingsMessage');
+      try {
+        const data = await apiGet('employees');
+        showMessage(`Connected successfully. Employees fetched: ${data.length}`, 'success', 'apiSettingsMessage');
+      } catch(e) {
+        showMessage(`Connection failed: ${e.message}`, 'error', 'apiSettingsMessage');
+      } finally {
+        setButtonLoading('testApiBtn', false);
+      }
+    });
+  }
+
+  async function safeGet(action) {
+    try { return await apiGet(action); }
+    catch(e) { return []; }
+  }
+
+  async function renderDepartments() { const data = await safeGet('departments'); renderDataEntryTable('Departments', data, ['Department ID', 'Department Name', 'Manager', 'Budget', 'Status'], 'addDepartment'); }
+
+  async function renderEmployees() {
+    const data = await safeGet('employees');
+    renderSimpleTable('Employees', data, ['Employee ID', 'Employee Name', 'Department', 'Role', 'Status', 'Created Date']);
+    const main = document.getElementById('mainContent');
+    main.insertAdjacentHTML('afterbegin', `
+      <div class="panel">
+        <div class="panel-header"><h2>➕ Enter New Employee</h2></div>
+        <div style="padding:20px">
+          <div class="form-row">
+            <div class="form-field"><label>Employee ID</label><input id="empId" placeholder="Employee ID"></div>
+            <div class="form-field"><label>Employee Name *</label><input id="empName" placeholder="Full name"></div>
+            <div class="form-field"><label>Department</label><input id="empDept" placeholder="Department"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-field"><label>Role</label><input id="empRole" placeholder="Role"></div>
+            <div class="form-field"><label>Status</label><select id="empStatus"><option>Active</option><option>Inactive</option></select></div>
+            <div class="form-field"><label>Created Date</label><input id="empCreatedDate" type="date"></div>
+          </div>
+          <button class="btn-primary" id="saveEmployeeBtn">💾 Save Employee</button>
+          <div id="employeeFormMessage" class="message-bar"></div>
+        </div>
+      </div>`);
+
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById('empCreatedDate').value = today;
+
+    document.getElementById('saveEmployeeBtn')?.addEventListener('click', async () => {
+      const payload = {
+        'Employee ID': document.getElementById('empId').value,
+        'Employee Name': document.getElementById('empName').value,
+        'Department': document.getElementById('empDept').value,
+        'Role': document.getElementById('empRole').value,
+        'Status': document.getElementById('empStatus').value,
+        'Created Date': document.getElementById('empCreatedDate').value
+      };
+      if (!payload['Employee Name']) return showMessage('Employee name is required', 'error', 'employeeFormMessage');
+      await saveWithSync('saveEmployeeBtn', 'employeeFormMessage', 'addEmployee', payload, 'Employee saved and synchronised to Employees tab.', { afterSuccess: () => setTimeout(() => renderEmployees(), 1000) });
+    });
+  }
+
+  async function renderTickets() {
+    const allTicketsRaw = await safeGet('tickets');
+    const allTickets = Array.isArray(allTicketsRaw) ? allTicketsRaw : [];
+    const stats = calculateTicketStats(allTickets);
+    const priorityCounts = groupCount(allTickets, t => getPriority(t));
+    const departmentCounts = groupCount(allTickets, t => getDepartment(t));
+
+    let data = allTickets;
+    if (window.taskFilter === 'open') data = stats.open;
+    else if (window.taskFilter === 'closed') data = stats.closed;
+    else if (window.taskFilter === 'overdue') data = stats.openLate;
+    else if (window.taskFilter === 'closed-on-time') data = stats.closedOnTime;
+    else if (window.taskFilter === 'closed-late') data = stats.closedLate;
+
+    const columns = ['Ticket ID', 'Title', 'Priority', 'Status', 'Department', 'Assigned To', 'Due Date'];
+    const main = document.getElementById('mainContent');
+    const activeFilterText = window.taskFilter ? `Filtered: ${window.taskFilter.replace(/-/g, ' ')}` : 'All tickets';
+
+    main.innerHTML = `
+      <div class="top-bar"><div class="page-title"><h1>Tickets</h1><p>Sheet tab: Tickets/Tasks · ${escapeHtml(activeFilterText)}</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
+      <div class="task-status-grid">
+        <div class="status-stat-card" onclick="window.taskFilter='open';renderTickets()" style="border-top:4px solid #3b82f6"><h3 style="color:#3b82f6">${stats.open.length}</h3><p>📋 Tickets Open</p></div>
+        <div class="status-stat-card" onclick="window.taskFilter='closed';renderTickets()" style="border-top:4px solid #22c55e"><h3 style="color:#22c55e">${stats.closed.length}</h3><p>✅ Tickets Closed</p></div>
+        <div class="status-stat-card" onclick="window.taskFilter='overdue';renderTickets()" style="border-top:4px solid #ef4444"><h3 style="color:#ef4444">${stats.openLate.length}</h3><p>⚠️ Open Tickets But Late</p></div>
+        <div class="status-stat-card" onclick="window.taskFilter='closed-on-time';renderTickets()" style="border-top:4px solid #10b981"><h3 style="color:#10b981">${stats.closedOnTime.length}</h3><p>🟢 Closed On Time Tickets</p></div>
+      </div>
+      <div class="task-status-grid">
+        <div class="status-stat-card" onclick="window.taskFilter='closed-late';renderTickets()" style="border-top:4px solid #f59e0b"><h3 style="color:#f59e0b">${stats.closedLate.length}</h3><p>🟠 Closed But Late</p></div>
+        <div class="status-stat-card" onclick="window.taskFilter=null;renderTickets()" style="border-top:4px solid #8b5cf6"><h3 style="color:#8b5cf6">${allTickets.length}</h3><p>🎫 Total Tickets</p></div>
+        <div class="status-stat-card" style="border-top:4px solid #0ea5e9"><h3 style="color:#0ea5e9">${Object.keys(priorityCounts).length}</h3><p>🏷️ Tickets by Priority</p></div>
+        <div class="status-stat-card" style="border-top:4px solid #6366f1"><h3 style="color:#6366f1">${Object.keys(departmentCounts).length}</h3><p>🏢 Tickets by Department</p></div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card"><h3>Tickets by Priority</h3><p>Current ticket count grouped by priority</p><canvas id="ticketsPriorityChart"></canvas></div>
+        <div class="chart-card"><h3>Tickets by Department</h3><p>Current ticket count grouped by department</p><canvas id="ticketsDepartmentChart"></canvas></div>
+      </div>
+      <div class="panel"><div class="panel-header"><h2>📋 Tickets</h2></div><div class="table-wrapper"><table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${data.length ? data.map(row => `<tr>${columns.map(c => `<td>${escapeHtml(getCellValue(row, c))}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${columns.length}" style="text-align:center">No data found</td></tr>`}</tbody></table></div></div>`;
+
+    if (typeof Chart !== 'undefined') {
+      const pCtx = document.getElementById('ticketsPriorityChart')?.getContext('2d');
+      if (pCtx) {
+        destroyChart('ticketsPriority');
+        charts.ticketsPriority = new Chart(pCtx, { type: 'doughnut', data: { labels: Object.keys(priorityCounts), datasets: [{ data: Object.values(priorityCounts), backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#22c55e', '#8b5cf6'] }] }, options: { responsive: true } });
+      }
+      const dCtx = document.getElementById('ticketsDepartmentChart')?.getContext('2d');
+      if (dCtx) {
+        destroyChart('ticketsDepartment');
+        charts.ticketsDepartment = new Chart(dCtx, { type: 'bar', data: { labels: Object.keys(departmentCounts), datasets: [{ label: 'Tickets', data: Object.values(departmentCounts), backgroundColor: '#6366f1' }] }, options: { responsive: true } });
+      }
+    }
+  }
+
+  async function renderKPIs() {
+    const data = await safeGet('kpis');
+    renderDataEntryTable('KPIs', data, ['KPIName', 'Target Value', 'Actual Value', 'Related Department', 'Frequency'], 'addKpi');
+  }
+
+  async function renderSLA() {
+    const data = await safeGet('sla');
+    renderDataEntryTable('SLA', data, ['SLA Name', 'Description', 'Priority', 'First Response', 'Resolution Target', 'Status'], 'addSla');
+  }
+
+  async function renderBSC() {
+    const data = await safeGet('bscMetrics');
+    renderDataEntryTable('BSC Metrics', data, ['BSC Name', 'BSC Description', 'Target Score', 'Actual Score', 'Related Department', 'Frequency'], 'addBscMetrics');
+  }
+
+  async function renderDivisions() { const data = await safeGet('divisions'); renderDataEntryTable('Divisions', data, ['Division ID', 'Division Name', 'Head', 'Region', 'Status'], 'addDivision'); }
+  async function renderAutomatedTasks() { const data = await safeGet('automatedTasks'); renderDataEntryTable('Automated Tasks', data, ['Task ID', 'Task Name', 'Description', 'Frequency', 'Assigned To', 'Assigned Email', 'Department', 'Next Run', 'Status'], 'addAutomatedTask'); }
 
   function renderDataEntryTable(title, data, columns, actionName) {
     const main = document.getElementById('mainContent');
@@ -1060,23 +1171,25 @@
     const fieldId = c => `entry_${c.replace(/[^a-zA-Z0-9]/g, '_')}`;
     main.innerHTML = `
       <div class="top-bar"><div class="page-title"><h1>${title}</h1><p>Sheet tab: ${title}</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
-      <div class="panel">
-        <div class="panel-header"><h2>➕ Enter New ${title}</h2></div>
-        <div style="padding:20px">
-          <div class="form-row">
-            ${columns.map(c => `<div class="form-field"><label>${escapeHtml(c)}</label>${c === 'Description' || c.includes('Description') ? `<textarea id="${fieldId(c)}" rows="2"></textarea>` : `<input id="${fieldId(c)}" placeholder="${escapeHtml(c)}">`}</div>`).join('')}
-          </div>
-          <button class="btn-primary" id="saveDataEntryBtn">💾 Save ${title}</button>
-          <div id="dataEntryMessage" class="message-bar"></div>
+      <div class="panel"><div class="panel-header"><h2>➕ Enter New ${title}</h2></div><div style="padding:20px">
+        <div class="form-row">
+          ${columns.map(c => `<div class="form-field"><label>${escapeHtml(c)}</label>${c === 'Assigned To' ? `<select id="${fieldId(c)}">${userOptionsHtml()}</select>` : c === 'Assigned Email' ? `<input id="${fieldId(c)}" readonly placeholder="Auto-filled email">` : c === 'Description' || c.includes('Description') ? `<textarea id="${fieldId(c)}" rows="2"></textarea>` : c === 'Status' ? `<select id="${fieldId(c)}"><option>Active</option><option>Open</option><option>Closed</option><option>Inactive</option><option>Paused</option></select>` : c === 'Priority' ? `<select id="${fieldId(c)}"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select>` : c === 'Frequency' ? `<select id="${fieldId(c)}"><option>Daily</option><option>Weekly</option><option>Monthly</option></select>` : c === 'Next Run' ? `<input id="${fieldId(c)}" type="date">` : `<input id="${fieldId(c)}" placeholder="${escapeHtml(c)}">`}</div>`).join('')}
         </div>
-      </div>
+        <button class="btn-primary" id="saveDataEntryBtn">💾 Save ${title}</button>
+        <div id="dataEntryMessage" class="message-bar"></div>
+      </div></div>
       <div class="panel"><div class="panel-header"><h2>📋 ${title}</h2></div><div class="table-wrapper"><table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${dataArray.length ? dataArray.map(row => `<tr>${columns.map(c => `<td>${escapeHtml(getCellValue(row, c))}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${columns.length}" style="text-align:center">No data found</td></tr>`}</tbody></table></div></div>`;
+
+    if (columns.includes('Assigned To') && columns.includes('Assigned Email')) {
+      wireAssigneeEmail(fieldId('Assigned To'), fieldId('Assigned Email'));
+    }
+
     document.getElementById('saveDataEntryBtn')?.addEventListener('click', async () => {
-      const payload = { sheetId: SHEET_ID, sheetTab: title };
+      const payload = {};
       columns.forEach(c => { payload[c] = document.getElementById(fieldId(c)).value; });
       const firstColumn = columns[0];
       if (!payload[firstColumn]) return showMessage(`${firstColumn} is required`, 'error', 'dataEntryMessage');
-      await saveWithSync('saveDataEntryBtn', 'dataEntryMessage', `add${actionName.charAt(0).toUpperCase()}${actionName.slice(1)}`, payload, `${title} record saved and synchronised.`, { afterSuccess: () => setTimeout(() => loadCurrentSection(), 1000) });
+      await saveWithSync('saveDataEntryBtn', 'dataEntryMessage', actionName, payload, `${title} record saved and synchronised.`, { afterSuccess: () => setTimeout(() => loadCurrentSection(), 1000) });
     });
   }
 
@@ -1085,7 +1198,7 @@
     const dataArray = Array.isArray(data) ? data : [];
     main.innerHTML = `<div class="top-bar"><div class="page-title"><h1>${title}</h1><p>Sheet tab: ${sheetTabName}</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div><div class="panel"><div class="panel-header"><h2>📋 ${title}</h2></div><div class="table-wrapper"><table><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${dataArray.length ? dataArray.map(row => `<tr>${columns.map(c => `<td>${escapeHtml(getCellValue(row, c))}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${columns.length}" style="text-align:center">No data found</td></tr>`}</tbody></table></div></div>`;
   }
-  
+
   async function loadCurrentSection() {
     requireLogin();
     document.getElementById('mainContent').innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading...</p></div>';
@@ -1101,12 +1214,23 @@
     else if (currentSection === 'divisions') await renderDivisions();
     else if (currentSection === 'automatedTasks') await renderAutomatedTasks();
     else await renderDashboard();
-    document.querySelectorAll('.nav-link').forEach(link => { link.classList.remove('active'); if (link.getAttribute('data-section') === currentSection) link.classList.add('active'); });
-    window.taskFilter = null;
+
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('data-section') === currentSection) link.classList.add('active');
+    });
+    if (currentSection !== 'tickets') window.taskFilter = null;
   }
-  
-  document.querySelectorAll('.nav-link').forEach(link => { link.addEventListener('click', () => { currentSection = link.getAttribute('data-section'); loadCurrentSection(); }); });
+
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      currentSection = link.getAttribute('data-section');
+      loadCurrentSection();
+    });
+  });
+
   loadCurrentSection();
 </script>
+
 </body>
 </html>
