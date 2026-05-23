@@ -419,6 +419,19 @@
     .message-error { background: #fee2e2; color: #991b1b; border-left: 3px solid #ef4444; }
     .message-info { background: #dbeafe; color: #1e3a8a; border-left: 3px solid #3b82f6; }
 
+    .api-response-box {
+      width: 100%;
+      min-height: 180px;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 12px;
+      overflow: auto;
+      white-space: pre-wrap;
+      border: 1px solid #1e293b;
+    }
+
     button:disabled {
       opacity: 0.65;
       cursor: not-allowed;
@@ -503,6 +516,7 @@
       <div class="nav-link active" data-section="dashboard">📊 App home</div>
       <div class="nav-link" data-section="users">👥 Users</div>
       <div class="nav-link" data-section="settings">⚙️ App settings</div>
+      <div class="nav-link" data-section="apiConnection">🔌 API Connection</div>
       
       <div class="nav-section" style="margin-top: 16px;">Data</div>
       <div class="nav-link" data-section="departments">🏢 Departments</div>
@@ -526,7 +540,28 @@
   const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwsd8UIeYojJWv5e9SoeGeBQ0BR6rnB-uoKN5an6CcNAuoCdDZ_6MiAqQfdv3dSwDfs/exec';
   const SHEET_ID = '1KWYWSUmwGYcBVIuDzh7yo86eTrfnMZX35DuGnRAVNv8';
 
+  const SHEET_ROUTES = {
+    departments: { action: 'departments', saveAction: 'addDepartment', sheetTab: 'Department', displayTab: 'Departments', columns: ['Department ID', 'Department Name', 'Manager', 'Budget', 'Status', 'Created Date'] },
+    employees: { action: 'employees', saveAction: 'addEmployee', sheetTab: 'Employees', displayTab: 'Employees', columns: ['Employee ID', 'Employee Name', 'Department', 'Role', 'Status', 'Created Date'] },
+    kpis: { action: 'kpis', saveAction: 'addKpi', sheetTab: 'KPIs', displayTab: 'KPIs', columns: ['KPIName', 'Target Value', 'Actual Value', 'Related Department', 'Frequency'] },
+    sla: { action: 'sla', saveAction: 'addSla', sheetTab: 'SLA', displayTab: 'SLA', columns: ['SLA Name', 'Description', 'Priority', 'First Response', 'Resolution Target', 'Status'] },
+    bsc: { action: 'bscMetrics', saveAction: 'addBscMetrics', sheetTab: 'BSC', displayTab: 'BSC Metrics', columns: ['BSC Name', 'BSC Description', 'Target Score', 'Actual Score', 'Related Department', 'Frequency'] },
+    divisions: { action: 'divisions', saveAction: 'addDivision', sheetTab: 'divisions', displayTab: 'Divisions', columns: ['Division ID', 'Division Name', 'Head', 'Region', 'Status'] },
+    automatedTasks: { action: 'automatedTasks', saveAction: 'addAutomatedTask', sheetTab: 'Automated Tasks', displayTab: 'Automated Tasks', columns: ['Task ID', 'Task Name', 'Description', 'Frequency', 'Assigned To', 'Assigned Email', 'Department', 'Next Run', 'Status'] }
+  };
+
+  function getRouteByAction(action) {
+    return Object.values(SHEET_ROUTES).find(route => route.action === action || route.saveAction === action) || null;
+  }
+
+
   let SCRIPT_URL = localStorage.getItem('quickbase_api_url') || DEFAULT_SCRIPT_URL;
+  let SEND_EMAIL_NOTIFICATIONS = localStorage.getItem('quickbase_send_email_notifications') !== 'false';
+  let API_POST_MODE = localStorage.getItem('quickbase_api_post_mode') || 'text';
+  let API_ONLY_URL = localStorage.getItem('quickbase_api_only_url') || SCRIPT_URL;
+  let API_ONLY_METHOD = localStorage.getItem('quickbase_api_only_method') || 'GET';
+  let API_ONLY_HEADERS = localStorage.getItem('quickbase_api_only_headers') || '{\n  "Content-Type": "application/json"\n}';
+  let API_ONLY_BODY = localStorage.getItem('quickbase_api_only_body') || '{\n  "action": "employees",\n  "sheetId": "1KWYWSUmwGYcBVIuDzh7yo86eTrfnMZX35DuGnRAVNv8"\n}';
   let currentUser = null;
   let currentSection = 'dashboard';
   let charts = {};
@@ -612,7 +647,9 @@
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 25000);
     try {
-      const url = `${SCRIPT_URL}?action=${encodeURIComponent(action)}&sheetId=${encodeURIComponent(SHEET_ID)}&_=${Date.now()}`;
+      const route = getRouteByAction(action);
+      const sheetTabParam = route ? `&sheetTab=${encodeURIComponent(route.sheetTab)}` : '';
+      const url = `${SCRIPT_URL}?action=${encodeURIComponent(action)}&sheetId=${encodeURIComponent(SHEET_ID)}${sheetTabParam}&_=${Date.now()}`;
       const res = await fetch(url, { method: 'GET', signal: controller.signal, cache: 'no-store', redirect: 'follow' });
       clearTimeout(timeout);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -634,13 +671,17 @@
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
     try {
-      const res = await fetch(SCRIPT_URL, {
+      const route = getRouteByAction(action);
+      const routedPayload = route ? Object.assign({}, payload, { sheetTab: route.sheetTab, sheetName: route.sheetTab, tabName: route.sheetTab }) : payload;
+      const requestBody = { action, payload: routedPayload, user: currentUser, sheetId: SHEET_ID, sheetTab: route ? route.sheetTab : (payload && payload.sheetTab), sheetName: route ? route.sheetTab : (payload && payload.sheetTab), tabName: route ? route.sheetTab : (payload && payload.sheetTab), sendEmail: SEND_EMAIL_NOTIFICATIONS };
+      const fetchOptions = {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action, payload, user: currentUser, sheetId: SHEET_ID }),
+        headers: API_POST_MODE === 'form' ? { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' } : { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: API_POST_MODE === 'form' ? new URLSearchParams({ data: JSON.stringify(requestBody) }) : JSON.stringify(requestBody),
         signal: controller.signal,
         redirect: 'follow'
-      });
+      };
+      const res = await fetch(SCRIPT_URL, fetchOptions);
       clearTimeout(timeout);
       const text = await res.text();
       let json = {};
@@ -734,6 +775,9 @@
       'Division Name': ['Division Name', 'Name'],
       'Head': ['Head', 'Division Head', 'Manager'],
       'Region': ['Region', 'Area'],
+      'Department ID': ['Department ID', 'ID'],
+      'Department Name': ['Department Name', 'Department', 'Name'],
+      'Budget': ['Budget'],
       'Status': ['Status']
     };
     const keys = aliases[column] || [column];
@@ -878,6 +922,36 @@
     </div>`;
   }
 
+
+  function buildTaskEmailPayload(type, data) {
+    const isAuto = type === 'automated';
+    const title = data.taskName || data.title || 'New task';
+    const assignee = data.assignedTo || 'Assignee';
+    const dueText = data.dueDate || data.nextRun || 'Not set';
+    const description = data.description || 'No description provided.';
+    return {
+      notifyAssignee: SEND_EMAIL_NOTIFICATIONS,
+      emailService: 'gmail',
+      emailTo: data.assignedEmail || '',
+      emailSubject: `${isAuto ? 'Automated recurring task' : 'New task'} assigned: ${title}`,
+      emailBody: `Hi ${assignee},
+
+A ${isAuto ? 'recurring automated task' : 'task/ticket'} has been assigned to you.
+
+Task: ${title}
+Department: ${data.department || 'Not set'}
+Priority/Frequency: ${data.priority || data.frequency || 'Not set'}
+Due/Next run: ${dueText}
+
+Description:
+${description}
+
+Created by: ${currentUser?.['Full Name'] || currentUser?.Email || 'QuickBase'}
+
+Please log in to QuickBase to review and update this item.`
+    };
+  }
+
   function wireDashboardForms() {
     wireAssigneeEmail('ticketAssignee', 'ticketAssigneeEmail');
     wireAssigneeEmail('autoAssignee', 'autoAssigneeEmail');
@@ -897,7 +971,9 @@
         attachmentLink: document.getElementById('ticketAttachment').value,
         sheetTab: 'Tasks'
       };
+      Object.assign(payload, buildTaskEmailPayload('ticket', payload));
       if (!payload.title) return showMessage('Title required', 'error', 'ticketFormMessage');
+      if (SEND_EMAIL_NOTIFICATIONS && !payload.emailTo) return showMessage('Assignee email is required for Gmail notification. Select an assignee with an email address.', 'error', 'ticketFormMessage');
       await saveWithSync('createTicketBtn', 'ticketFormMessage', 'addTicket', payload, 'Ticket saved, synchronised and assignee notified.', { afterSuccess: () => setTimeout(() => renderDashboard(), 1000) });
     });
 
@@ -914,7 +990,9 @@
         description: document.getElementById('autoDesc').value,
         sheetTab: 'Automated Tasks'
       };
+      Object.assign(payload, buildTaskEmailPayload('automated', payload));
       if (!payload.taskName) return showMessage('Task name required', 'error', 'autoTaskMessage');
+      if (SEND_EMAIL_NOTIFICATIONS && !payload.emailTo) return showMessage('Assignee email is required for Gmail notification. Select an assignee with an email address.', 'error', 'autoTaskMessage');
       await saveWithSync('createAutoTaskBtn', 'autoTaskMessage', 'addAutomatedTask', payload, 'Automated task saved, synchronised and assignee notified.', { afterSuccess: () => setTimeout(() => renderDashboard(), 1000) });
     });
   }
@@ -1001,6 +1079,121 @@
 
   async function renderUsers() { const data = await safeGet('users'); renderSimpleTable('Users', data, ['Employee ID', 'Employee Name', 'Department', 'Role', 'Status', 'Created Date']); }
 
+
+  async function renderApiConnection() {
+    document.getElementById('mainContent').innerHTML = `
+      <div class="top-bar"><div class="page-title"><h1>API Connection</h1><p>API-only posting and fetching test area</p></div></div>
+      <div class="panel">
+        <div class="panel-header"><h2>🔌 API Only - Fetch / Post</h2></div>
+        <div style="padding:20px">
+          <div class="form-field" style="margin-bottom:16px">
+            <label>API Endpoint URL</label>
+            <input id="apiOnlyUrlInput" value="${escapeHtml(API_ONLY_URL)}" placeholder="Paste API endpoint URL here">
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Method</label>
+              <select id="apiOnlyMethodInput">
+                <option value="GET" ${API_ONLY_METHOD === 'GET' ? 'selected' : ''}>GET / Fetch</option>
+                <option value="POST" ${API_ONLY_METHOD === 'POST' ? 'selected' : ''}>POST</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Content Type / Headers JSON</label>
+              <textarea id="apiOnlyHeadersInput" rows="4" placeholder='{"Content-Type":"application/json"}'>${escapeHtml(API_ONLY_HEADERS)}</textarea>
+            </div>
+          </div>
+          <div class="form-field" style="margin-bottom:16px">
+            <label>POST Body JSON</label>
+            <textarea id="apiOnlyBodyInput" rows="7" placeholder='{"action":"employees"}'>${escapeHtml(API_ONLY_BODY)}</textarea>
+          </div>
+          <button class="btn-primary" id="saveApiOnlyBtn">💾 Save API Only Settings</button>
+          <button class="btn-secondary" id="testApiOnlyFetchBtn">🔄 Test Fetch</button>
+          <button class="btn-secondary" id="testApiOnlyPostBtn">⬆ Test Post</button>
+          <div id="apiOnlyMessage" class="message-bar"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h2>📡 API Response</h2></div>
+        <div style="padding:20px">
+          <pre id="apiOnlyResponse" class="api-response-box">No API test run yet.</pre>
+        </div>
+      </div>`;
+
+    const saveApiOnlySettings = () => {
+      API_ONLY_URL = document.getElementById('apiOnlyUrlInput').value.trim();
+      API_ONLY_METHOD = document.getElementById('apiOnlyMethodInput').value;
+      API_ONLY_HEADERS = document.getElementById('apiOnlyHeadersInput').value;
+      API_ONLY_BODY = document.getElementById('apiOnlyBodyInput').value;
+      if (!API_ONLY_URL) {
+        showMessage('API endpoint URL is required', 'error', 'apiOnlyMessage');
+        return false;
+      }
+      localStorage.setItem('quickbase_api_only_url', API_ONLY_URL);
+      localStorage.setItem('quickbase_api_only_method', API_ONLY_METHOD);
+      localStorage.setItem('quickbase_api_only_headers', API_ONLY_HEADERS);
+      localStorage.setItem('quickbase_api_only_body', API_ONLY_BODY);
+      showMessage('API-only settings saved.', 'success', 'apiOnlyMessage');
+      return true;
+    };
+
+    const parseHeaders = () => {
+      const raw = document.getElementById('apiOnlyHeadersInput').value.trim();
+      if (!raw) return {};
+      try {
+        return JSON.parse(raw);
+      } catch(e) {
+        throw new Error('Headers must be valid JSON.');
+      }
+    };
+
+    const parseBody = () => {
+      const raw = document.getElementById('apiOnlyBodyInput').value.trim();
+      if (!raw) return {};
+      try {
+        return JSON.parse(raw);
+      } catch(e) {
+        throw new Error('POST body must be valid JSON.');
+      }
+    };
+
+    const runApiOnlyTest = async (method) => {
+      if (!saveApiOnlySettings()) return;
+      const responseBox = document.getElementById('apiOnlyResponse');
+      responseBox.textContent = 'Connecting...';
+      showMessage(`Testing API ${method}...`, 'info', 'apiOnlyMessage');
+
+      try {
+        const headers = parseHeaders();
+        const options = { method, headers, redirect: 'follow', cache: 'no-store' };
+        let url = API_ONLY_URL;
+
+        if (method === 'POST') {
+          options.body = JSON.stringify(parseBody());
+        } else {
+          const connector = API_ONLY_URL.includes('?') ? '&' : '?';
+          const bodyObj = parseBody();
+          const query = new URLSearchParams(bodyObj).toString();
+          if (query) url = `${API_ONLY_URL}${connector}${query}`;
+        }
+
+        const res = await fetch(url, options);
+        const responseText = await res.text();
+        let display = responseText;
+        try { display = JSON.stringify(JSON.parse(responseText), null, 2); } catch(e) {}
+        responseBox.textContent = `Status: ${res.status} ${res.statusText}\n\n${display}`;
+        showMessage(`API ${method} completed. Status: ${res.status}`, res.ok ? 'success' : 'error', 'apiOnlyMessage');
+      } catch(e) {
+        responseBox.textContent = e.stack || e.message || String(e);
+        showMessage(e.message || 'API test failed.', 'error', 'apiOnlyMessage');
+      }
+    };
+
+    document.getElementById('saveApiOnlyBtn').addEventListener('click', saveApiOnlySettings);
+    document.getElementById('testApiOnlyFetchBtn').addEventListener('click', () => runApiOnlyTest('GET'));
+    document.getElementById('testApiOnlyPostBtn').addEventListener('click', () => runApiOnlyTest('POST'));
+  }
+
   async function renderSettings() {
     document.getElementById('mainContent').innerHTML = `
       <div class="top-bar"><div class="page-title"><h1>App Settings</h1><p>API connection and Google Sheet configuration</p></div></div>
@@ -1012,7 +1205,12 @@
             <input id="apiUrlInput" value="${escapeHtml(SCRIPT_URL)}" placeholder="Paste your /exec Web App URL here">
           </div>
           <p style="font-size:13px;color:#64748b;margin-bottom:12px"><strong>Sheet ID:</strong> ${SHEET_ID}</p>
-          <button class="btn-primary" id="saveApiBtn">💾 Save API URL</button>
+          <div class="form-row">
+            <div class="form-field"><label>POST / Fetch Body Type</label><select id="apiPostModeInput"><option value="text" ${API_POST_MODE === 'text' ? 'selected' : ''}>JSON text/plain</option><option value="form" ${API_POST_MODE === 'form' ? 'selected' : ''}>Form URL Encoded</option></select></div>
+            <div class="form-field"><label>Gmail Notifications</label><select id="emailNotifyInput"><option value="true" ${SEND_EMAIL_NOTIFICATIONS ? 'selected' : ''}>Enabled - backend sends Gmail</option><option value="false" ${!SEND_EMAIL_NOTIFICATIONS ? 'selected' : ''}>Disabled</option></select></div>
+          </div>
+          <p style="font-size:13px;color:#64748b;margin-bottom:12px">Gmail is sent by the connected Google Apps Script backend, not directly by the browser.</p>
+          <button class="btn-primary" id="saveApiBtn">💾 Save API Settings</button>
           <button class="btn-secondary" id="testApiBtn">🔄 Test Connection</button>
           <button class="btn-secondary" id="resetApiBtn">↩ Reset Default</button>
           <div id="apiSettingsMessage" class="message-bar"></div>
@@ -1023,14 +1221,24 @@
       const value = document.getElementById('apiUrlInput').value.trim();
       if (!value) return showMessage('API URL is required', 'error', 'apiSettingsMessage');
       SCRIPT_URL = value;
+      API_POST_MODE = document.getElementById('apiPostModeInput').value;
+      SEND_EMAIL_NOTIFICATIONS = document.getElementById('emailNotifyInput').value === 'true';
       localStorage.setItem('quickbase_api_url', value);
-      showMessage('API URL saved.', 'success', 'apiSettingsMessage');
+      localStorage.setItem('quickbase_api_post_mode', API_POST_MODE);
+      localStorage.setItem('quickbase_send_email_notifications', String(SEND_EMAIL_NOTIFICATIONS));
+      showMessage('API settings saved.', 'success', 'apiSettingsMessage');
     });
 
     document.getElementById('resetApiBtn').addEventListener('click', () => {
       SCRIPT_URL = DEFAULT_SCRIPT_URL;
       localStorage.removeItem('quickbase_api_url');
+      localStorage.removeItem('quickbase_api_post_mode');
+      localStorage.removeItem('quickbase_send_email_notifications');
+      API_POST_MODE = 'text';
+      SEND_EMAIL_NOTIFICATIONS = true;
       document.getElementById('apiUrlInput').value = SCRIPT_URL;
+      document.getElementById('apiPostModeInput').value = API_POST_MODE;
+      document.getElementById('emailNotifyInput').value = 'true';
       showMessage('API URL reset to default.', 'success', 'apiSettingsMessage');
     });
 
@@ -1053,10 +1261,11 @@
     catch(e) { return []; }
   }
 
-  async function renderDepartments() { const data = await safeGet('departments'); renderDataEntryTable('Departments', data, ['Department ID', 'Department Name', 'Manager', 'Budget', 'Status'], 'addDepartment'); }
+  async function renderDepartments() { const route = SHEET_ROUTES.departments; const data = await safeGet(route.action); renderDataEntryTable(route.displayTab, data, route.columns, route.saveAction, route.sheetTab); }
 
   async function renderEmployees() {
-    const data = await safeGet('employees');
+    const route = SHEET_ROUTES.employees;
+    const data = await safeGet(route.action);
     renderSimpleTable('Employees', data, ['Employee ID', 'Employee Name', 'Department', 'Role', 'Status', 'Created Date']);
     const main = document.getElementById('mainContent');
     main.insertAdjacentHTML('afterbegin', `
@@ -1091,7 +1300,10 @@
         'Created Date': document.getElementById('empCreatedDate').value
       };
       if (!payload['Employee Name']) return showMessage('Employee name is required', 'error', 'employeeFormMessage');
-      await saveWithSync('saveEmployeeBtn', 'employeeFormMessage', 'addEmployee', payload, 'Employee saved and synchronised to Employees tab.', { afterSuccess: () => setTimeout(() => renderEmployees(), 1000) });
+      payload.sheetTab = route.sheetTab;
+      payload.sheetName = route.sheetTab;
+      payload.tabName = route.sheetTab;
+      await saveWithSync('saveEmployeeBtn', 'employeeFormMessage', route.saveAction, payload, 'Employee saved and synchronised to Employees tab.', { afterSuccess: () => setTimeout(() => renderEmployees(), 1000) });
     });
   }
 
@@ -1148,32 +1360,35 @@
   }
 
   async function renderKPIs() {
-    const data = await safeGet('kpis');
-    renderDataEntryTable('KPIs', data, ['KPIName', 'Target Value', 'Actual Value', 'Related Department', 'Frequency'], 'addKpi');
+    const route = SHEET_ROUTES.kpis;
+    const data = await safeGet(route.action);
+    renderDataEntryTable(route.displayTab, data, route.columns, route.saveAction, route.sheetTab);
   }
 
   async function renderSLA() {
-    const data = await safeGet('sla');
-    renderDataEntryTable('SLA', data, ['SLA Name', 'Description', 'Priority', 'First Response', 'Resolution Target', 'Status'], 'addSla');
+    const route = SHEET_ROUTES.sla;
+    const data = await safeGet(route.action);
+    renderDataEntryTable(route.displayTab, data, route.columns, route.saveAction, route.sheetTab);
   }
 
   async function renderBSC() {
-    const data = await safeGet('bscMetrics');
-    renderDataEntryTable('BSC Metrics', data, ['BSC Name', 'BSC Description', 'Target Score', 'Actual Score', 'Related Department', 'Frequency'], 'addBscMetrics');
+    const route = SHEET_ROUTES.bsc;
+    const data = await safeGet(route.action);
+    renderDataEntryTable(route.displayTab, data, route.columns, route.saveAction, route.sheetTab);
   }
 
-  async function renderDivisions() { const data = await safeGet('divisions'); renderDataEntryTable('Divisions', data, ['Division ID', 'Division Name', 'Head', 'Region', 'Status'], 'addDivision'); }
-  async function renderAutomatedTasks() { const data = await safeGet('automatedTasks'); renderDataEntryTable('Automated Tasks', data, ['Task ID', 'Task Name', 'Description', 'Frequency', 'Assigned To', 'Assigned Email', 'Department', 'Next Run', 'Status'], 'addAutomatedTask'); }
+  async function renderDivisions() { const route = SHEET_ROUTES.divisions; const data = await safeGet(route.action); renderDataEntryTable(route.displayTab, data, route.columns, route.saveAction, route.sheetTab); }
+  async function renderAutomatedTasks() { const route = SHEET_ROUTES.automatedTasks; const data = await safeGet(route.action); renderDataEntryTable(route.displayTab, data, route.columns, route.saveAction, route.sheetTab); }
 
-  function renderDataEntryTable(title, data, columns, actionName) {
+  function renderDataEntryTable(title, data, columns, actionName, sheetTabName = title) {
     const main = document.getElementById('mainContent');
     const dataArray = Array.isArray(data) ? data : [];
     const fieldId = c => `entry_${c.replace(/[^a-zA-Z0-9]/g, '_')}`;
     main.innerHTML = `
-      <div class="top-bar"><div class="page-title"><h1>${title}</h1><p>Sheet tab: ${title}</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
+      <div class="top-bar"><div class="page-title"><h1>${title}</h1><p>Sheet tab: ${sheetTabName}</p></div><button class="refresh-btn" onclick="loadCurrentSection()">↻ Refresh</button></div>
       <div class="panel"><div class="panel-header"><h2>➕ Enter New ${title}</h2></div><div style="padding:20px">
         <div class="form-row">
-          ${columns.map(c => `<div class="form-field"><label>${escapeHtml(c)}</label>${c === 'Assigned To' ? `<select id="${fieldId(c)}">${userOptionsHtml()}</select>` : c === 'Assigned Email' ? `<input id="${fieldId(c)}" readonly placeholder="Auto-filled email">` : c === 'Description' || c.includes('Description') ? `<textarea id="${fieldId(c)}" rows="2"></textarea>` : c === 'Status' ? `<select id="${fieldId(c)}"><option>Active</option><option>Open</option><option>Closed</option><option>Inactive</option><option>Paused</option></select>` : c === 'Priority' ? `<select id="${fieldId(c)}"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select>` : c === 'Frequency' ? `<select id="${fieldId(c)}"><option>Daily</option><option>Weekly</option><option>Monthly</option></select>` : c === 'Next Run' ? `<input id="${fieldId(c)}" type="date">` : `<input id="${fieldId(c)}" placeholder="${escapeHtml(c)}">`}</div>`).join('')}
+          ${columns.map(c => `<div class="form-field"><label>${escapeHtml(c)}</label>${c === 'Assigned To' ? `<select id="${fieldId(c)}">${userOptionsHtml()}</select>` : c === 'Assigned Email' ? `<input id="${fieldId(c)}" readonly placeholder="Auto-filled email">` : c === 'Description' || c.includes('Description') ? `<textarea id="${fieldId(c)}" rows="2"></textarea>` : c === 'Status' ? `<select id="${fieldId(c)}"><option>Active</option><option>Open</option><option>Closed</option><option>Inactive</option><option>Paused</option></select>` : c === 'Priority' ? `<select id="${fieldId(c)}"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select>` : c === 'Frequency' ? `<select id="${fieldId(c)}"><option>Daily</option><option>Weekly</option><option>Monthly</option></select>` : (c === 'Next Run' || c === 'Created Date') ? `<input id="${fieldId(c)}" type="date">` : `<input id="${fieldId(c)}" placeholder="${escapeHtml(c)}">`}</div>`).join('')}
         </div>
         <button class="btn-primary" id="saveDataEntryBtn">💾 Save ${title}</button>
         <div id="dataEntryMessage" class="message-bar"></div>
@@ -1187,6 +1402,10 @@
     document.getElementById('saveDataEntryBtn')?.addEventListener('click', async () => {
       const payload = {};
       columns.forEach(c => { payload[c] = document.getElementById(fieldId(c)).value; });
+      payload.sheetTab = sheetTabName;
+      payload.sheetName = sheetTabName;
+      payload.tabName = sheetTabName;
+      if (columns.includes('Created Date') && !payload['Created Date']) payload['Created Date'] = new Date().toISOString().slice(0,10);
       const firstColumn = columns[0];
       if (!payload[firstColumn]) return showMessage(`${firstColumn} is required`, 'error', 'dataEntryMessage');
       await saveWithSync('saveDataEntryBtn', 'dataEntryMessage', actionName, payload, `${title} record saved and synchronised.`, { afterSuccess: () => setTimeout(() => loadCurrentSection(), 1000) });
@@ -1205,6 +1424,7 @@
     if (currentSection === 'dashboard') await renderDashboard();
     else if (currentSection === 'users') await renderUsers();
     else if (currentSection === 'settings') await renderSettings();
+    else if (currentSection === 'apiConnection') await renderApiConnection();
     else if (currentSection === 'departments') await renderDepartments();
     else if (currentSection === 'employees') await renderEmployees();
     else if (currentSection === 'tickets') await renderTickets();
