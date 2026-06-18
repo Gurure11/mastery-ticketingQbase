@@ -119,6 +119,7 @@ select.mini:focus,input.find:focus{outline:none;border-color:var(--brand)}
 .btn.ret{color:var(--late);border-color:#EFC9C9}.btn.ret:hover{background:var(--late-soft)}
 .btn.approve{color:var(--ontime);border-color:#BFE6D3}.btn.approve:hover{background:var(--ontime-soft)}
 .btn.return{color:var(--late);border-color:#EFC9C9}.btn.return:hover{background:var(--late-soft)}
+.btn.upload{color:var(--brand-ink);border-color:#CDEBFA}.btn.upload:hover{background:var(--brand-soft)}
 
 .tablecard{background:var(--card);border:1px solid var(--line);border-radius:11px}
 .scroll{}
@@ -588,9 +589,19 @@ button:focus-visible,.tab:focus-visible,select:focus-visible,input:focus-visible
 .dw-score-section .final-score .big{font-size:24px;font-weight:700;color:var(--ontime)}
 .dw-score-section .final-score .label{font-size:11px;color:var(--ink3)}
 
-/* ===== Approval Action Buttons in Drawer ===== */
-.dw-actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
-.dw-actions .btn{flex:1;min-width:100px;justify-content:center;padding:10px 16px;font-size:14px}
+/* ===== Upload Styles ===== */
+.upload-zone{border:2px dashed var(--line2);border-radius:9px;padding:16px;text-align:center;margin-top:10px;transition:border-color .2s,background .2s;cursor:pointer}
+.upload-zone:hover{border-color:var(--brand);background:var(--brand-soft)}
+.upload-zone.dragover{border-color:var(--brand);background:var(--brand-soft)}
+.upload-zone .icon{font-size:24px;color:var(--ink3);margin-bottom:4px}
+.upload-zone .hint{font-size:12px;color:var(--ink3)}
+.upload-zone input[type="file"]{display:none}
+.upload-list{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.upload-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:6px;padding:6px 10px;font-size:12px}
+.upload-item .name{color:var(--ink);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.upload-item .size{color:var(--ink3);font-family:var(--mono);font-size:10px;margin:0 10px}
+.upload-item .remove{color:var(--late);cursor:pointer;font-size:14px;line-height:1;padding:0 4px}
+.upload-item .remove:hover{opacity:.7}
 </style>
 </head>
 <body>
@@ -971,77 +982,81 @@ let T = [];
 const ASAT = new Date();
 
 // ============================================================
-// UTILITY FUNCTIONS
+// UPLOAD SYSTEM
 // ============================================================
-const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let uploads = {};
 
-const PRANK = { Critical: 0, High: 1, Medium: 2, Low: 3, '—': 9 };
-const SRANK = { 'Open': 0, 'Awaiting review': 1, 'More time': 2, 'Closed': 3 };
-const STDOT = { 'Open': 'open', 'Awaiting review': 'await', 'More time': 'more', 'Closed': 'closed' };
-
-function stCell(s, overdue) {
-  if (overdue && s !== 'Closed') return `<span class="st"><span class="dot late"></span>${esc(s)} · late</span>`;
-  return `<span class="st"><span class="dot ${STDOT[s] || 'open'}"></span>${esc(s)}</span>`;
+function renderUploadSection(ref) {
+  if (!uploads[ref]) uploads[ref] = [];
+  const files = uploads[ref];
+  
+  return `<div class="dwsec">
+    <div class="t">Attachments / Proof</div>
+    <div class="upload-zone" onclick="document.getElementById('fileInput-${esc(ref)}').click()" 
+         ondrop="handleDrop(event, '${esc(ref)}')" ondragover="handleDragOver(event)">
+      <div class="icon">📎</div>
+      <div class="hint">Click or drag files here to upload</div>
+      <input type="file" id="fileInput-${esc(ref)}" multiple onchange="handleFileSelect(event, '${esc(ref)}')">
+    </div>
+    <div class="upload-list" id="uploadList-${esc(ref)}">
+      ${files.map((f, i) => `
+        <div class="upload-item">
+          <span class="name">${esc(f.name)}</span>
+          <span class="size">${(f.size / 1024).toFixed(0)} KB</span>
+          <span class="remove" onclick="removeUpload('${esc(ref)}', ${i})">✕</span>
+        </div>
+      `).join('')}
+    </div>
+  </div>`;
 }
 
-function prio(p) { return `<span class="prio ${esc(p)}">${esc(p)}</span>`; }
-function fmtD(s) { return s || '—'; }
-function lateCell(d) { if (!d) return '—'; return `<span class="late-n${d >= 4 ? ' sev' : ''}">${d}</span>`; }
-function refc(t) { return `<span class="t-ref">${esc(t.ref)}</span>`; }
-function matchQ(t, q) { if (!q) return true; q = q.toLowerCase(); return (t.name + ' ' + t.ref + ' ' + t.owner + ' ' + t.dept).toLowerCase().includes(q); }
-
-function inPeriod(ds) {
-  if (state.period === 'all') return true;
-  if (!ds) return false;
-  const d = new Date(ds);
-  if (state.period === 'month') return d.getFullYear() === ASAT.getFullYear() && d.getMonth() === ASAT.getMonth();
-  if (state.period === 'quarter') return d.getFullYear() === ASAT.getFullYear() && ((d.getMonth() / 3) | 0) === ((ASAT.getMonth() / 3) | 0);
-  if (state.period === 'week') { const diff = (ASAT - d) / 86400000; return diff >= -1 && diff <= 6; }
-  return true;
+function handleFileSelect(e, ref) {
+  const files = e.target.files;
+  if (!files.length) return;
+  addFiles(ref, files);
+  // Reset input
+  e.target.value = '';
+  // Refresh drawer if open
+  refreshDrawer(ref);
 }
 
-function ballOf(t) {
-  return t.status === 'Awaiting review' ? 'Approver' : 'Assignee';
+function handleDrop(e, ref) {
+  e.preventDefault();
+  const files = e.dataTransfer.files;
+  if (!files.length) return;
+  addFiles(ref, files);
+  e.target.classList.remove('dragover');
+  refreshDrawer(ref);
 }
 
-function toast(m, t) {
-  const c = document.getElementById('toast');
-  if (!c) return;
-  const d = document.createElement('div');
-  d.className = 'tst ' + (t === 'warn' ? 'warn' : '');
-  d.textContent = m;
-  c.appendChild(d);
-  setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 250); }, 2600);
+function handleDragOver(e) {
+  e.preventDefault();
+  e.target.classList.add('dragover');
 }
 
-function modalCancel() {
-  const m = document.getElementById('modal');
-  if (m) m.classList.remove('open');
+function addFiles(ref, fileList) {
+  if (!uploads[ref]) uploads[ref] = [];
+  for (let f of fileList) {
+    uploads[ref].push({ name: f.name, size: f.size, file: f, uploadedAt: new Date().toISOString() });
+  }
+  toast(`${fileList.length} file(s) uploaded to ${ref}`);
+  logAudit('Files uploaded', ref, `${fileList.length} file(s) attached`);
 }
 
-function modalConfirm() {
-  const v = document.getElementById('modal-input');
-  const cb = window._modalCb;
-  if (cb) cb(v ? v.value.trim() : '');
-  modalCancel();
+function removeUpload(ref, idx) {
+  if (!uploads[ref]) return;
+  const removed = uploads[ref].splice(idx, 1)[0];
+  toast(`Removed: ${removed.name}`);
+  refreshDrawer(ref);
 }
 
-function askModal(o) {
-  window._modalCb = o.onConfirm || null;
-  const title = document.getElementById('modal-title');
-  const label = document.getElementById('modal-label');
-  const input = document.getElementById('modal-input');
-  const ok = document.getElementById('modal-ok');
-  if (title) title.textContent = o.title || '';
-  if (label) label.textContent = o.label || '';
-  if (input) { input.value = o.value || ''; input.placeholder = o.placeholder || ''; input.rows = o.rows || 3; }
-  if (ok) { ok.textContent = o.confirmText || 'Confirm'; ok.className = 'btn ' + (o.danger ? 'ret' : 'primary'); }
-  const m = document.getElementById('modal');
-  if (m) { m.classList.add('open'); m.setAttribute('aria-hidden', 'false'); setTimeout(() => input && input.focus(), 10); }
+function refreshDrawer(ref) {
+  // Re-open the drawer to reflect changes
+  const drawer = document.getElementById('drawer');
+  if (drawer && drawer.classList.contains('open')) {
+    openTicket(ref);
+  }
 }
-
-function printView() { window.print(); }
 
 // ============================================================
 // USER DATA FROM USERS SHEET
@@ -1332,6 +1347,9 @@ async function loadSheetData() {
     renderWeightPanel();
     renderReport();
     renderPerf();
+    
+    // Load automated tasks
+    await loadAutomatedTasks();
     
     toast('Data loaded (' + DATA.tickets.length + ' tickets)');
     return true;
@@ -2287,51 +2305,8 @@ function dleg(segs) {
 }
 
 // ============================================================
-// TICKET DRAWER WITH APPROVER ACTIONS + SCORING + AUTO CLOSURE
+// TICKET DRAWER WITH APPROVER ACTIONS + SCORING + SYSTEM SCORE + UPLOAD
 // ============================================================
-
-// Auto-move overdue Critical tickets to Review basket after 5 days
-function autoMoveOverdueCriticalToReview() {
-  T.forEach(t => {
-    // If ticket is Critical, Open or More time status, overdue, and due date is at least 5 days old
-    if ((t.prio === 'Critical' || t.prio === 'High') && 
-        (t.status === 'Open' || t.status === 'More time' || t.status === 'Further review') && 
-        t.overdue && t.daysLate >= 5) {
-      
-      // Move to review basket
-      t.status = 'Awaiting review';
-      t.upStatus = 'Ready for Executive 1 Review';
-      t.upTs = new Date().toISOString();
-      t.submittedBy = 'System Auto-Move';
-      t.upComment = 'Auto-moved to review basket after 5 days overdue';
-      
-      // Log the auto-move
-      logAudit('Auto-moved to Review Basket', t.ref, '5 days overdue - critical ticket');
-    }
-  });
-  
-  // Refresh review queue
-  reviewQueue = DATA.tickets.filter(t => t.status === 'Awaiting review');
-}
-
-// Auto-close tickets that have been in review for 5 days
-function autoCloseReviewTickets() {
-  T.forEach(t => {
-    if (t.status === 'Awaiting review' && t.upTs) {
-      const reviewDays = Math.round((ASAT - new Date(t.upTs)) / 86400000);
-      if (reviewDays >= 5) {
-        // Auto-close the ticket
-        t.status = 'Closed';
-        t.closed = new Date().toISOString().slice(0,10);
-        t.closedOnTime = 'No';
-        t.closedLate = 'Yes';
-        t.systemScore = 0;
-        
-        logAudit('Auto-closed after 5 days in review', t.ref, 'No executive action taken');
-      }
-    }
-  });
-}
 
 function openTicket(ref) {
   const t = T.find(x => x.ref === ref);
@@ -2356,7 +2331,7 @@ function openTicket(ref) {
   const isExec1 = currentUser && currentUser.isExecutive && currentUser.executiveLevel === 1;
   const isExec2 = currentUser && currentUser.isExecutive && currentUser.executiveLevel === 2;
   
-  // Get scores
+  // Get scores - system score, exec1, exec2
   const exec1Score = t.exec1Score || '';
   const exec2Score = t.exec2Score || '';
   const systemScore = t.systemScore || t.scorePercent || '';
@@ -2368,40 +2343,25 @@ function openTicket(ref) {
     finalScore = Math.round((avgExec / 5) * parseFloat(systemScore));
   } else if (exec1Score && systemScore) {
     finalScore = Math.round((parseFloat(exec1Score) / 5) * parseFloat(systemScore));
-  } else if (exec2Score && systemScore) {
-    finalScore = Math.round((parseFloat(exec2Score) / 5) * parseFloat(systemScore));
   }
-  <button class="btn approve"
-        onclick="act('${esc(t.ref)}',true);closeTicket()">
-  ✓ Approve & Score (Exec 1)
-</button>
-
-<button class="btn approve"
-        onclick="act('${esc(t.ref)}',true);closeTicket()">
-  ✓ Approve & Close (Exec 2)
-</button>
-  <button class="btn return"
-        onclick="act('${esc(t.ref)}',false);closeTicket()">
-  ↺ Return
-</button>
   
-  // Build scoring section
+  // Build scoring section - show system score prominently for both execs
   let scoringHTML = '';
   if (t.status === 'Awaiting review' || t.status === 'Closed' || t.status === 'Further review') {
     scoringHTML = `<div class="dw-score-section">
       <h4>📊 Scoring & Performance</h4>
       <div class="score-grid">
-        <div class="score-item"><div class="label">System Score</div><div class="value">${systemScore ? systemScore + '%' : '—'}</div></div>
+        <div class="score-item" style="background:var(--wait-soft);border:1px solid #E6C887"><div class="label">System Score</div><div class="value">${systemScore ? systemScore + '%' : '—'}</div></div>
         <div class="score-item"><div class="label">Executive 1 Score</div><div class="value ${exec1Score ? '' : 'pending'}">${exec1Score ? exec1Score + '/5' : 'Pending'}</div></div>
         <div class="score-item"><div class="label">Executive 2 Score</div><div class="value ${exec2Score ? '' : 'pending'}">${exec2Score ? exec2Score + '/5' : 'Pending'}</div></div>
-        <div class="score-item"><div class="label">Final % Score</div><div class="value">${finalScore !== null ? finalScore + '%' : '—'}</div></div>
+        <div class="score-item" style="background:var(--ontime-soft);border:1px solid #BFE6D3"><div class="label">Final % Score</div><div class="value">${finalScore !== null ? finalScore + '%' : '—'}</div></div>
       </div>
       ${finalScore !== null ? `<div class="final-score"><div class="label">Final Score</div><div class="big">${finalScore}%</div></div>` : ''}
     </div>`;
   }
   
   let b = `<div class="dwcrumb">${esc(state.tab)} › ${esc(t.dept)} › ${esc(t.ref)}</div><h3>${esc(t.name)}</h3>`;
-  b += `<div class="agestrip"><div class="age"><div class="l">Open</div><div class="v">${openDays == null ? '—' : openDays + 'd'}</div></div>${dueChip}<div class="age"><div class="l">Awaiting review</div><div class="v">${t.status === 'Awaiting review' || t.status === 'Further review' ? t.daysWaiting + 'd' : '—'}</div></div></div>`;
+  b += `<div class="agestrip"><div class="age"><div class="l">Open</div><div class="v">${openDays == null ? '—' : openDays + 'd'}</div></div>${dueChip}<div class="age"><div class="l">Awaiting review</div><div class="v">${t.status === 'Awaiting review' ? t.daysWaiting + 'd' : '—'}</div></div></div>`;
   b += `<div class="dwgrid">
     <div class="c"><div class="l">Assigned to</div><div class="v">${esc(t.owner)}</div></div>
     <div class="c"><div class="l">Raised by</div><div class="v">${t.raisedBy ? esc(t.raisedBy) : '<span class="muted2">—</span>'}${t.raisedBy === DATA.me ? ' <span class="meflag">you</span>' : ''}</div></div>
@@ -2420,7 +2380,7 @@ function openTicket(ref) {
   if (t.created) tl.push(['Created', t.created, '']);
   if (t.upTs || t.upStatus) tl.push([t.upStatus || 'Updated', t.upTs || '', t.upBy || '']);
   if (t.compReq) tl.push(['Completion requested', t.compReq, '']);
-  if (t.status === 'Awaiting review' || t.status === 'Further review') tl.push(['Awaiting your review', 'waiting ' + t.daysWaiting + 'd', '']);
+  if (t.status === 'Awaiting review') tl.push(['Awaiting your review', 'waiting ' + t.daysWaiting + 'd', '']);
   if (t.due) tl.push([t.overdue ? 'Due — passed' : 'Due', t.due, t.overdue ? (t.daysLate + 'd late') : '']);
   if (t.closed) tl.push(['Closed', t.closed, t.closedOnTime === 'Yes' ? 'On time' : 'Late']);
   b += `<div class="dwsec"><div class="t">Timeline</div><div class="timeline">${tl.map(e => `<div class="ev"><span class="dot"></span><span class="lab">${esc(e[0])}</span><span class="dt">${esc(e[1])}${e[2] ? ' · ' + esc(e[2]) : ''}</span></div>`).join('')}</div></div>`;
@@ -2428,39 +2388,52 @@ function openTicket(ref) {
   if (t.comment) b += `<div class="dwsec"><div class="t">Comments</div><p>${esc(t.comment)}</p></div>`;
   if (t.proofs && t.proofs.length) b += `<div class="dwsec proof"><div class="t">Proof / attachments</div><p>${t.proofs.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">Proof ${i + 1} ↗</a>`).join('')}</p></div>`;
   
-  // Add scoring section
+  // Add scoring section with system score
   b += scoringHTML;
   
-  // Add executive score picker for Exec 1
-  if (isExec1 && t.status === 'Awaiting review') {
+  // Add upload section
+  b += renderUploadSection(ref);
+  
+  // Add executive score picker for Exec 1 - they see system score alongside their score
+  if (isExec1 && (t.status === 'Awaiting review' || t.status === 'Further review')) {
     const sc = scores[t.ref] || {};
-    b += `<div class="dwsec"><div class="t">Your Executive Score${sc.score ? ` · <span class="yourscore">your score ${sc.score}/5</span>` : ''}</div><div class="scorepick">${[1,2,3,4,5].map(n => `<button class="sb${sc.score >= n ? ' on' : ''}" onclick="setScore('${esc(t.ref)}',${n})">${n}</button>`).join('')}<span class="scoreclear" onclick="setScore('${esc(t.ref)}',0)">clear</span></div>
-    <div class="scorehint">Rubric — 5 excellent · 4 strong · 3 acceptable · 2 below · 1 rework.</div></div>`;
+    b += `<div class="dwsec"><div class="t">Your Executive Score${sc.score ? ` · <span class="yourscore">your score ${sc.score}/5</span>` : ''} <span class="muted2">(System Score: ${systemScore || '—'}%)</span></div><div class="scorepick">${[1,2,3,4,5].map(n => `<button class="sb${sc.score >= n ? ' on' : ''}" onclick="setScore('${esc(t.ref)}',${n})">${n}</button>`).join('')}<span class="scoreclear" onclick="setScore('${esc(t.ref)}',0)">clear</span></div>
+    <div class="scorehint">Rubric — 5 excellent · 4 strong · 3 acceptable · 2 below · 1 rework. System score: ${systemScore || 'not yet calculated'}</div></div>`;
+  }
+  
+  // Exec 2 also sees system score alongside their score
+  if (isExec2 && (t.status === 'Awaiting review' || t.status === 'Further review')) {
+    const sc = scores[t.ref] || {};
+    b += `<div class="dwsec"><div class="t">Your Executive 2 Score${sc.score ? ` · <span class="yourscore">your score ${sc.score}/5</span>` : ''} <span class="muted2">(System Score: ${systemScore || '—'}%)</span></div><div class="scorepick">${[1,2,3,4,5].map(n => `<button class="sb${sc.score >= n ? ' on' : ''}" onclick="setScore('${esc(t.ref)}',${n})">${n}</button>`).join('')}<span class="scoreclear" onclick="setScore('${esc(t.ref)}',0)">clear</span></div>
+    <div class="scorehint">Rubric — 5 excellent · 4 strong · 3 acceptable · 2 below · 1 rework. System score: ${systemScore || 'not yet calculated'}</div></div>`;
   }
   
   if (body) body.innerHTML = b;
   
-  // ACTION BUTTONS IN DRAWER FOOTER - Always show for any ticket that can be actioned
+  // ACTION BUTTONS - Always show Approve/Return for tickets that can be actioned
   let a = '';
   if (t.status === 'Awaiting review' || t.status === 'Further review') {
     if (isExec1) {
       a = `<div class="dw-actions">
-        <button class="btn approve" onclick="act('${esc(t.ref)}',true);closeTicket()">✓ Approve & Score</button>
+        <button class="btn approve" onclick="act('${esc(t.ref)}',true);closeTicket()">✓ Approve & Score (Exec 1)</button>
         <button class="btn return" onclick="act('${esc(t.ref)}',false);closeTicket()">↺ Return</button>
+        <button class="btn upload" onclick="document.getElementById('fileInput-${esc(t.ref)}').click()">📎 Upload</button>
       </div>`;
     } else if (isExec2) {
       a = `<div class="dw-actions">
-        <button class="btn approve" onclick="act('${esc(t.ref)}',true);closeTicket()">✓ Approve & Close</button>
+        <button class="btn approve" onclick="act('${esc(t.ref)}',true);closeTicket()">✓ Approve & Close (Exec 2)</button>
         <button class="btn return" onclick="act('${esc(t.ref)}',false);closeTicket()">↺ Return</button>
+        <button class="btn upload" onclick="document.getElementById('fileInput-${esc(t.ref)}').click()">📎 Upload</button>
       </div>`;
     } else {
       a = `<div class="dw-actions"><span style="font-size:12px;color:var(--ink3)">Only executives can approve or return this ticket.</span></div>`;
     }
   } else if (t.status === 'Open' || t.status === 'More time') {
-    // For Open tickets, show a "Move to Review" button for executives
+    // For Open tickets, show "Move to Review" button for executives
     if (isExec1 || isExec2) {
       a = `<div class="dw-actions">
         <button class="btn" style="background:var(--brand);color:#fff;border-color:var(--brand)" onclick="moveToReview('${esc(t.ref)}');closeTicket()">📤 Move to Review Basket</button>
+        <button class="btn upload" onclick="document.getElementById('fileInput-${esc(t.ref)}').click()">📎 Upload</button>
       </div>`;
     } else {
       a = `<span style="font-size:12px;color:var(--ink3)">No action required — this ticket is ${t.status.toLowerCase()}.</span>`;
@@ -2468,13 +2441,96 @@ function openTicket(ref) {
   } else {
     a = `<span style="font-size:12px;color:var(--ink3)">No action required — this ticket is ${t.status.toLowerCase()}.</span>`;
   }
+  
+  // Add Approve/Return buttons for "My Tickets" view (tickets raised by the user)
+  if (state.tab === 'mine' && t.raisedBy === DATA.me) {
+    a = `<div class="dw-actions" style="border-top:1px solid var(--brand);padding-top:10px;margin-top:6px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%">
+        <span style="font-size:11px;color:var(--brand-ink);font-weight:600">Approver Action</span>
+        <button class="btn go" onclick="approveMyTicket('${esc(t.ref)}');closeTicket()">✓ Approve</button>
+        <button class="btn ret" onclick="returnMyTicket('${esc(t.ref)}');closeTicket()">↺ Return</button>
+        <button class="btn upload" onclick="document.getElementById('fileInput-${esc(t.ref)}').click()">📎 Upload</button>
+      </div>
+    </div>`;
+  }
+  
   if (act) act.innerHTML = a;
   
   if (scrim) scrim.classList.add('open');
   if (drawer) drawer.classList.add('open');
 }
 
-// Move ticket to Review Basket manually
+// Approve a ticket from "My Tickets"
+function approveMyTicket(ref) {
+  const t = T.find(x => x.ref === ref);
+  if (!t) { toast('Ticket not found'); return; }
+  if (t.status === 'Closed') { toast('Ticket is already closed'); return; }
+  
+  askModal({
+    title: 'Approve ticket',
+    label: 'Score (1-5) and optional comment',
+    placeholder: 'Score (1-5)',
+    confirmText: 'Approve',
+    onConfirm: input => {
+      const score = parseInt(input.trim());
+      if (isNaN(score) || score < 1 || score > 5) {
+        toast('Score must be between 1 and 5', 'warn');
+        return;
+      }
+      // Set status to Closed
+      t.status = 'Closed';
+      t.closed = new Date().toISOString().slice(0,10);
+      t.exec1Score = score;
+      t.exec1Percent = Math.round((score / 5) * 100);
+      if (t.due && t.closed <= t.due) {
+        t.closedOnTime = 'Yes';
+        t.closedLate = 'No';
+      } else if (t.due && t.closed > t.due) {
+        t.closedOnTime = 'No';
+        t.closedLate = 'Yes';
+      }
+      logAudit('Approved (My Ticket)', t.ref, 'Score: ' + score + '/5', score);
+      // Remove from review queue if present
+      const idx = reviewQueue.findIndex(r => r.ref === ref);
+      if (idx >= 0) reviewQueue.splice(idx, 1);
+      renderTiles();
+      headlines();
+      renderReviewView();
+      renderMine();
+      toast('Approved & closed ' + ref);
+    }
+  });
+}
+
+// Return a ticket from "My Tickets"
+function returnMyTicket(ref) {
+  const t = T.find(x => x.ref === ref);
+  if (!t) { toast('Ticket not found'); return; }
+  if (t.status === 'Closed') { toast('Ticket is already closed'); return; }
+  
+  askModal({
+    title: 'Return ticket',
+    label: 'Reason for returning',
+    placeholder: 'Explain what needs fixing…',
+    confirmText: 'Return',
+    danger: true,
+    onConfirm: reason => {
+      t.status = 'Open';
+      state.returns[t.ref] = (state.returns[t.ref] || 0) + 1;
+      logAudit('Returned (My Ticket)', t.ref, reason || '');
+      // Remove from review queue if present
+      const idx = reviewQueue.findIndex(r => r.ref === ref);
+      if (idx >= 0) reviewQueue.splice(idx, 1);
+      renderTiles();
+      headlines();
+      renderReviewView();
+      renderMine();
+      toast('Returned ' + ref);
+    }
+  });
+}
+
+// Move ticket to Review Basket
 function moveToReview(ref) {
   const t = T.find(x => x.ref === ref);
   if (!t) { toast('Ticket not found'); return; }
@@ -2514,6 +2570,224 @@ function setScore(ref, n) {
   if (drawer && drawer.classList.contains('open')) {
     openTicket(ref);
   }
+}
+
+// ============================================================
+// AUTO-MOVE CRITICAL TO REVIEW AFTER 5 DAYS
+// ============================================================
+function autoMoveCriticalToReview() {
+  T.forEach(t => {
+    if ((t.prio === 'Critical' || t.prio === 'High') && 
+        (t.status === 'Open' || t.status === 'More time') && 
+        t.overdue && t.daysLate >= 5) {
+      
+      t.status = 'Awaiting review';
+      t.upStatus = 'Ready for Executive 1 Review';
+      t.upTs = new Date().toISOString();
+      t.submittedBy = 'System Auto-Move';
+      t.upComment = 'Auto-moved to review basket after 5 days overdue';
+      
+      logAudit('Auto-moved to Review Basket', t.ref, '5 days overdue - critical ticket');
+    }
+  });
+  reviewQueue = DATA.tickets.filter(t => t.status === 'Awaiting review');
+}
+
+// ============================================================
+// SYSTEM SCORING - Auto-calculate based on submission date
+// ============================================================
+function calculateSystemScore(ticket) {
+  if (!ticket.submissionDate && !ticket.upTs) {
+    // No submission, check if ticket is overdue and should be closed
+    if (ticket.overdue && ticket.daysLate >= 5) {
+      // Auto-close on 5th day of being late
+      if (ticket.status !== 'Closed') {
+        ticket.status = 'Closed';
+        ticket.closed = new Date().toISOString().slice(0,10);
+        ticket.closedOnTime = 'No';
+        ticket.closedLate = 'Yes';
+        ticket.systemScore = 0;
+        logAudit('Auto-closed (5 days late)', ticket.ref, 'System auto-closure');
+      }
+    }
+    return;
+  }
+  
+  const subDate = new Date(ticket.submissionDate || ticket.upTs);
+  const dueDate = ticket.due ? new Date(ticket.due) : null;
+  
+  if (!dueDate) {
+    // No due date, cannot calculate
+    return;
+  }
+  
+  const diffDays = Math.round((subDate - dueDate) / 86400000);
+  
+  if (diffDays <= 0) {
+    ticket.systemScore = 100; // On time or early
+    ticket.scorePercent = 100;
+  } else if (diffDays <= 4) {
+    ticket.systemScore = 50; // Within 4 days late
+    ticket.scorePercent = 50;
+  } else {
+    ticket.systemScore = 0; // 5+ days late
+    ticket.scorePercent = 0;
+    // Auto-close on 5th day
+    if (ticket.status !== 'Closed') {
+      ticket.status = 'Closed';
+      ticket.closed = new Date().toISOString().slice(0,10);
+      ticket.closedOnTime = 'No';
+      ticket.closedLate = 'Yes';
+      logAudit('Auto-closed (5+ days late)', ticket.ref, 'System auto-closure');
+    }
+  }
+  
+  // Update review queue if status changed
+  if (ticket.status === 'Awaiting review') {
+    reviewQueue = DATA.tickets.filter(t => t.status === 'Awaiting review');
+  }
+}
+
+// ============================================================
+// UPDATED ACT FUNCTION - Handles Executive 1 & 2 scoring
+// ============================================================
+
+function act(r, ok) {
+  const i = reviewQueue.findIndex(t => t.ref === r);
+  if (i < 0) { 
+    // Check if ticket is in main T array
+    const t = T.find(tk => tk.ref === r);
+    if (!t) { toast('Ticket not found'); return; }
+    // If ticket is not in review queue but is awaiting review, add it
+    if (t.status === 'Awaiting review' || t.status === 'Further review') {
+      reviewQueue.push(t);
+      renderReviewView();
+      // Try again
+      const newIdx = reviewQueue.findIndex(tk => tk.ref === r);
+      if (newIdx < 0) { toast('Ticket not in review queue'); return; }
+      return act(r, ok);
+    }
+    toast('Ticket not in review queue');
+    return;
+  }
+  
+  if (ok) { 
+    // Ask for score if Executive 1
+    if (currentUser && currentUser.isExecutive && currentUser.executiveLevel === 1) {
+      askModal({
+        title: 'Score ticket - Executive 1',
+        label: 'Enter score (1-5) for ' + r + '\nSystem Score: ' + (reviewQueue[i].systemScore || '—') + '%',
+        placeholder: '1-5',
+        confirmText: 'Approve & Score (Exec 1)',
+        onConfirm: score => {
+          const numScore = parseInt(score);
+          if (isNaN(numScore) || numScore < 1 || numScore > 5) {
+            toast('Score must be between 1 and 5', 'warn');
+            return;
+          }
+          doReview(r, true, '', numScore, 1);
+        }
+      });
+    } else if (currentUser && currentUser.isExecutive && currentUser.executiveLevel === 2) {
+      // Executive 2 - show system score and Exec 1 score if available
+      const t = reviewQueue[i];
+      const msg = 'Enter score (1-5) for ' + r + 
+                  '\nSystem Score: ' + (t.systemScore || '—') + '%' +
+                  '\nExecutive 1 Score: ' + (t.exec1Score || 'Pending');
+      askModal({
+        title: 'Score ticket - Executive 2',
+        label: msg,
+        placeholder: '1-5',
+        confirmText: 'Approve & Close (Exec 2)',
+        onConfirm: score => {
+          const numScore = parseInt(score);
+          if (isNaN(numScore) || numScore < 1 || numScore > 5) {
+            toast('Score must be between 1 and 5', 'warn');
+            return;
+          }
+          doReview(r, true, '', numScore, 2);
+        }
+      });
+    } else {
+      doReview(r, true, '');
+    }
+    return;
+  }
+  
+  askModal({
+    title: 'Return ticket',
+    label: 'Reason for returning ' + r,
+    placeholder: 'Explain what needs fixing…',
+    confirmText: 'Return ticket',
+    danger: true,
+    onConfirm: reason => doReview(r, false, reason)
+  });
+}
+
+function doReview(r, ok, reason, score, execLevel) {
+  const i = reviewQueue.findIndex(t => t.ref === r);
+  if (i < 0) return;
+  const t = reviewQueue.splice(i, 1)[0];
+  
+  if (ok) {
+    // Update ticket status to Closed
+    t.status = 'Closed';
+    t.closed = new Date().toISOString().slice(0,10);
+    
+    // Set score based on which executive is scoring
+    if (score) {
+      if (execLevel === 1) {
+        t.exec1Score = score;
+        t.exec1Percent = Math.round((score / 5) * 100);
+        // Add to scores
+        scores[t.ref] = { score: score, comment: reason || '', executive: 1 };
+        // Move to Executive 2 queue
+        t.status = 'Awaiting review';
+        t.upStatus = 'Ready for Executive 2 Review';
+        t.upTs = new Date().toISOString();
+        t.upComment = 'Executive 1 scored: ' + score + '/5';
+        // Add back to review queue for Exec 2
+        reviewQueue.push(t);
+        logAudit('Executive 1 scored', t.ref, 'Score: ' + score + '/5 - moved to Executive 2');
+        renderReviewView();
+        renderTiles();
+        headlines();
+        toast('Executive 1 scored ' + t.ref + ' - ' + score + '/5 - moved to Executive 2');
+        return;
+      } else if (execLevel === 2) {
+        t.exec2Score = score;
+        t.exec2Percent = Math.round((score / 5) * 100);
+        scores[t.ref] = { score: score, comment: reason || '', executive: 2 };
+        // Calculate final score
+        if (t.exec1Score && t.exec2Score && t.systemScore) {
+          const avgExec = (parseFloat(t.exec1Score) + parseFloat(t.exec2Score)) / 2;
+          t.finalScore = Math.round((avgExec / 5) * parseFloat(t.systemScore));
+        }
+        // Determine closed on time
+        if (t.due && t.closed <= t.due) {
+          t.closedOnTime = 'Yes';
+          t.closedLate = 'No';
+        } else if (t.due && t.closed > t.due) {
+          t.closedOnTime = 'No';
+          t.closedLate = 'Yes';
+        }
+        logAudit('Executive 2 scored & closed', t.ref, 'Score: ' + score + '/5 - Final: ' + (t.finalScore || 'N/A') + '%');
+      }
+    }
+  } else {
+    // Returned - set status back to Open
+    t.status = 'Open';
+    state.returns[t.ref] = (state.returns[t.ref] || 0) + 1;
+    logAudit('Returned', t.ref, reason || '');
+  }
+  
+  delete state.sel[t.ref];
+  stashUndo([t], !ok);
+  renderReviewView();
+  renderTiles();
+  headlines();
+  renderActivity();
+  toast(ok ? ('Approved & closed · ' + t.ref + (score ? ' Score: ' + score + '/5' : '')) : ('Returned · ' + t.ref + ' (rework recorded)'), ok ? 'ok' : 'warn');
 }
 
 // ============================================================
@@ -2956,6 +3230,151 @@ function closeHelp() {
 }
 
 // ============================================================
+// AUTOMATED TASKS
+// ============================================================
+let automatedTasks = [];
+
+async function loadAutomatedTasks() {
+  try {
+    const url = OPOT_SHEETS.writeUrl + '?mode=readAutomatedTasks&t=' + Date.now();
+    const resp = await fetch(url);
+    const result = await resp.json();
+    
+    if (result.ok && result.sheets && result.sheets['Automated Tasks']) {
+      automatedTasks = result.sheets['Automated Tasks'].map(row => ({
+        title: row['Title'] || row['Task'] || 'Untitled',
+        schedule: row['Schedule'] || 'Daily',
+        dueOffset: parseInt(row['Due Offset (Days)']) || 1,
+        assignee: row['Assignee'] || row['Assigned To'] || 'Unassigned',
+        dept: row['Department'] || row['Dept'] || 'General',
+        prio: row['Priority'] || 'Medium',
+        status: row['Status'] || 'Active',
+        lastRun: row['Last Run'] || ''
+      }));
+      
+      // Process automated tasks
+      processAutomatedTasks();
+    }
+  } catch (e) {
+    console.log('Could not load automated tasks:', e);
+  }
+}
+
+function processAutomatedTasks() {
+  const today = new Date().toISOString().slice(0, 10);
+  
+  automatedTasks.forEach(task => {
+    if (task.status !== 'Active') return;
+    
+    const lastRun = task.lastRun ? new Date(task.lastRun) : null;
+    const shouldRun = shouldTaskRun(task, lastRun);
+    
+    if (shouldRun) {
+      generateTaskFromAutomated(task, today);
+      // Update last run
+      task.lastRun = today;
+      // Send update to sheet
+      sendToAutomatedTasks(task);
+    }
+  });
+}
+
+function shouldTaskRun(task, lastRun) {
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  
+  if (!lastRun) return true;
+  
+  const lastRunStr = lastRun.toISOString().slice(0, 10);
+  if (lastRunStr === todayStr) return false;
+  
+  switch (task.schedule) {
+    case 'Daily':
+      return true;
+    case 'Weekly':
+      return (today.getDay() === 1); // Monday
+    case 'Bi-weekly':
+      const weeksSince = Math.floor((today - lastRun) / (7 * 24 * 60 * 60 * 1000));
+      return weeksSince >= 2;
+    case 'Monthly':
+      return (today.getDate() === 1);
+    default:
+      return false;
+  }
+}
+
+function generateTaskFromAutomated(task, dueDate) {
+  const due = new Date(dueDate);
+  due.setDate(due.getDate() + (task.dueOffset || 1));
+  const dueStr = due.toISOString().slice(0, 10);
+  
+  const ref = 'AUTO-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + String(Math.random()).slice(2,6);
+  
+  const newTicket = {
+    ref, name: task.title, dept: task.dept, prio: task.prio || 'Medium', status: 'Open',
+    owner: task.assignee, created: dueDate, due: dueStr,
+    closed: '', submittedBy: task.assignee, desc: 'Automated task generated from schedule',
+    comment: '', upStatus: '', upComment: '', upBy: '', upTs: '', lastResp: '',
+    compReq: '', proofs: [], raisedBy: DATA.me,
+    overdue: false, daysLate: 0, daysWaiting: 0,
+    ownerEmail: '', ownerWhatsapp: '', ownerCostCenter: '', ownerDepartment: task.dept,
+    systemScore: null, exec1Score: '', exec2Score: '', exec1Percent: '', exec2Percent: '', finalScore: '',
+    isAutomated: true, parentTask: task.title
+  };
+  
+  T.push(newTicket);
+  DATA.summary.activeAssigned++;
+  DATA.summary.total++;
+  logAudit('Automated task created', ref, 'From: ' + task.title);
+  toast('Automated task created: ' + ref);
+}
+
+async function sendToAutomatedTasks(task) {
+  try {
+    const url = OPOT_SHEETS.writeUrl + '?mode=updateAutomatedTask';
+    const body = new URLSearchParams();
+    body.append('title', task.title);
+    body.append('lastRun', task.lastRun || new Date().toISOString().slice(0, 10));
+    body.append('status', task.status || 'Active');
+    
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString()
+    });
+  } catch (e) {
+    console.log('Could not update automated task:', e);
+  }
+}
+
+// ============================================================
+// RECURRING NOTIFICATIONS
+// ============================================================
+function checkNotifications() {
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  
+  T.forEach(t => {
+    if (t.status === 'Closed') return;
+    if (!t.due) return;
+    
+    const dueDate = new Date(t.due);
+    const diffDays = Math.round((dueDate - today) / 86400000);
+    
+    // 2 days before due date
+    if (diffDays === 2) {
+      toast('⏰ Reminder: ' + t.ref + ' - "' + t.name + '" due in 2 days!', 'warn');
+      logAudit('Reminder sent', t.ref, '2 days before due date');
+    }
+    // On due date
+    if (diffDays === 0) {
+      toast('⏰ DUE TODAY: ' + t.ref + ' - "' + t.name + '" is due today!', 'warn');
+      logAudit('Due date reminder sent', t.ref, 'Due today');
+    }
+  });
+}
+
+// ============================================================
 // KEYBOARD SHORTCUTS
 // ============================================================
 document.addEventListener('keydown', e => {
@@ -3002,6 +3421,9 @@ async function init() {
   } catch (e) {
     console.log('Could not preload users:', e);
   }
+  
+  // Start notification checker
+  setInterval(checkNotifications, 60000); // Check every minute
 }
 
 // Enter key for login
@@ -3017,13 +3439,18 @@ init();
 
 // Run auto-move and auto-close on load and periodically
 setInterval(() => {
-  autoMoveOverdueCriticalToReview();
-  autoCloseReviewTickets();
+  // Calculate system scores for all tickets
+  T.forEach(t => calculateSystemScore(t));
+  // Auto-move critical overdue tickets to review
+  autoMoveCriticalToReview();
   // Update UI
   renderTiles();
   headlines();
   renderReviewView();
-}, 60000); // Check every minute
+  renderTable('critical');
+  // Process automated tasks periodically
+  processAutomatedTasks();
+}, 30000); // Check every 30 seconds
 </script>
 </body>
 </html>
