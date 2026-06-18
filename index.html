@@ -2371,6 +2371,19 @@ function openTicket(ref) {
   } else if (exec2Score && systemScore) {
     finalScore = Math.round((parseFloat(exec2Score) / 5) * parseFloat(systemScore));
   }
+  <button class="btn approve"
+        onclick="act('${esc(t.ref)}',true);closeTicket()">
+  ✓ Approve & Score (Exec 1)
+</button>
+
+<button class="btn approve"
+        onclick="act('${esc(t.ref)}',true);closeTicket()">
+  ✓ Approve & Close (Exec 2)
+</button>
+  <button class="btn return"
+        onclick="act('${esc(t.ref)}',false);closeTicket()">
+  ↺ Return
+</button>
   
   // Build scoring section
   let scoringHTML = '';
