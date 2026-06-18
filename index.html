@@ -587,6 +587,10 @@ button:focus-visible,.tab:focus-visible,select:focus-visible,input:focus-visible
 .dw-score-section .final-score{background:var(--ontime-soft);border:1px solid #BFE6D3;border-radius:6px;padding:10px;text-align:center;margin-top:10px}
 .dw-score-section .final-score .big{font-size:24px;font-weight:700;color:var(--ontime)}
 .dw-score-section .final-score .label{font-size:11px;color:var(--ink3)}
+
+/* ===== Approval Action Buttons in Drawer ===== */
+.dw-actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+.dw-actions .btn{flex:1;min-width:100px;justify-content:center;padding:10px 16px;font-size:14px}
 </style>
 </head>
 <body>
@@ -2283,8 +2287,51 @@ function dleg(segs) {
 }
 
 // ============================================================
-// TICKET DRAWER WITH APPROVER ACTIONS + SCORING
+// TICKET DRAWER WITH APPROVER ACTIONS + SCORING + AUTO CLOSURE
 // ============================================================
+
+// Auto-move overdue Critical tickets to Review basket after 5 days
+function autoMoveOverdueCriticalToReview() {
+  T.forEach(t => {
+    // If ticket is Critical, Open or More time status, overdue, and due date is at least 5 days old
+    if ((t.prio === 'Critical' || t.prio === 'High') && 
+        (t.status === 'Open' || t.status === 'More time' || t.status === 'Further review') && 
+        t.overdue && t.daysLate >= 5) {
+      
+      // Move to review basket
+      t.status = 'Awaiting review';
+      t.upStatus = 'Ready for Executive 1 Review';
+      t.upTs = new Date().toISOString();
+      t.submittedBy = 'System Auto-Move';
+      t.upComment = 'Auto-moved to review basket after 5 days overdue';
+      
+      // Log the auto-move
+      logAudit('Auto-moved to Review Basket', t.ref, '5 days overdue - critical ticket');
+    }
+  });
+  
+  // Refresh review queue
+  reviewQueue = DATA.tickets.filter(t => t.status === 'Awaiting review');
+}
+
+// Auto-close tickets that have been in review for 5 days
+function autoCloseReviewTickets() {
+  T.forEach(t => {
+    if (t.status === 'Awaiting review' && t.upTs) {
+      const reviewDays = Math.round((ASAT - new Date(t.upTs)) / 86400000);
+      if (reviewDays >= 5) {
+        // Auto-close the ticket
+        t.status = 'Closed';
+        t.closed = new Date().toISOString().slice(0,10);
+        t.closedOnTime = 'No';
+        t.closedLate = 'Yes';
+        t.systemScore = 0;
+        
+        logAudit('Auto-closed after 5 days in review', t.ref, 'No executive action taken');
+      }
+    }
+  });
+}
 
 function openTicket(ref) {
   const t = T.find(x => x.ref === ref);
@@ -2321,11 +2368,13 @@ function openTicket(ref) {
     finalScore = Math.round((avgExec / 5) * parseFloat(systemScore));
   } else if (exec1Score && systemScore) {
     finalScore = Math.round((parseFloat(exec1Score) / 5) * parseFloat(systemScore));
+  } else if (exec2Score && systemScore) {
+    finalScore = Math.round((parseFloat(exec2Score) / 5) * parseFloat(systemScore));
   }
   
   // Build scoring section
   let scoringHTML = '';
-  if (t.status === 'Awaiting review' || t.status === 'Closed') {
+  if (t.status === 'Awaiting review' || t.status === 'Closed' || t.status === 'Further review') {
     scoringHTML = `<div class="dw-score-section">
       <h4>📊 Scoring & Performance</h4>
       <div class="score-grid">
@@ -2339,7 +2388,7 @@ function openTicket(ref) {
   }
   
   let b = `<div class="dwcrumb">${esc(state.tab)} › ${esc(t.dept)} › ${esc(t.ref)}</div><h3>${esc(t.name)}</h3>`;
-  b += `<div class="agestrip"><div class="age"><div class="l">Open</div><div class="v">${openDays == null ? '—' : openDays + 'd'}</div></div>${dueChip}<div class="age"><div class="l">Awaiting review</div><div class="v">${t.status === 'Awaiting review' ? t.daysWaiting + 'd' : '—'}</div></div></div>`;
+  b += `<div class="agestrip"><div class="age"><div class="l">Open</div><div class="v">${openDays == null ? '—' : openDays + 'd'}</div></div>${dueChip}<div class="age"><div class="l">Awaiting review</div><div class="v">${t.status === 'Awaiting review' || t.status === 'Further review' ? t.daysWaiting + 'd' : '—'}</div></div></div>`;
   b += `<div class="dwgrid">
     <div class="c"><div class="l">Assigned to</div><div class="v">${esc(t.owner)}</div></div>
     <div class="c"><div class="l">Raised by</div><div class="v">${t.raisedBy ? esc(t.raisedBy) : '<span class="muted2">—</span>'}${t.raisedBy === DATA.me ? ' <span class="meflag">you</span>' : ''}</div></div>
@@ -2358,7 +2407,7 @@ function openTicket(ref) {
   if (t.created) tl.push(['Created', t.created, '']);
   if (t.upTs || t.upStatus) tl.push([t.upStatus || 'Updated', t.upTs || '', t.upBy || '']);
   if (t.compReq) tl.push(['Completion requested', t.compReq, '']);
-  if (t.status === 'Awaiting review') tl.push(['Awaiting your review', 'waiting ' + t.daysWaiting + 'd', '']);
+  if (t.status === 'Awaiting review' || t.status === 'Further review') tl.push(['Awaiting your review', 'waiting ' + t.daysWaiting + 'd', '']);
   if (t.due) tl.push([t.overdue ? 'Due — passed' : 'Due', t.due, t.overdue ? (t.daysLate + 'd late') : '']);
   if (t.closed) tl.push(['Closed', t.closed, t.closedOnTime === 'Yes' ? 'On time' : 'Late']);
   b += `<div class="dwsec"><div class="t">Timeline</div><div class="timeline">${tl.map(e => `<div class="ev"><span class="dot"></span><span class="lab">${esc(e[0])}</span><span class="dt">${esc(e[1])}${e[2] ? ' · ' + esc(e[2]) : ''}</span></div>`).join('')}</div></div>`;
@@ -2378,17 +2427,30 @@ function openTicket(ref) {
   
   if (body) body.innerHTML = b;
   
-  // Action buttons in drawer footer
+  // ACTION BUTTONS IN DRAWER FOOTER - Always show for any ticket that can be actioned
   let a = '';
-  if (t.status === 'Awaiting review') {
+  if (t.status === 'Awaiting review' || t.status === 'Further review') {
     if (isExec1) {
-      a = `<button class="btn approve" onclick="act('${esc(t.ref)}',true);closeTicket()">✓ Approve & Score</button>
-           <button class="btn return" onclick="act('${esc(t.ref)}',false);closeTicket()">↺ Return</button>`;
+      a = `<div class="dw-actions">
+        <button class="btn approve" onclick="act('${esc(t.ref)}',true);closeTicket()">✓ Approve & Score</button>
+        <button class="btn return" onclick="act('${esc(t.ref)}',false);closeTicket()">↺ Return</button>
+      </div>`;
     } else if (isExec2) {
-      a = `<button class="btn approve" onclick="act('${esc(t.ref)}',true);closeTicket()">✓ Approve & Close</button>
-           <button class="btn return" onclick="act('${esc(t.ref)}',false);closeTicket()">↺ Return</button>`;
+      a = `<div class="dw-actions">
+        <button class="btn approve" onclick="act('${esc(t.ref)}',true);closeTicket()">✓ Approve & Close</button>
+        <button class="btn return" onclick="act('${esc(t.ref)}',false);closeTicket()">↺ Return</button>
+      </div>`;
     } else {
-      a = `<span style="font-size:12px;color:var(--ink3)">Only executives can approve or return this ticket.</span>`;
+      a = `<div class="dw-actions"><span style="font-size:12px;color:var(--ink3)">Only executives can approve or return this ticket.</span></div>`;
+    }
+  } else if (t.status === 'Open' || t.status === 'More time') {
+    // For Open tickets, show a "Move to Review" button for executives
+    if (isExec1 || isExec2) {
+      a = `<div class="dw-actions">
+        <button class="btn" style="background:var(--brand);color:#fff;border-color:var(--brand)" onclick="moveToReview('${esc(t.ref)}');closeTicket()">📤 Move to Review Basket</button>
+      </div>`;
+    } else {
+      a = `<span style="font-size:12px;color:var(--ink3)">No action required — this ticket is ${t.status.toLowerCase()}.</span>`;
     }
   } else {
     a = `<span style="font-size:12px;color:var(--ink3)">No action required — this ticket is ${t.status.toLowerCase()}.</span>`;
@@ -2397,6 +2459,31 @@ function openTicket(ref) {
   
   if (scrim) scrim.classList.add('open');
   if (drawer) drawer.classList.add('open');
+}
+
+// Move ticket to Review Basket manually
+function moveToReview(ref) {
+  const t = T.find(x => x.ref === ref);
+  if (!t) { toast('Ticket not found'); return; }
+  if (t.status !== 'Open' && t.status !== 'More time') {
+    toast('Ticket is already in review or closed');
+    return;
+  }
+  
+  t.status = 'Awaiting review';
+  t.upStatus = 'Ready for Executive 1 Review';
+  t.upTs = new Date().toISOString();
+  t.upBy = DATA.me;
+  t.upComment = 'Manually moved to review basket by ' + DATA.me;
+  
+  // Update review queue
+  reviewQueue = DATA.tickets.filter(t => t.status === 'Awaiting review');
+  
+  logAudit('Manually moved to Review Basket', t.ref, 'By ' + DATA.me);
+  renderReviewView();
+  renderTiles();
+  headlines();
+  toast('Ticket moved to Review Basket');
 }
 
 function closeTicket() {
@@ -2914,6 +3001,16 @@ document.getElementById('loginEmail').addEventListener('keydown', function(e) {
 
 // Start the app
 init();
+
+// Run auto-move and auto-close on load and periodically
+setInterval(() => {
+  autoMoveOverdueCriticalToReview();
+  autoCloseReviewTickets();
+  // Update UI
+  renderTiles();
+  headlines();
+  renderReviewView();
+}, 60000); // Check every minute
 </script>
 </body>
 </html>
