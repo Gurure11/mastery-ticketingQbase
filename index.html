@@ -6,7 +6,7 @@
   <title>Perspective Collections Online</title>
   <meta name="description" content="Perspective Collections Online - clothing, footwear, stationery and lifestyle essentials." />
   
-  <script src="https://www.paypal.com/sdk/js?client-id=AZVbb4j8ccP87KE_T9uEcwMAS60jZzTxCzFjwhqUsS8pwAaj4r8fCCVbXhzUSLOQAGzTIybGb5N-rh5j&currency=USD"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=AT8N4K7kIeU2jJgKxzPMsOW0k6oSCcrIN519RvHYSrUUNgrrvCz6sZQAsoXJvUsD2gvxGnLhNR9vOg1J&currency=USD"></script>
   <style>
     :root{--purple:#32104f;--purple2:#4b1d72;--gold:#d4af37;--white:#fff;--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--soft:#f8fafc;--ok:#16a34a;--danger:#ef4444;--radius:24px;--shadow:0 20px 60px rgba(15,23,42,.14)}
     *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}html{scroll-behavior:smooth}body{background:#fff;color:var(--ink);overflow-x:hidden}.hide{display:none!important}a{color:inherit;text-decoration:none}button{font:inherit}.container{width:min(1200px,calc(100% - 32px));margin:auto}.admin-login-strip{background:#fff;color:#4b1d72;text-align:right;font-size:11px;padding:5px 16px;border-bottom:1px solid var(--line)}.admin-login-strip button{font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid var(--gold);background:#fff;color:#4b1d72;font-weight:900;cursor:pointer}.top-strip{background:linear-gradient(90deg,var(--purple),#180425);color:#fff;text-align:center;font-size:13px;padding:9px}.top-strip b{color:var(--gold)}
@@ -19,6 +19,55 @@
     @media(max-width:1040px){.nav-links{display:none}.hamburger{display:inline-flex}.categories{grid-template-columns:repeat(3,1fr)}.grid,.features,.showcase-grid{grid-template-columns:repeat(2,1fr)}.contact-grid,.footer-grid{grid-template-columns:1fr}.hero{min-height:620px}.product-img{height:230px}}
     @media(max-width:600px){.container{width:min(100% - 22px,1200px)}.brand{font-size:18px}.brand img{width:40px;height:40px}.nav-actions{gap:5px}.icon-btn,.btn{padding:9px 11px}.categories,.grid,.features,.admin-grid,.showcase-grid{grid-template-columns:1fr}.section{padding:46px 0}.toolbar select{width:100%}.hero{min-height:580px}.hero-actions .btn{width:100%;text-align:center}.product-img{height:250px}.section-head{display:block}.section-head p{margin-top:8px}.character{font-size:38px}.footer{padding-bottom:80px}}
     @media print{header,.top-strip,.hero,.whatsapp-float,.drawer,.overlay,.modal,.btn:not(.print-keep),#shop,#categories,#contact,.footer{display:none!important}.admin{background:#fff}.card{box-shadow:none;border:0}.report-table th{background:#eee!important}}
+    
+    /* Currency converter display */
+    .currency-converter {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin: 8px 0 12px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .currency-converter .label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .currency-converter .rate {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--purple);
+    }
+    .currency-converter .usd-total {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--gold);
+    }
+    .currency-converter .refresh-btn {
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .currency-converter .refresh-btn:hover {
+      background: var(--line);
+    }
+    .loading-rate {
+      color: var(--muted);
+      font-size: 13px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
   </style>
 </head>
 <body>
@@ -36,9 +85,27 @@
   <a class="whatsapp-float" href="https://wa.me/27768114770" target="_blank" rel="noopener">WhatsApp</a><div class="overlay" id="overlay" onclick="closeAll()"></div><div class="toast" id="toast"></div>
   <aside class="drawer" id="cartDrawer"><div class="drawer-head"><h2>Your Cart</h2><button class="icon-btn" onclick="closeCart()">✕</button></div><div class="drawer-body" id="cartItems"></div><div class="drawer-foot"><div class="total-row"><span>Total</span><span id="cartTotal">R0.00</span></div><button class="btn primary" style="width:100%;margin-bottom:8px" onclick="openCheckout()">View Cart / Checkout</button><button class="btn danger" style="width:100%" onclick="clearCart()">Clear Cart</button></div></aside>
   <div class="modal" id="loginModal"><h2>Login / Register</h2><p class="meta">Admin and client rights are controlled from the Users tab.</p><div class="field"><label>Email</label><input id="loginEmail" type="email"></div><div class="field"><label>Password</label><input id="loginPassword" type="password"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" onclick="loginUser()">Login</button><button class="btn" onclick="registerClient()">Register Client</button><button class="btn" onclick="closeAll()">Close</button></div><div id="loginMessage" class="meta" style="margin-top:10px"></div></div>
-  <div class="modal" id="checkoutModal"><h2>Checkout</h2><div id="checkoutLines" class="meta" style="margin:10px 0"></div><div class="field"><label>Name</label><input id="checkoutName"></div><div class="field"><label>Phone / WhatsApp</label><input id="checkoutPhone"></div><div class="field"><label>Email</label><input id="checkoutEmail" type="email"></div><div class="field"><label>Delivery Address</label><textarea id="checkoutAddress" rows="3"></textarea></div><div id="paypal-button-container" style="margin-bottom:12px"></div><button class="btn primary" style="width:100%;margin-bottom:8px" onclick="checkout('EFT / Manual Payment')">Checkout: EFT / Manual</button><button class="btn" style="width:100%;margin-bottom:8px" onclick="checkout('Cash on Delivery')">Checkout: Cash on Delivery</button><button class="btn" style="width:100%" onclick="closeAll()">Close</button></div>
+  <div class="modal" id="checkoutModal"><h2>Checkout</h2>
+    <!-- Currency Converter Display -->
+    <div id="currencyConverter" class="currency-converter" style="display:none;">
+      <span class="label">💱 Exchange Rate</span>
+      <span class="rate" id="exchangeRateDisplay">Loading...</span>
+      <span class="label">Total in USD</span>
+      <span class="usd-total" id="usdTotalDisplay">$0.00</span>
+      <button class="refresh-btn" onclick="refreshExchangeRate()">↻ Refresh</button>
+    </div>
+    <div id="checkoutLines" class="meta" style="margin:10px 0"></div>
+    <div class="field"><label>Name</label><input id="checkoutName"></div>
+    <div class="field"><label>Phone / WhatsApp</label><input id="checkoutPhone"></div>
+    <div class="field"><label>Email</label><input id="checkoutEmail" type="email"></div>
+    <div class="field"><label>Delivery Address</label><textarea id="checkoutAddress" rows="3"></textarea></div>
+    <div id="paypal-button-container" style="margin-bottom:12px"></div>
+    <button class="btn primary" style="width:100%;margin-bottom:8px" onclick="checkout('EFT / Manual Payment')">Checkout: EFT / Manual</button>
+    <button class="btn" style="width:100%;margin-bottom:8px" onclick="checkout('Cash on Delivery')">Checkout: Cash on Delivery</button>
+    <button class="btn" style="width:100%" onclick="closeAll()">Close</button>
+  </div>
 <script>
-const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbwK8r1wrKNrc_7TCW1fiCYmpLFh8QbRxGUz6v0Bq0MDcvr5uf7X5CUTBJ7Bnp0EFdcP/exec';
+const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbyS7hVUdhc24U_sGR4jf4B2hAsVJKtfy-P0Tz2HKYdtMBu0oiCEVSrO01IJ0P1pDOk5Bw/exec';
 function backendUrl(){return APPS_SCRIPT_URL || (location.href.includes('script.google.com/macros/s/') ? location.href.split('?')[0] : '');}
 const PRODUCT_SHEET_ID='1QE4xz4z3BabA62Se-DtL_TOD2ZfGj7PRyg0D9ofbHcU';
 const PRODUCT_TAB='Products';
@@ -47,6 +114,9 @@ const WHATSAPP_NUMBER='27768114770';
 let CATEGORIES=["Men's Clothes", "Womens' Clothes", "Children's Clothes", "Baby's Clothes", "Mens, Shoes", "Women's shoes", "Children's shoes", "babys' shoes", "Stationery", "Electronics", "Miscallaneous"];
 const CATEGORY_EMOJI={'Mens section':'👔',"Women's section":'👗','Childrens':'🧒','Babies':'🍼','Footwear':'👟','Miscallaneous':'🛍️','Stationery':'✏️'};
 let products=[],currentUser=JSON.parse(localStorage.getItem('perspective_user')||'null'),cart=[];function cartStorageKey(){return 'perspective_cart_'+(currentUser&&currentUser.Email?String(currentUser.Email).trim().toLowerCase():'guest')}function loadCart(){cart=JSON.parse(localStorage.getItem(cartStorageKey())||'[]')}loadCart();
+let cachedExchangeRate = null;
+let rateLastUpdated = null;
+
 function hasServer(){return (typeof google!=='undefined'&&google.script&&google.script.run)||!!backendUrl();}
 document.getElementById('year').textContent=new Date().getFullYear();
 function money(v){return 'R'+Number(v||0).toFixed(2)}function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3000)}function startSync(label='Synchronising...'){const btn=document.activeElement&&document.activeElement.tagName==='BUTTON'?document.activeElement:null;if(!btn)return()=>{};const original=btn.innerHTML;btn.disabled=true;btn.innerHTML='⏳ '+label;return()=>{btn.disabled=false;btn.innerHTML=original}}function toggleMobileNav(){mobileNav.classList.toggle('hide')}function isAdmin(){if(!currentUser)return false;const v=`${currentUser.Role||''} ${currentUser.Rights||''} ${currentUser.Status||''}`.toLowerCase();return v.includes('admin')}function userRoleLabel(){if(!currentUser)return 'Client';return currentUser.Role||currentUser.Rights||currentUser.Status||'Client'}function updateUserUI(){const loggedIn=!!currentUser;const adminUser=isAdmin();const displayName=currentUser?(currentUser.Name||currentUser.Email||'Logged in user'):'Guest';userChip.textContent=loggedIn?`${displayName} · ${userRoleLabel()}`:'Guest';loginBtn.classList.toggle('hide',loggedIn);logoutBtn.classList.toggle('hide',!loggedIn);adminNav.classList.toggle('hide',!adminUser);if(typeof mobileAdminNav!=='undefined')mobileAdminNav.classList.toggle('hide',!adminUser);document.getElementById('admin').classList.toggle('hide',!adminUser);adminPanel.classList.toggle('show',adminUser);adminLocked.classList.toggle('hide',true);if(!adminUser&&location.hash==='#admin')location.hash='home'}function logoutUser(){currentUser=null;localStorage.removeItem('perspective_user');loadCart();updateUserUI();renderCart();toast('Logged out successfully');if(location.hash==='#admin')location.hash='home'}function driveImageUrl(value){const raw=String(value||'').trim();if(!raw)return '';let id='';let m=raw.match(/\/d\/([a-zA-Z0-9_-]+)/);if(m)id=m[1];if(!id){m=raw.match(/[?&]id=([a-zA-Z0-9_-]+)/);if(m)id=m[1];}if(!id&&/^[a-zA-Z0-9_-]{20,}$/.test(raw))id=raw;if(id)return 'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w1000';return raw}function imgSrc(p){const driveId=p.DriveFileID||p.driveFileId||p['Drive File ID']||p.FileID||'';return driveImageUrl(p.ImageURL||p.ImageUrl||p.imageUrl||p['Image URL']||p.Image||driveId)||'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=900&auto=format&fit=crop'}function productId(p){return p.ProductID||p.ProductId||p.ID||p.SKU||p.Name}
@@ -64,6 +134,94 @@ function demoProducts(){const data=[];const imgs={
 Object.keys(imgs).forEach(cat=>imgs[cat].forEach((id,i)=>data.push({ProductID:`${cat.slice(0,3).toUpperCase()}-${i+1}`,SKU:`${cat.replace(/\W/g,'').toUpperCase()}-${i+1}`,Name:`${cat} Item ${i+1}`,Category:cat,Price:99+(i+1)*35,Stock:Math.max(2,25-i),SalesCount:(i*3)%17,Description:`Quality ${cat.toLowerCase()} product for Perspective Collection Online.`,ImageURL:`https://images.unsplash.com/${id}?q=80&w=900&auto=format&fit=crop`,CreatedAt:new Date(Date.now()-i*86400000).toISOString()})));return data}
 function renderProducts(){const q=searchInput.value.toLowerCase(),cat=categoryFilter.value,sort=sortFilter.value;let items=products.filter(p=>(!cat||String(p.Category||'')===cat)&&(`${p.Name||''} ${p.Description||''} ${p.Category||''}`.toLowerCase().includes(q)));if(sort==='low')items.sort((a,b)=>Number(a.Price||0)-Number(b.Price||0));if(sort==='high')items.sort((a,b)=>Number(b.Price||0)-Number(a.Price||0));if(sort==='popular')items.sort((a,b)=>Number(b.SalesCount||0)-Number(a.SalesCount||0));productGrid.innerHTML=items.length?items.map(productCard).join(''):'<div class="empty">No products found.</div>'}function productCard(p){return `<article class="product"><div class="product-img"><img src="${esc(imgSrc(p))}" alt="${esc(p.Name||'Product')}"></div><div class="product-body"><span class="badge">${esc(p.Category||'Product')}</span><h3>${esc(p.Name||'Unnamed product')}</h3><div class="meta">${esc(p.Description||'Available now')} · Stock: ${esc(p.Stock||0)}</div><div class="price">${money(p.Price)}</div><div class="product-actions"><button class="btn primary" onclick='addToCart(${JSON.stringify(productId(p))})'>Add to cart</button><button class="btn" onclick='quickWhatsApp(${JSON.stringify(productId(p))})'>Ask</button></div></div></article>`}function renderHighlights(){const bySales=[...products].sort((a,b)=>Number(b.SalesCount||0)-Number(a.SalesCount||0));const newItems=[...products].sort((a,b)=>new Date(b.CreatedAt||0)-new Date(a.CreatedAt||0));const least=[...products].sort((a,b)=>Number(a.SalesCount||0)-Number(b.SalesCount||0));popularGrid.innerHTML=bySales.slice(0,3).map(productCard).join('')||'<div class="empty">No data</div>';newGrid.innerHTML=newItems.slice(0,3).map(productCard).join('')||'<div class="empty">No data</div>';leastGrid.innerHTML=least.slice(0,3).map(productCard).join('')||'<div class="empty">No data</div>'}
 function getProduct(id){return products.find(p=>String(productId(p))===String(id))}function addToCart(id){const p=getProduct(id);if(!p)return;let item=cart.find(i=>String(i.id)===String(id));if(item)item.qty++;else cart.push({id,qty:1});saveCart();toast('Added to cart')}function saveCart(){localStorage.setItem(cartStorageKey(),JSON.stringify(cart));renderCart()}function clearCart(){cart=[];saveCart();toast('Cart cleared')}function renderCart(){cartCount.textContent=cart.reduce((s,i)=>s+i.qty,0);let total=0;cartItems.innerHTML=cart.length?cart.map(i=>{const p=getProduct(i.id)||{};const sub=Number(p.Price||0)*i.qty;total+=sub;return `<div class="cart-item"><img src="${esc(imgSrc(p))}"><div><b>${esc(p.Name||i.id)}</b><div class="meta">${money(p.Price)} each</div><div class="qty"><button onclick="changeQty('${jsq(i.id)}',-1)">−</button><span>${i.qty}</span><button onclick="changeQty('${jsq(i.id)}',1)">+</button></div></div><button class="icon-btn" onclick="removeCart('${jsq(i.id)}')">🗑️</button></div>`}).join(''):'<div class="empty">Your cart is empty.</div>';document.getElementById('cartTotal').textContent=money(total)}function totalCart(){return cart.reduce((s,i)=>{const p=getProduct(i.id)||{};return s+Number(p.Price||0)*i.qty},0)}function changeQty(id,d){let item=cart.find(i=>String(i.id)===String(id));if(!item)return;item.qty+=d;if(item.qty<=0)cart=cart.filter(i=>String(i.id)!==String(id));saveCart()}function removeCart(id){cart=cart.filter(i=>String(i.id)!==String(id));saveCart()}function openCart(){overlay.classList.add('show');cartDrawer.classList.add('open');renderCart()}function closeCart(){overlay.classList.remove('show');cartDrawer.classList.remove('open')}function closeAll(){overlay.classList.remove('show');cartDrawer.classList.remove('open');loginModal.classList.remove('show');checkoutModal.classList.remove('show')}function openLogin(){overlay.classList.add('show');loginModal.classList.add('show')}function quickWhatsApp(id){const p=getProduct(id);window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi Perspective Collection, I am interested in: '+(p?.Name||id))}`,'_blank')}
+
+// ============================================================
+// IMPROVED LIVE CURRENCY CONVERTER - ZAR to USD (Multiple APIs)
+// ============================================================
+
+async function getExchangeRate() {
+  // Check cache (5 minutes)
+  if (cachedExchangeRate && rateLastUpdated && (Date.now() - rateLastUpdated) < 300000) {
+    return cachedExchangeRate;
+  }
+  
+  // Multiple API fallbacks
+  const apis = [
+    {
+      name: 'exchangerate-api',
+      url: 'https://api.exchangerate-api.com/v4/latest/ZAR',
+      parse: (data) => data.rates.USD
+    },
+    {
+      name: 'open.er-api',
+      url: 'https://open.er-api.com/v6/latest/ZAR',
+      parse: (data) => data.rates.USD
+    },
+    {
+      name: 'currency-api',
+      url: 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/zar.json',
+      parse: (data) => data.zar?.usd || null
+    }
+  ];
+  
+  for (const api of apis) {
+    try {
+      const response = await fetch(api.url);
+      if (!response.ok) continue;
+      const data = await response.json();
+      const rate = api.parse(data);
+      if (rate && rate > 0) {
+        cachedExchangeRate = rate;
+        rateLastUpdated = Date.now();
+        console.log(`✅ Exchange rate from ${api.name}: ${rate}`);
+        return rate;
+      }
+    } catch (error) {
+      console.warn(`⚠️ ${api.name} failed:`, error.message);
+    }
+  }
+  
+  // Fallback rate if all APIs fail
+  console.warn('⚠️ All exchange rate APIs failed - using fallback 0.055');
+  return 0.055;
+}
+
+async function refreshExchangeRate() {
+  const display = document.getElementById('exchangeRateDisplay');
+  display.textContent = 'Loading...';
+  display.className = 'loading-rate';
+  
+  try {
+    const rate = await getExchangeRate();
+    cachedExchangeRate = rate;
+    rateLastUpdated = Date.now();
+    display.textContent = `1 ZAR = $${rate.toFixed(4)} USD`;
+    display.className = 'rate';
+    updateCurrencyDisplay();
+    toast('✅ Exchange rate updated!');
+  } catch (error) {
+    display.textContent = 'Failed to load';
+    display.className = 'rate';
+    toast('Failed to update exchange rate. Using fallback.');
+  }
+}
+
+function updateCurrencyDisplay() {
+  const zarTotal = totalCart();
+  const rate = cachedExchangeRate || 0.055;
+  const usdTotal = zarTotal * rate;
+  
+  document.getElementById('usdTotalDisplay').textContent = `$${usdTotal.toFixed(2)}`;
+  
+  const rateDisplay = document.getElementById('exchangeRateDisplay');
+  if (rateDisplay.textContent === 'Loading...' || rateDisplay.textContent === 'Failed to load') {
+    rateDisplay.textContent = `1 ZAR = $${rate.toFixed(4)} USD`;
+  }
+}
+
+// ============================================================
+// IMPROVED CHECKOUT & PAYPAL WITH CURRENCY CONVERSION
+// ============================================================
 
 // Updated checkout function
 async function checkout(method) {
@@ -103,10 +261,6 @@ async function checkout(method) {
   alert('✅ Thank you! Your order was received. Perspective Collection Online will contact you shortly.');
 }
 
-// ============================================================
-// IMPROVED PAYPAL INITIALIZATION
-// ============================================================
-
 function initPayPal() {
   const container = document.getElementById('paypal-button-container');
   if (!container) return;
@@ -133,24 +287,42 @@ function initPayPal() {
         label: 'paypal'
       },
 
-      createOrder: (data, actions) => {
-        const total = totalCart().toFixed(2);
-        console.log('💰 PayPal Order Total (ZAR):', total);
-        
-        return actions.order.create({
-          purchase_units: [{
-            description: 'Perspective Collection Online Order',
-            amount: {
-              currency_code: 'ZAR',
-              value: total
-            },
-            custom_id: 'PO-' + Date.now()
-          }],
-          application_context: {
-            shipping_preference: 'SET_PROVIDED',
-            user_action: 'PAY_NOW'
+      createOrder: async (data, actions) => {
+        try {
+          const zarTotal = totalCart();
+          const rate = await getExchangeRate();
+          const usdAmount = (zarTotal * rate).toFixed(2);
+          
+          // Ensure minimum amount ($1.00 USD)
+          const finalAmount = Math.max(1.00, parseFloat(usdAmount)).toFixed(2);
+          
+          console.log(`💱 ZAR ${zarTotal.toFixed(2)} → USD ${finalAmount} (Rate: ${rate})`);
+          
+          // Update the currency display
+          if (cachedExchangeRate) {
+            document.getElementById('usdTotalDisplay').textContent = `$${finalAmount}`;
           }
-        });
+          
+          return actions.order.create({
+            purchase_units: [{
+              description: 'Perspective Collection Online Order',
+              amount: {
+                currency_code: 'USD',
+                value: finalAmount
+              },
+              custom_id: 'PO-' + Date.now()
+            }],
+            application_context: {
+              shipping_preference: 'SET_PROVIDED',
+              user_action: 'PAY_NOW',
+              brand_name: 'Perspective Collection Online'
+            }
+          });
+        } catch (err) {
+          console.error('PayPal createOrder error:', err);
+          toast('Failed to prepare PayPal payment. Please try another method.');
+          throw err;
+        }
       },
 
       onApprove: async (data, actions) => {
@@ -162,7 +334,7 @@ function initPayPal() {
           console.log('✅ PayPal payment captured:', details);
           
           // Complete order flow
-          checkout('PayPal');
+          checkout('PayPal (USD)');
         } catch (err) {
           console.error('PayPal capture error:', err);
           toast('Payment capture failed. Please contact us.');
@@ -188,7 +360,7 @@ function initPayPal() {
   }
 }
 
-// Enhanced openCheckout
+// Enhanced openCheckout with currency converter
 function openCheckout() {
   if (!cart.length) return toast('Cart is empty.');
 
@@ -201,8 +373,17 @@ function openCheckout() {
   overlay.classList.add('show');
   checkoutModal.classList.add('show');
 
+  // Show and update currency converter
+  const converter = document.getElementById('currencyConverter');
+  converter.style.display = 'flex';
+  
+  // Load exchange rate and update display
+  refreshExchangeRate().then(() => {
+    updateCurrencyDisplay();
+  });
+
   // Render PayPal after modal is visible
-  setTimeout(initPayPal, 300);
+  setTimeout(initPayPal, 500);
 }
 
 function runServer(functionName,payload){return new Promise((resolve,reject)=>{google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[functionName](payload)})}async function postBackend(action,payload){const productActions=['products','addProduct','updateProduct','deleteProduct','uploadProductImage'];const request={action,payload};if(productActions.includes(action)){request.sheetId=PRODUCT_SHEET_ID;request.tab=PRODUCT_TAB;request.headings=PRODUCT_HEADINGS}if(typeof google!=='undefined'&&google.script&&google.script.run){return await runServer('handleAction',request)}const url=backendUrl();if(!url)throw new Error('Apps Script connection is not set. Deploy the matching Code.gs as a Web App and paste its URL into APPS_SCRIPT_URL, or serve this HTML from Apps Script.');const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(request)});const json=await res.json();if(json.success===false)throw new Error(json.message||'Backend error');return json}async function loginUser(){const stopSync=startSync();loginMessage.textContent='Synchronising login...';try{if(!loginEmail.value||!loginPassword.value)return toast('Email and password required.');const json=await postBackend('login',{email:loginEmail.value,password:loginPassword.value});currentUser=json.user;if(!currentUser)throw new Error('Invalid login response.');localStorage.setItem('perspective_user',JSON.stringify(currentUser));loadCart();updateUserUI();renderCart();closeAll();toast(`Logged in as ${currentUser.Name||currentUser.Email}`)}catch(e){loginMessage.textContent=e.message}finally{stopSync()}}async function registerClient(){const stopSync=startSync();try{const payload={Name:prompt('Your name:')||'',Email:loginEmail.value,Password:loginPassword.value,Role:'Client',Rights:'Client',Status:'Active'};if(!payload.Email||!payload.Password)return toast('Email and password required.');await postBackend('register',payload);toast('Client registered. You can login now.')}catch(e){toast(e.message)}finally{stopSync()}}async function backendInit(){const stopSync=startSync();try{const res=await postBackend('init',{});toast((res&&res.spreadsheetUrl)?'Backend tabs verified. Google Sheet connected.':'Backend tabs verified.')}catch(e){toast(e.message)}finally{stopSync()}}function fileToBase64(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]);r.onerror=reject;r.readAsDataURL(file)})}function populateEditProducts(){editProduct.innerHTML='<option value="">New product</option>'+products.map(p=>`<option value="${esc(productId(p))}">${esc(p.Name||productId(p))}</option>`).join('')}function loadProductForEdit(){const p=getProduct(editProduct.value);if(!p)return;adminName.value=p.Name||'';adminCategory.value=p.Category||'';adminPrice.value=p.Price||'';adminStock.value=p.Stock||'';adminSku.value=p.SKU||'';adminDescription.value=p.Description||'';adminImageUrl.value=imgSrc(p)||''}async function saveProductAdmin(){const stopSync=startSync();if(!isAdmin()){stopSync();return toast('Admin rights required.')}let file=adminImage.files[0];let now=new Date().toISOString();let existing=getProduct(editProduct.value)||{};let payload={ProductID:editProduct.value||existing.ProductID||'',SKU:adminSku.value,Name:adminName.value,Category:adminCategory.value,Description:adminDescription.value,Price:adminPrice.value,Stock:adminStock.value,ImageURL:adminImageUrl.value||existing.ImageURL||'',DriveFileID:existing.DriveFileID||'',Status:existing.Status||'Active',SalesCount:existing.SalesCount||0,CreatedAt:existing.CreatedAt||now,UpdatedAt:now};if(newCategoryName.value){payload.Category=newCategoryName.value;if(!CATEGORIES.includes(payload.Category)){CATEGORIES.push(payload.Category);renderCategories()}}try{if(file){let upload=await postBackend('uploadProductImage',{ProductID:payload.ProductID,SKU:payload.SKU,Name:payload.Name,imageBase64:await fileToBase64(file),imageMimeType:file.type,imageName:file.name});payload.ImageURL=upload.ImageURL||upload.imageUrl||payload.ImageURL;payload.DriveFileID=upload.DriveFileID||upload.driveFileId||payload.DriveFileID}payload=Object.fromEntries(PRODUCT_HEADINGS.map(h=>[h,payload[h]??'']));await postBackend(editProduct.value?'updateProduct':'addProduct',payload);adminMessage.textContent='Product saved successfully.';adminImage.value='';await loadProducts()}catch(e){adminMessage.textContent=e.message}finally{stopSync()}}async function deleteProductAdmin(){const stopSync=startSync();if(!isAdmin()){stopSync();return toast('Admin rights required.')}const id=editProduct.value;if(!id){stopSync();return toast('Select an existing product to delete.')}const p=getProduct(id)||{};if(!confirm('Delete '+(p.Name||id)+' permanently from Google Sheet?')){stopSync();return}try{await postBackend('deleteProduct',{ProductID:id});products=products.filter(x=>String(productId(x))!==String(id));populateEditProducts();renderProducts();renderHighlights();editProduct.value='';adminMessage.textContent='Product deleted successfully.'}catch(e){adminMessage.textContent=e.message}finally{stopSync()}}async function addCategoryAdmin(){const stopSync=startSync();if(!isAdmin()){stopSync();return toast('Admin rights required.')}const name=newCategoryName.value.trim();if(!name){stopSync();return toast('Enter new category name.')}try{await postBackend('addCategory',{Category:name});if(!CATEGORIES.includes(name)){CATEGORIES.push(name);renderCategories()}toast('Category created.')}catch(e){toast(e.message)}finally{stopSync()}}async function loadSalesReport(){const stopSync=startSync();try{let json;if(hasServer())json=await postBackend('report',{period:reportPeriod.value});else json=demoReport(reportPeriod.value);reportSummary.innerHTML=`<b>${esc(json.periodLabel||reportPeriod.value)}</b> · Orders: ${json.orderCount||0} · Sales: ${money(json.totalSales||0)}`;reportTable.innerHTML='<thead><tr><th>Product</th><th>Category</th><th>Qty Sold</th><th>Total Sales</th></tr></thead><tbody>'+((json.items||[]).map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.category)}</td><td>${esc(r.qty)}</td><td>${money(r.total)}</td></tr>`).join('')||'<tr><td colspan="4">No sales found</td></tr>')+'</tbody>'}catch(e){toast(e.message)}finally{stopSync()}}function demoReport(period){return{periodLabel:'Demo '+period,orderCount:4,totalSales:2450,items:[{name:'Mens section Item 1',category:'Mens section',qty:3,total:650},{name:"Women's section Item 2",category:"Women's section",qty:2,total:900},{name:'Stationery Item 1',category:'Stationery',qty:6,total:900}]}}function sendContactWhatsApp(){const msg=`Perspective Collection enquiry%0AName: ${contactName.value}%0AEmail: ${contactEmail.value}%0AMessage: ${contactMessage.value}`;window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`,'_blank');if(hasServer())postBackend('contact',{name:contactName.value,email:contactEmail.value,message:contactMessage.value}).catch(()=>{})}
