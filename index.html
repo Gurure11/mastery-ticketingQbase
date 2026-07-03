@@ -124,7 +124,7 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxD-tO472AT8hNN5U6Lgr8sSZrS0O69cywC8NNlo8ZfSNnPSX1ZuJ8ubWH-p3XYhSYJ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzstSOLncU3R2gsr68srCf9cJgXc8RU0ZrtSi2Ns8Ug8EBcOKygp50hZeY8DOejo3Mv/exec';
 function readStoredUser(){
   try{
     const raw=localStorage.getItem('ob_user');
@@ -161,28 +161,9 @@ function api(action, data={}){
 }
 
 async function postApi(action, data={}){
-  if(!SCRIPT_URL || SCRIPT_URL.includes('PASTE_')) throw new Error('Replace SCRIPT_URL with your Apps Script Web App URL.');
-  showSync('Synchronising '+action+'...');
-  try{
-    const payload = JSON.stringify({...data, action});
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'text/plain;charset=utf-8'},
-      body: payload,
-      redirect: 'follow'
-    });
-    const txt = await res.text();
-    let json;
-    try{ json = JSON.parse(txt); }
-    catch(parseErr){ throw new Error('Upload response was not valid JSON. Make sure the Apps Script is deployed as Web App: Execute as Me, Anyone with the link, and deploy a New version. Response: '+txt.slice(0,180)); }
-    if(!json.ok) throw new Error(json.error || 'Upload failed.');
-    markSynced();
-    return json.data;
-  }catch(err){
-    throw new Error(err.message || 'Upload failed. Check Apps Script deployment permissions and Drive folder access.');
-  }finally{
-    hideSync();
-  }
+  // Apps Script POST responses can be redirected to a Google HTML page when this
+  // HTML is opened as a local file. JSONP uses doGet and always returns executable JSON.
+  return api(action,data);
 }
 
 function initDates(){const d=new Date(); const iso=d.toISOString().slice(0,10); ['ntIssue','ntDue','rtStart'].forEach(id=>{const el=document.getElementById(id); if(el) el.value=iso;});}
@@ -388,7 +369,7 @@ function drawActions(t){let html='';const closed=isClosedTicket(t);const assigne
   dActions.innerHTML=html||'<span class="muted">No action available for your role on this ticket.</span>';const rd=document.getElementById('returnDue');if(rd){const d=new Date();d.setDate(d.getDate()+1);rd.value=d.toISOString().slice(0,10);}const md=document.getElementById('moreTimeDate');if(md){const d=new Date();d.setDate(d.getDate()+2);md.value=d.toISOString().slice(0,10);}}
 function requestMoreTime(){const d=document.getElementById('moreTimeDate')?.value; if(!d)return alert('Select the new requested submission date.');postApi('requestMoreTime',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,requestedDueDate:d,reason:document.getElementById('moreTimeReason')?.value||''}).then(()=>{alert('More time request sent to Executive1 and ticket creator for approval.');refresh();openTicket(DETAIL.ticket.TicketID);}).catch(alertErr)}
 function approveMoreTime(){const scoreCommentEl=document.getElementById('scoreComment');const commentEl=document.getElementById('commentTxt');postApi('approveMoreTime',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,comment:scoreCommentEl?.value||commentEl?.value||''}).then(()=>{alert('More time approval captured. If both required approvals are complete, the new submission date has been applied.');refresh();openTicket(DETAIL.ticket.TicketID);}).catch(alertErr)}
-function returnTicket(){const due=document.getElementById('returnDue')?.value; if(!due)return alert('Select a new due date before returning this ticket.');postApi('returnTicket',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,newDueDate:due,comment:scoreComment?.value||commentTxt?.value||''}).then(()=>{alert('Ticket returned and re-opened with a new due date.');refresh();openTicket(DETAIL.ticket.TicketID)}).catch(alertErr)}
+function returnTicket(){const due=document.getElementById('returnDue')?.value; if(!due)return alert('Select a new due date before returning this ticket.');const scoreCommentEl=document.getElementById('scoreComment');const commentEl=document.getElementById('commentTxt');postApi('returnTicket',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,newDueDate:due,comment:scoreCommentEl?.value||commentEl?.value||''}).then(()=>{alert('Ticket returned and re-opened with a new due date.');refresh();openTicket(DETAIL.ticket.TicketID)}).catch(alertErr)}
 function addComment(){postApi('addComment',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,comment:commentTxt.value}).then(()=>openTicket(DETAIL.ticket.TicketID)).catch(alertErr)}
 
 function readFileAsBase64(file){
@@ -400,21 +381,33 @@ function readFileAsBase64(file){
   });
 }
 async function uploadFileChunked(file, ticketId, comment){
-  // Attachments now use POST instead of JSONP. This avoids URL-length failures
-  // and is the recommended method for images, PDFs, Word/Excel files and other documents.
-  const maxBytes = 18 * 1024 * 1024;
+  // Upload in small JSONP chunks. This prevents Apps Script/Google redirects from
+  // returning an HTML document that the browser then incorrectly tries to parse as JSON.
+  const maxBytes = 4 * 1024 * 1024;
   if(file.size > maxBytes){
-    throw new Error('File is too large. Please upload a file smaller than 18MB, or compress/split it.');
+    throw new Error('File is too large for the reliable browser upload route. Please use a file smaller than 4MB, or compress/split it.');
   }
   const base64 = await readFileAsBase64(file);
-  return postApi('uploadAttachmentPost', {
+  const chunkSize = 6000;
+  const totalChunks = Math.ceil(base64.length/chunkSize);
+  const session = await api('initAttachmentUpload', {
     userId: USER.UserID,
     ticketId: ticketId,
     fileName: file.name,
     mimeType: file.type || 'application/octet-stream',
-    base64: base64,
+    totalChunks: totalChunks,
     comment: comment || ''
   });
+  for(let i=0;i<totalChunks;i++){
+    showSync('Uploading '+Math.round((i/totalChunks)*100)+'%...');
+    await api('uploadAttachmentChunk', {
+      uploadId: session.uploadId,
+      index: i,
+      chunk: base64.slice(i*chunkSize,(i+1)*chunkSize)
+    });
+  }
+  showSync('Finishing upload...');
+  return api('finishAttachmentUpload',{uploadId:session.uploadId,totalChunks:totalChunks});
 }
 
 async function submitTicket(){
