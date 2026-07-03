@@ -124,7 +124,7 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby4KqYccmeeU8HVVoqXcFWk7M_6XICtAjeReNuwF1msEL4Q9vPm7lj7NzQ0G48O3zMa/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwfo_sD5zEbsRZeKbZateiUKppZaPhj7zzkZpex7C6yv8tXnTu0Lczfcxdnq91VuGtn/exec';
 let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
 let STATE = {tickets:[], users:[], referenceData:[], summary:{}};
 let CURRENT_FILTER = 'all';
@@ -244,17 +244,25 @@ function applyRoleVisibility(){
   if(!showReview && (document.getElementById('review1')?.classList.contains('on') || document.getElementById('review2')?.classList.contains('on'))){showTab('task');}
 }
 function norm(v){return String(v||'').trim().toLowerCase();}
+function normLoose(v){return norm(v).replace(/[^a-z0-9]/g,'');}
+function sameLoose(a,b){
+  const x=normLoose(a), y=normLoose(b);
+  if(!x || !y) return false;
+  if(x===y) return true;
+  // Allows sheet rows like "Brighton" to match Users.Name like "Brighton Phiri", without opening access too widely.
+  return (x.length>=4 && y.length>=4 && (x.includes(y) || y.includes(x)));
+}
 function isMineAssigned(t){
-  return norm(t.AssignedToUserID)===norm(USER.UserID) ||
-         norm(t.AssignedToEmail)===norm(USER.Email) ||
-         norm(t.AssignedToName)===norm(USER.Name) ||
-         norm(t.AssignedToUsername)===norm(USER.Username);
+  return sameLoose(t.AssignedToUserID, USER.UserID) ||
+         sameLoose(t.AssignedToEmail, USER.Email) ||
+         sameLoose(t.AssignedToName, USER.Name) ||
+         sameLoose(t.AssignedToUsername, USER.Username);
 }
 function isMineCreated(t){
-  return norm(t.CreatedByUserID)===norm(USER.UserID) ||
-         norm(t.CreatedByEmail)===norm(USER.Email) ||
-         norm(t.CreatedByName)===norm(USER.Name) ||
-         norm(t.CreatedByUsername)===norm(USER.Username);
+  return sameLoose(t.CreatedByUserID, USER.UserID) ||
+         sameLoose(t.CreatedByEmail, USER.Email) ||
+         sameLoose(t.CreatedByName, USER.Name) ||
+         sameLoose(t.CreatedByUsername, USER.Username);
 }
 function myTickets(){
   const tickets=STATE.tickets||[];
