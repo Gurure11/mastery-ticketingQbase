@@ -124,7 +124,7 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyYXNuUdoQE8759sYzQWGlj3LrG-g6qG2HzFEArUx1yZKkuml3752jWNghhl1lOHVVJ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFIiuOoKFX-ExXQQzDgQiZSJiC9pZWsfl9_k7mZ2U56wkNXLET_QM0jcwjKSaiAlgb/exec';
 function readStoredUser(){
   try{
     const raw=localStorage.getItem('ob_user');
@@ -143,7 +143,19 @@ let CURRENT_FILTER = 'all';
 function showSync(msg){const el=document.getElementById('syncbar'); if(el){el.classList.remove('hide'); el.innerHTML='<b>'+esc(msg||'Synchronising...')+'</b> please wait';}}
 function hideSync(){const el=document.getElementById('syncbar'); if(el) el.classList.add('hide');}
 function markSynced(){const el=document.getElementById('asAt'); if(el) el.textContent='Synchronised: '+new Date().toLocaleString();}
+function hasNativeAppsScript(){
+  return typeof google!=='undefined' && google.script && google.script.run;
+}
 function api(action, data={}){
+  if(hasNativeAppsScript()){
+    showSync('Synchronising '+action+'...');
+    return new Promise((resolve,reject)=>{
+      google.script.run
+        .withSuccessHandler(result=>{hideSync();markSynced();resolve(result);})
+        .withFailureHandler(error=>{hideSync();reject(new Error(error?.message||String(error)||'Apps Script request failed.'));})
+        .runApi(action,data);
+    });
+  }
   if(!SCRIPT_URL || SCRIPT_URL.includes('PASTE_')) return Promise.reject(new Error('Replace SCRIPT_URL with your Apps Script Web App URL.'));
   showSync('Synchronising '+action+'...');
   const payload = encodeURIComponent(JSON.stringify({...data, action}));
@@ -152,9 +164,10 @@ function api(action, data={}){
     const s=document.createElement('script');
     let finished=false;
     const cleanup=()=>{try{delete window[cb];}catch(e){} try{s.remove();}catch(e){} hideSync(); markSynced();};
-    const timer=setTimeout(()=>{if(finished)return; finished=true; cleanup(); reject(new Error('Apps Script JSONP connection timed out. For uploads, use smaller files or redeploy the latest Apps Script as Web App: Execute as Me, Anyone with the link.'));}, 60000);
+    const timer=setTimeout(()=>{if(finished)return; finished=true; cleanup(); reject(new Error('The Apps Script web app did not return a callback. Open the deployed /exec URL directly instead of this local HTML file, or confirm the deployment allows Anyone access.'));}, 30000);
     window[cb]=(res)=>{if(finished)return; finished=true; clearTimeout(timer); cleanup(); res && res.ok ? resolve(res.data) : reject(new Error((res && res.error) || 'Request failed'));};
     s.onerror=()=>{if(finished)return; finished=true; clearTimeout(timer); cleanup(); reject(new Error('Apps Script JSONP connection failed. Check deployment permissions, SCRIPT_URL, and file chunk size.'));};
+    s.onload=()=>{setTimeout(()=>{if(finished)return;finished=true;clearTimeout(timer);cleanup();reject(new Error('Google loaded a page but did not run the API callback. Use the deployed Apps Script /exec page and set access to Anyone.'));},1500);};
     s.src = SCRIPT_URL + '?callback=' + cb + '&payload=' + payload;
     document.body.appendChild(s);
   });
@@ -387,12 +400,13 @@ function readFileAsBase64(file){
 async function uploadFileChunked(file, ticketId, comment){
   // Upload in small JSONP chunks. This prevents Apps Script/Google redirects from
   // returning an HTML document that the browser then incorrectly tries to parse as JSON.
-  const maxBytes = 4 * 1024 * 1024;
+  const native=hasNativeAppsScript();
+  const maxBytes = (native?12:2) * 1024 * 1024;
   if(file.size > maxBytes){
-    throw new Error('File is too large for the reliable browser upload route. Please use a file smaller than 4MB, or compress/split it.');
+    throw new Error(`File is too large. Please use a file smaller than ${native?12:2}MB, or compress/split it.`);
   }
   const base64 = await readFileAsBase64(file);
-  const chunkSize = 6000;
+  const chunkSize = native?80000:6000;
   const totalChunks = Math.ceil(base64.length/chunkSize);
   const session = await api('initAttachmentUpload', {
     userId: USER.UserID,
