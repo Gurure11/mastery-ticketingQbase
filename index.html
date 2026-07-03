@@ -124,7 +124,7 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzstSOLncU3R2gsr68srCf9cJgXc8RU0ZrtSi2Ns8Ug8EBcOKygp50hZeY8DOejo3Mv/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwNQ5xvIIT_cS3EepfkcsVh_a4uSiUiUI8BF_ZQpJSkXBuUeswrAj6hiJxXO6DHdw/exec';
 function readStoredUser(){
   try{
     const raw=localStorage.getItem('ob_user');
@@ -259,11 +259,17 @@ function isMineCreated(t){
 function myTickets(){
   const tickets=STATE.tickets||[];
   if(userRoleKey()==='admin'||userRoleKey()==='adminmanager') return tickets.filter(t=>!isClosedTicket(t));
-  return tickets.filter(t=>isMineAssigned(t) && t.Status==='Open' && t.CurrentBasket==='Assignee' && !isClosedTicket(t));
+  return tickets.filter(t=>isMineAssigned(t) && isOpenAssigneeTicket(t));
 }
-function isClosedTicket(t){return String(t.Status||'').trim()==='Closed' || String(t.CurrentBasket||'').trim()==='Closed';}
+function isClosedTicket(t){return norm(t.Status)==='closed' || norm(t.CurrentBasket)==='closed';}
+function isOpenAssigneeTicket(t){
+  const status=norm(t.Status), basket=norm(t.CurrentBasket);
+  const openStatus=status==='open'||status==='re-opened'||status==='reopened'||status==='returned'||(!status&&basket==='assignee');
+  const assigneeBasket=basket==='assignee'||(!basket&&openStatus);
+  return !isClosedTicket(t)&&openStatus&&assigneeBasket;
+}
 function isLate(t){return String(t.TimeRemainingText||'').toLowerCase().includes('late') || String(t.ClosedTiming||'').toLowerCase().includes('late');}
-function isOpenOnTime(t){return !isClosedTicket(t) && !isLate(t) && (t.CurrentBasket==='Assignee'||t.Status==='Open');}
+function isOpenOnTime(t){return isOpenAssigneeTicket(t) && !isLate(t);}
 function filterTickets(kind){
   const tickets=STATE.tickets||[];
   if(kind==='critical') return myTickets().filter(t=>String(t.Priority)==='Critical');
