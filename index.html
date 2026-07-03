@@ -124,7 +124,7 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwNQ5xvIIT_cS3EepfkcsVh_a4uSiUiUI8BF_ZQpJSkXBuUeswrAj6hiJxXO6DHdw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyYXNuUdoQE8759sYzQWGlj3LrG-g6qG2HzFEArUx1yZKkuml3752jWNghhl1lOHVVJ/exec';
 function readStoredUser(){
   try{
     const raw=localStorage.getItem('ob_user');
@@ -168,7 +168,7 @@ async function postApi(action, data={}){
 
 function initDates(){const d=new Date(); const iso=d.toISOString().slice(0,10); ['ntIssue','ntDue','rtStart'].forEach(id=>{const el=document.getElementById(id); if(el) el.value=iso;});}
 function login(){document.getElementById('loginErr').textContent='Synchronising login...';postApi('login',{username:loginUser.value.trim(),password:loginPass.value.trim()}).then(u=>{USER=u;localStorage.setItem('ob_user',JSON.stringify(u));start();alert('Login successful.');}).catch(e=>loginErr.textContent=e.message);}
-function setupNow(){document.getElementById('loginErr').textContent='Repairing sheets...';postApi('setup',{}).then(()=>{loginErr.textContent='Sheets repaired. Try login again. Your Users tab headings now match: UserID, Name, Email, Phone, WhatsApp, Username, Password, Role, Department, IsActive, CreatedAt, LastLogin, Cost Center. Try login again. If Users tab was empty use admin / admin123.';}).catch(e=>loginErr.textContent=e.message);}
+function setupNow(){document.getElementById('loginErr').textContent='Repairing sheets and ticket assignments...';postApi('setup',{}).then(res=>{const repair=res?.assignmentRepair||{};loginErr.textContent=`Sheets repaired. ${repair.repaired||0} ticket assignment(s) corrected; ${repair.unresolvedCount||0} could not be matched automatically. Try login again. If unresolved tickets remain, make their AssignedToEmail or AssignedToUserID match the Users tab.`;}).catch(e=>loginErr.textContent=e.message);}
 function logout(){showSync('Synchronising logout...');localStorage.removeItem('ob_user');alert('Logout successful.');location.reload();}
 function start(){document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide');userPill.textContent=USER.Name+' · '+USER.Role;initDates();applyRoleVisibility();refresh();}
 function refresh(){postApi('bootstrap',{userId:USER.UserID}).then(data=>{STATE=data;fillLists();applyRoleVisibility();render();}).catch(alertErr);}
@@ -240,21 +240,19 @@ function normLoose(v){return norm(v).replace(/[^a-z0-9]/g,'');}
 function sameLoose(a,b){
   const x=normLoose(a), y=normLoose(b);
   if(!x || !y) return false;
-  if(x===y) return true;
-  // Allows sheet rows like "Brighton" to match Users.Name like "Brighton Phiri", without opening access too widely.
-  return (x.length>=4 && y.length>=4 && (x.includes(y) || y.includes(x)));
+  return x===y;
 }
 function isMineAssigned(t){
-  return sameLoose(t.AssignedToUserID, USER.UserID) ||
-         sameLoose(t.AssignedToEmail, USER.Email) ||
-         sameLoose(t.AssignedToName, USER.Name) ||
-         sameLoose(t.AssignedToUsername, USER.Username);
+  if(norm(t.AssignedToUserID)) return norm(t.AssignedToUserID)===norm(USER.UserID);
+  if(norm(t.AssignedToEmail)&&norm(USER.Email)) return norm(t.AssignedToEmail)===norm(USER.Email);
+  if(norm(t.AssignedToUsername)&&norm(USER.Username)) return norm(t.AssignedToUsername)===norm(USER.Username);
+  return sameLoose(t.AssignedToName,USER.Name);
 }
 function isMineCreated(t){
-  return sameLoose(t.CreatedByUserID, USER.UserID) ||
-         sameLoose(t.CreatedByEmail, USER.Email) ||
-         sameLoose(t.CreatedByName, USER.Name) ||
-         sameLoose(t.CreatedByUsername, USER.Username);
+  if(norm(t.CreatedByUserID)) return norm(t.CreatedByUserID)===norm(USER.UserID);
+  if(norm(t.CreatedByEmail)&&norm(USER.Email)) return norm(t.CreatedByEmail)===norm(USER.Email);
+  if(norm(t.CreatedByUsername)&&norm(USER.Username)) return norm(t.CreatedByUsername)===norm(USER.Username);
+  return sameLoose(t.CreatedByName,USER.Name);
 }
 function myTickets(){
   const tickets=STATE.tickets||[];
