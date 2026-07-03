@@ -124,8 +124,19 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwfo_sD5zEbsRZeKbZateiUKppZaPhj7zzkZpex7C6yv8tXnTu0Lczfcxdnq91VuGtn/exec';
-let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx8IUXyiTEtigvPxdoJOWjI1Ro6VqlWUs1wOhsmcSDrGjq6NOk-Oz520x-wyj_II597/exec';
+function readStoredUser(){
+  try{
+    const raw=localStorage.getItem('ob_user');
+    if(!raw) return null;
+    const parsed=JSON.parse(raw);
+    return parsed && typeof parsed==='object' && !Array.isArray(parsed) ? parsed : null;
+  }catch(err){
+    localStorage.removeItem('ob_user');
+    return null;
+  }
+}
+let USER = readStoredUser();
 let STATE = {tickets:[], users:[], referenceData:[], summary:{}};
 let CURRENT_FILTER = 'all';
 
@@ -266,23 +277,21 @@ function isMineCreated(t){
 }
 function myTickets(){
   const tickets=STATE.tickets||[];
-  if(isExecutiveUser()){
-    return tickets.filter(t=>isMineCreated(t) && !isMineAssigned(t) && !isClosedTicket(t));
-  }
-  return tickets.filter(t=>isMineAssigned(t) && !isClosedTicket(t));
+  if(userRoleKey()==='admin'||userRoleKey()==='adminmanager') return tickets.filter(t=>!isClosedTicket(t));
+  return tickets.filter(t=>isMineAssigned(t) && t.Status==='Open' && t.CurrentBasket==='Assignee' && !isClosedTicket(t));
 }
 function isClosedTicket(t){return String(t.Status||'').trim()==='Closed' || String(t.CurrentBasket||'').trim()==='Closed';}
 function isLate(t){return String(t.TimeRemainingText||'').toLowerCase().includes('late') || String(t.ClosedTiming||'').toLowerCase().includes('late');}
 function isOpenOnTime(t){return !isClosedTicket(t) && !isLate(t) && (t.CurrentBasket==='Assignee'||t.Status==='Open');}
 function filterTickets(kind){
   const tickets=STATE.tickets||[];
-  if(kind==='critical') return tickets.filter(t=>String(t.Priority)==='Critical' && !isClosedTicket(t) && (isExecutiveUser() || isMineAssigned(t)));
-  if(kind==='openOnTime') return tickets.filter(t=>isOpenOnTime(t) && (isExecutiveUser() || isMineAssigned(t)));
-  if(kind==='openLate') return tickets.filter(t=>!isClosedTicket(t) && isLate(t) && (isExecutiveUser() || isMineAssigned(t)));
+  if(kind==='critical') return myTickets().filter(t=>String(t.Priority)==='Critical');
+  if(kind==='openOnTime') return myTickets().filter(t=>isOpenOnTime(t));
+  if(kind==='openLate') return myTickets().filter(t=>isLate(t));
   if(kind==='review1') return isReviewAllowed('review1') ? tickets.filter(t=>t.CurrentBasket==='Executive1' && !isClosedTicket(t)) : [];
   if(kind==='review2') return isReviewAllowed('review2') ? tickets.filter(t=>(t.CurrentBasket==='Executive2'||t.CurrentBasket==='HiringApprovalExecutive2') && !isClosedTicket(t)) : [];
   if(kind==='closed') return tickets.filter(t=>isClosedTicket(t));
-  if(kind==='assigned') return tickets.filter(t=>t.CurrentBasket==='Assignee' && !isClosedTicket(t) && (isExecutiveUser() || isMineAssigned(t)));
+  if(kind==='assigned') return myTickets();
   return myTickets();
 }
 function openTicketWindow(kind){
@@ -378,7 +387,7 @@ function drawActions(t){let html='';const closed=isClosedTicket(t);const assigne
   if(!closed && (t.CurrentBasket==='Executive2'||t.CurrentBasket==='HiringApprovalExecutive2')&&(role==='executive2'||role==='exec2'||role==='admin'||role==='adminmanager'))html+=`<div class="scorebox"><span class="pill">System Score: ${score(t.SystemScore)}</span><label>Executive2 Score %</label><input id="scoreIn" type="number" min="0" max="100" value="100"><input id="scoreComment" placeholder="Closing / return comment"><button class="btn primary" onclick="approve2()">Approve & Close</button><input id="returnDue" type="date" title="New due date"><button class="btn bad" onclick="returnTicket()">Return / Re-open</button></div>`;
   dActions.innerHTML=html||'<span class="muted">No action available for your role on this ticket.</span>';const rd=document.getElementById('returnDue');if(rd){const d=new Date();d.setDate(d.getDate()+1);rd.value=d.toISOString().slice(0,10);}const md=document.getElementById('moreTimeDate');if(md){const d=new Date();d.setDate(d.getDate()+2);md.value=d.toISOString().slice(0,10);}}
 function requestMoreTime(){const d=document.getElementById('moreTimeDate')?.value; if(!d)return alert('Select the new requested submission date.');postApi('requestMoreTime',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,requestedDueDate:d,reason:document.getElementById('moreTimeReason')?.value||''}).then(()=>{alert('More time request sent to Executive1 and ticket creator for approval.');refresh();openTicket(DETAIL.ticket.TicketID);}).catch(alertErr)}
-function approveMoreTime(){postApi('approveMoreTime',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,comment:scoreComment?.value||commentTxt?.value||''}).then(()=>{alert('More time approval captured. If both required approvals are complete, the new submission date has been applied.');refresh();openTicket(DETAIL.ticket.TicketID);}).catch(alertErr)}
+function approveMoreTime(){const scoreCommentEl=document.getElementById('scoreComment');const commentEl=document.getElementById('commentTxt');postApi('approveMoreTime',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,comment:scoreCommentEl?.value||commentEl?.value||''}).then(()=>{alert('More time approval captured. If both required approvals are complete, the new submission date has been applied.');refresh();openTicket(DETAIL.ticket.TicketID);}).catch(alertErr)}
 function returnTicket(){const due=document.getElementById('returnDue')?.value; if(!due)return alert('Select a new due date before returning this ticket.');postApi('returnTicket',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,newDueDate:due,comment:scoreComment?.value||commentTxt?.value||''}).then(()=>{alert('Ticket returned and re-opened with a new due date.');refresh();openTicket(DETAIL.ticket.TicketID)}).catch(alertErr)}
 function addComment(){postApi('addComment',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,comment:commentTxt.value}).then(()=>openTicket(DETAIL.ticket.TicketID)).catch(alertErr)}
 
@@ -414,12 +423,17 @@ async function submitTicket(){
     if(f) await uploadFileChunked(f, DETAIL.ticket.TicketID, commentTxt?.value||'');
     await postApi('submitTicket',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,comment:commentTxt?.value||''});
     alert('Ticket submitted to Executive1 successfully. Clock stopped, system score captured, and attachment link posted where applicable.');
-    refresh();
-    openTicket(DETAIL.ticket.TicketID);
+    closeDrawer();
+    CURRENT_FILTER='all';
+    loadTicketsView('task',300);
   }catch(e){alertErr(e);}
 }
-function approve1(){postApi('executive1Approve',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,score:scoreIn.value,comment:scoreComment.value}).then(()=>{alert('Executive1 approval successful. Ticket moved to Executive2.');closeDrawer();CURRENT_FILTER='review1';loadTicketsView('review1',300);}).catch(alertErr)}
-function approve2(){postApi('executive2Approve',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,score:scoreIn.value,comment:scoreComment.value}).then(()=>{alert('Executive2 approval successful. Ticket is permanently closed and moved to Closed Tickets.');closeDrawer();CURRENT_FILTER='review2';loadTicketsView('review2',300);}).catch(alertErr)}
+function removeTicketFromCurrentBasket(ticketId){
+  STATE.tickets=(STATE.tickets||[]).filter(t=>String(t.TicketID)!==String(ticketId));
+  render();
+}
+function approve1(){const id=DETAIL.ticket.TicketID;postApi('executive1Approve',{userId:USER.UserID,ticketId:id,score:scoreIn.value,comment:scoreComment.value}).then(()=>{removeTicketFromCurrentBasket(id);alert('Executive1 approval successful. Ticket moved to Executive2.');closeDrawer();CURRENT_FILTER='review1';loadTicketsView('review1',300);}).catch(alertErr)}
+function approve2(){const id=DETAIL.ticket.TicketID;postApi('executive2Approve',{userId:USER.UserID,ticketId:id,score:scoreIn.value,comment:scoreComment.value}).then(()=>{removeTicketFromCurrentBasket(id);alert('Executive2 approval successful. Ticket is permanently closed and moved to Closed Tickets.');closeDrawer();CURRENT_FILTER='review2';loadTicketsView('review2',300);}).catch(alertErr)}
 function uploadFile(){
   const f=fileUp.files[0];
   if(!f) return alert('Choose a file first.');
