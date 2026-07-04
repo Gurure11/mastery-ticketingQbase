@@ -124,11 +124,11 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxMIyenWpEM_AQ0_KaehIau32piTq1CUa53R-vcpde4k8ipEZbYajdWWGl-0CJzQ4oa4Q/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx5daTzktVf2ZwwvlC1fZNHuAxxctJUdM6YZEUJDV4TPb2GKxnbnulOCVYdwN4WKP5gKw/exec';
 let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
 let STATE = {tickets:[], users:[], referenceData:[], summary:{}};
-let CURRENT_FILTER = 'all';
 let SUMMARY_TIMER = null;
+let CURRENT_FILTER = 'all';
 
 function showSync(msg){const el=document.getElementById('syncbar'); if(el){el.classList.remove('hide'); el.innerHTML='<b>'+esc(msg||'Synchronising...')+'</b> please wait';}}
 function hideSync(){const el=document.getElementById('syncbar'); if(el) el.classList.add('hide');}
@@ -184,34 +184,24 @@ function initDates(){const d=new Date(); const iso=d.toISOString().slice(0,10); 
 function login(){document.getElementById('loginErr').textContent='Synchronising login...';postApi('login',{username:loginUser.value.trim(),password:loginPass.value.trim()}).then(u=>{USER=u;localStorage.setItem('ob_user',JSON.stringify(u));start();alert('Login successful.');}).catch(e=>loginErr.textContent=e.message);}
 function setupNow(){document.getElementById('loginErr').textContent='Repairing sheets...';postApi('setup',{}).then(()=>{loginErr.textContent='Sheets repaired. Try login again. This setup only fixes tabs/headings; heavy score repair is no longer run during setup/login.';}).catch(e=>loginErr.textContent=e.message);}
 function logout(){showSync('Synchronising logout...');localStorage.removeItem('ob_user');alert('Logout successful.');location.reload();}
-function start(){document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide');userPill.textContent=USER.Name+' · '+USER.Role;initDates();applyRoleVisibility();refresh();}
-function refresh(){postApi('bootstrap',{userId:USER.UserID,max:0}).then(data=>{STATE=data;STATE.tickets=STATE.tickets||[];fillLists();applyRoleVisibility();render();startSummaryRefresh();loadTicketsView('task',300);}).catch(e=>{hideSync(); alert('Bootstrap loading failed: '+(e.message||e)+'\n\nDeploy the matching EXECUTIVE SHARED DASHBOARD FAST BOOTSTRAP Apps Script as a NEW VERSION, then refresh.');});}
-function refreshSummary(){
-  if(!USER) return;
-  postApi('getSummary',{userId:USER.UserID}).then(sum=>{
-    STATE.summary=sum||STATE.summary||{};
-    render();
-  }).catch(()=>{});
-}
-function startSummaryRefresh(){
-  if(SUMMARY_TIMER) clearInterval(SUMMARY_TIMER);
-  SUMMARY_TIMER=setInterval(refreshSummary,45000);
-}
+function start(){document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide');userPill.textContent=USER.Name+' · '+USER.Role;initDates();applyRoleVisibility();refresh(); if(SUMMARY_TIMER) clearInterval(SUMMARY_TIMER); SUMMARY_TIMER=setInterval(refreshSummary,45000);}
+function refresh(){postApi('bootstrap',{userId:USER.UserID,max:120}).then(data=>{STATE.tickets=data.tickets||[];STATE.users=data.users||STATE.users||[];STATE.referenceData=data.referenceData||STATE.referenceData||[];STATE.summary=data.summary||STATE.summary||{};fillLists();applyRoleVisibility();render();}).catch(e=>{hideSync(); alert('Loading failed: '+(e.message||e)+'\n\nDeploy the matching stable fast Apps Script as a NEW VERSION, then refresh.');});}
+function refreshSummary(){if(!USER)return;postApi('getSummary',{userId:USER.UserID}).then(s=>{STATE.summary=s||STATE.summary||{};render();}).catch(e=>console.warn('Summary refresh failed',e));}
 function loadTicketsView(view, max){
   if(!USER) return;
-  postApi('getTicketsByView',{userId:USER.UserID,view:view||'all',max:max||300}).then(data=>{
+  const v=view||'all';
+  const m=max || (v==='closed'||v==='openLate'||v==='critical'?1000:300);
+  postApi('getTicketsByView',{userId:USER.UserID,view:v,max:m}).then(data=>{
     STATE.tickets=data.tickets||[];
-    // Keep STATE.summary stable for dashboard figures. View loads must not replace totals with a partial view.
-    if(data.summary && Object.keys(data.summary).length) STATE.summary=data.summary;
+    if(data.summary) STATE.summary=data.summary;
     render();
-    refreshSummary();
   }).catch(alertErr);
 }
 function alertErr(e){alert(e.message||e);}
 function showTab(id){if((id==='review1'||id==='review2')&&!isReviewAllowed(id)){id='task';}showSync('Synchronising navigation...');document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.tab===id;b.classList.toggle('on',on);b.classList.toggle('active',on);});document.querySelectorAll('.section').forEach(s=>s.classList.toggle('on',s.id===id));setTimeout(hideSync,250);
   if(id==='review1') loadTicketsView('review1',300);
   else if(id==='review2') loadTicketsView('review2',300);
-  else if(id==='closed') loadTicketsView('closed',1000);
+  else if(id==='closed') loadTicketsView('closed',300);
   else if(id==='task') loadTicketsView('task',300);
   else if(id==='performance') loadTicketsView('all',500);
 }
@@ -293,42 +283,15 @@ function filterTickets(kind){
 function openTicketWindow(kind){
   if((kind==='review1'||kind==='review2')&&!isReviewAllowed(kind)){kind='all';}
   CURRENT_FILTER=kind;
-  const maxRows = (kind==='closed'||kind==='openLate'||kind==='critical') ? 1000 : 300;
   if(kind==='review1') showTab('review1');
   else if(kind==='review2') showTab('review2');
   else if(kind==='closed') showTab('closed');
   else showTab('task');
-  // Force the clicked dashboard card to load its exact backend view, not only the default task tab.
-  loadTicketsView(kind==='all'?'task':kind,maxRows);
+  loadTicketsView(kind==='all'?'task':kind,(kind==='closed'||kind==='openLate'||kind==='critical')?1000:300);
   const el=document.getElementById('taskRows'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
-function render(){
-  const s=(searchTask?.value||'').toLowerCase();
-  const tickets=STATE.tickets||[];
-
-  // Stable dashboard cards must come from STATE.summary, not the current lazy-loaded table.
-  // This prevents figures from disappearing when Review/Closed/My Tickets replaces STATE.tickets with a partial view.
-  const srv=STATE.summary||{};
-  const sum={
-    critical:Number(srv.critical||0),
-    openOnTime:Number(srv.openOnTime||0),
-    e1:Number(srv.review1||0),
-    e2:Number(srv.review2||0),
-    closed:Number(srv.closed||0),
-    late:Number(srv.late||0)
-  };
-
-  if(document.getElementById('stCritical'))stCritical.textContent=sum.critical;
-  if(document.getElementById('stOpenOnTime'))stOpenOnTime.textContent=sum.openOnTime;
-  if(document.getElementById('stE1'))stE1.textContent=sum.e1;
-  if(document.getElementById('stE2'))stE2.textContent=sum.e2;
-  if(document.getElementById('stClosed'))stClosed.textContent=sum.closed;
-  if(document.getElementById('stLate'))stLate.textContent=sum.late;
-
-  renderDashboard(tickets,sum);
-  buildPerfOptions();
-  renderPerformance();
-
+function render(){const s=(searchTask?.value||'').toLowerCase();const tickets=STATE.tickets||[];const srv=STATE.summary||{};const sum={critical:Number(srv.critical||0),openOnTime:Number(srv.openOnTime||0),e1:Number(srv.review1||0),e2:Number(srv.review2||0),closed:Number(srv.closed||0),late:Number(srv.late||0)}; if(!STATE.summary||Object.keys(STATE.summary).length===0){tickets.forEach(t=>{if(String(t.Priority)==='Critical'&&t.Status!=='Closed')sum.critical++; if(isOpenOnTime(t))sum.openOnTime++; if(t.CurrentBasket==='Executive1')sum.e1++; if(t.CurrentBasket==='Executive2')sum.e2++; if(t.Status==='Closed'||t.CurrentBasket==='Closed')sum.closed++; if(t.Status!=='Closed'&&isLate(t))sum.late++;});}
+  if(document.getElementById('stCritical'))stCritical.textContent=sum.critical; if(document.getElementById('stOpenOnTime'))stOpenOnTime.textContent=sum.openOnTime; stE1.textContent=sum.e1;stE2.textContent=sum.e2;stClosed.textContent=sum.closed;stLate.textContent=sum.late; renderDashboard(tickets,sum); buildPerfOptions(); renderPerformance();
   const filtered=filterTickets(CURRENT_FILTER).filter(t=>(t.Title+t.TicketID+t.AssignedToName+t.Department+t.CostCenter).toLowerCase().includes(s));
   taskRows.innerHTML=(`<tr><td colspan="8" class="filterTitle">Showing: ${esc(filterLabel(CURRENT_FILTER))}</td></tr>`)+ (filtered.map(rowTask).join('')||empty(8));
   review1Rows.innerHTML=isReviewAllowed('review1')?(tickets.filter(t=>t.CurrentBasket==='Executive1' && t.Status!=='Closed').map(rowReview1).join('')||empty(6)):empty(6);
@@ -453,11 +416,12 @@ async function submitTicket(){
     await postApi('submitTicket',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,comment:commentTxt?.value||''});
     alert('Ticket submitted successfully. It has moved to Executive1 Review and disappeared from the assignee open basket.');
     closeDrawer();
+    refreshSummary();
     loadTicketsView('task',300);
   }catch(e){alertErr(e);}
 }
-function approve1(){postApi('executive1Approve',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,score:scoreIn.value,comment:scoreComment.value}).then(()=>{alert('Executive1 approval successful. Ticket moved to Executive2 and disappeared from Executive1 Review.');closeDrawer();loadTicketsView('review1',300);}).catch(alertErr)}
-function approve2(){postApi('executive2Approve',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,score:scoreIn.value,comment:scoreComment.value}).then(()=>{alert('Executive2 approval successful. Ticket is permanently closed and removed from Executive2 Review.');closeDrawer();loadTicketsView('review2',300);}).catch(alertErr)}
+function approve1(){postApi('executive1Approve',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,score:scoreIn.value,comment:scoreComment.value}).then(()=>{alert('Executive1 approval successful. Ticket moved to Executive2 and disappeared from Executive1 Review.');closeDrawer();refreshSummary();loadTicketsView('review1',300);}).catch(alertErr)}
+function approve2(){postApi('executive2Approve',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,score:scoreIn.value,comment:scoreComment.value}).then(()=>{alert('Executive2 approval successful. Ticket is permanently closed and removed from Executive2 Review.');closeDrawer();refreshSummary();loadTicketsView('review2',300);}).catch(alertErr)}
 function uploadFile(){
   const f=fileUp.files[0];
   if(!f) return alert('Choose a file first.');
