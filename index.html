@@ -124,7 +124,7 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyedT9YwI3mEZyYdoGDBrtBluCRifpfZrMXPTXy8pfrmkxPE5hNyAQvqckbrnF4hlaqJw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzXtx_O8hp607Txd3dem-sacMv8XndM7HSM9MKTsYsPxxrliQ6AV91rdf9Ca0wWJmL2bg/exec';
 let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
 let STATE = {tickets:[], users:[], referenceData:[], summary:{}};
 let CURRENT_FILTER = 'all';
@@ -185,7 +185,7 @@ function login(){document.getElementById('loginErr').textContent='Synchronising 
 function setupNow(){document.getElementById('loginErr').textContent='Repairing sheets...';postApi('setup',{}).then(()=>{loginErr.textContent='Sheets repaired. Try login again. This setup only fixes tabs/headings; heavy score repair is no longer run during setup/login.';}).catch(e=>loginErr.textContent=e.message);}
 function logout(){showSync('Synchronising logout...');localStorage.removeItem('ob_user');alert('Logout successful.');location.reload();}
 function start(){document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide');userPill.textContent=USER.Name+' · '+USER.Role;initDates();applyRoleVisibility();refresh();}
-function refresh(){postApi('bootstrap',{userId:USER.UserID,max:120}).then(data=>{STATE=data;fillLists();applyRoleVisibility();render();startSummaryRefresh();}).catch(e=>{hideSync(); alert('Bootstrap loading failed: '+(e.message||e)+'\n\nDeploy the matching FAST LAZY BULLETPROOF Apps Script as a NEW VERSION, then refresh. If it still fails, check the Apps Script error shown above.');});}
+function refresh(){postApi('bootstrap',{userId:USER.UserID,max:0}).then(data=>{STATE=data;STATE.tickets=STATE.tickets||[];fillLists();applyRoleVisibility();render();startSummaryRefresh();loadTicketsView('task',300);}).catch(e=>{hideSync(); alert('Bootstrap loading failed: '+(e.message||e)+'\n\nDeploy the matching EXECUTIVE SHARED DASHBOARD FAST BOOTSTRAP Apps Script as a NEW VERSION, then refresh.');});}
 function refreshSummary(){
   if(!USER) return;
   postApi('getSummary',{userId:USER.UserID}).then(sum=>{
