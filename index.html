@@ -124,7 +124,7 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzXtx_O8hp607Txd3dem-sacMv8XndM7HSM9MKTsYsPxxrliQ6AV91rdf9Ca0wWJmL2bg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxMIyenWpEM_AQ0_KaehIau32piTq1CUa53R-vcpde4k8ipEZbYajdWWGl-0CJzQ4oa4Q/exec';
 let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
 let STATE = {tickets:[], users:[], referenceData:[], summary:{}};
 let CURRENT_FILTER = 'all';
@@ -211,7 +211,7 @@ function alertErr(e){alert(e.message||e);}
 function showTab(id){if((id==='review1'||id==='review2')&&!isReviewAllowed(id)){id='task';}showSync('Synchronising navigation...');document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.tab===id;b.classList.toggle('on',on);b.classList.toggle('active',on);});document.querySelectorAll('.section').forEach(s=>s.classList.toggle('on',s.id===id));setTimeout(hideSync,250);
   if(id==='review1') loadTicketsView('review1',300);
   else if(id==='review2') loadTicketsView('review2',300);
-  else if(id==='closed') loadTicketsView('closed',300);
+  else if(id==='closed') loadTicketsView('closed',1000);
   else if(id==='task') loadTicketsView('task',300);
   else if(id==='performance') loadTicketsView('all',500);
 }
@@ -293,11 +293,13 @@ function filterTickets(kind){
 function openTicketWindow(kind){
   if((kind==='review1'||kind==='review2')&&!isReviewAllowed(kind)){kind='all';}
   CURRENT_FILTER=kind;
+  const maxRows = (kind==='closed'||kind==='openLate'||kind==='critical') ? 1000 : 300;
   if(kind==='review1') showTab('review1');
   else if(kind==='review2') showTab('review2');
   else if(kind==='closed') showTab('closed');
   else showTab('task');
-  loadTicketsView(kind==='all'?'task':kind,300);
+  // Force the clicked dashboard card to load its exact backend view, not only the default task tab.
+  loadTicketsView(kind==='all'?'task':kind,maxRows);
   const el=document.getElementById('taskRows'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function render(){
