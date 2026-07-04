@@ -124,7 +124,7 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHztJXbMmLZ55rnFHBEBfg2lwnlQntuCHSwUs57ASVTK4fR5GVCAdvqJauiw42i0kM/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyoei-31sUQ9R88Mm0FK6Z9YXj3qK3lvJ-08oCeWz5-7OvZn-_Q9SMpn8kpHcapozFJ/exec';
 let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
 let STATE = {tickets:[], users:[], referenceData:[], summary:{}};
 let CURRENT_FILTER = 'all';
@@ -235,9 +235,14 @@ function openTicketWhatsApp(){const t=DETAIL.ticket;const phone=cleanPhone(t.Ass
 function copyTicketWhatsApp(){copyText(DETAIL.ticket.WhatsAppMessage||ticketWhatsAppText(DETAIL.ticket));}
 function ticketWhatsAppText(t){return `ONPOINT-BASE TASK ${t.TicketID}\n\nAssigned to: ${t.AssignedToName}\nDepartment: ${t.Department||''}\nCost Center: ${t.CostCenter||''}\nTitle: ${t.Title}\nPriority: ${t.Priority}\nIssue Date: ${fmt(t.IssueDate)}\nDue: ${fmt(t.DueDate)}\nStatus: ${t.Status}\nTime lapse: ${t.TimeRemainingText||''}\n\nDescription:\n${t.Description||''}`;}
 function userRoleKey(){return String(USER?.Role||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
-function userMatch(a,b){return String(a||'').trim().toLowerCase()!=='' && String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase();}
-function isMineAsCreator(t){return userMatch(t.CreatedByUserID,USER.UserID)||userMatch(t.CreatedByEmail,USER.Email)||userMatch(t.CreatedByName,USER.Name);}
-function isMineAsAssignee(t){return userMatch(t.AssignedToUserID,USER.UserID)||userMatch(t.AssignedToEmail,USER.Email)||userMatch(t.AssignedToName,USER.Name);}
+function identityKey(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ').replace(/[^a-z0-9@.]+/g,'');}
+function nameKey(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ').replace(/[^a-z0-9]+/g,'');}
+function emailKey(v){return String(v||'').trim().toLowerCase();}
+function userMatch(a,b){const aa=identityKey(a),bb=identityKey(b);return aa!==''&&bb!==''&&aa===bb;}
+function emailMatch(a,b){const aa=emailKey(a),bb=emailKey(b);return aa!==''&&bb!==''&&aa===bb;}
+function nameMatch(a,b){const aa=nameKey(a),bb=nameKey(b);return aa!==''&&bb!==''&&aa===bb;}
+function isMineAsCreator(t){return userMatch(t.CreatedByUserID,USER.UserID)||emailMatch(t.CreatedByEmail,USER.Email)||nameMatch(t.CreatedByName,USER.Name);}
+function isMineAsAssignee(t){return userMatch(t.AssignedToUserID,USER.UserID)||emailMatch(t.AssignedToEmail,USER.Email)||nameMatch(t.AssignedToName,USER.Name);}
 function isExecutiveUser(){const r=userRoleKey();return r==='admin'||r==='adminmanager'||r==='executive1'||r==='exec1'||r==='executive2'||r==='exec2';}
 function isReviewAllowed(kind){
   const r=userRoleKey();
