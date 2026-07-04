@@ -152,13 +152,16 @@ function api(action, data={}){
 async function postApi(action, data={}){
   if(!SCRIPT_URL || SCRIPT_URL.includes('PASTE_')) throw new Error('Replace SCRIPT_URL with your Apps Script Web App URL.');
   showSync('Synchronising '+action+'...');
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(), 65000);
   try{
     const payload = JSON.stringify({...data, action});
     const res = await fetch(SCRIPT_URL, {
       method: 'POST',
       headers: {'Content-Type':'text/plain;charset=utf-8'},
       body: payload,
-      redirect: 'follow'
+      redirect: 'follow',
+      signal: controller.signal
     });
     const txt = await res.text();
     let json;
@@ -168,8 +171,10 @@ async function postApi(action, data={}){
     markSynced();
     return json.data;
   }catch(err){
-    throw new Error(err.message || 'Upload failed. Check Apps Script deployment permissions and Drive folder access.');
+    if(err && err.name === 'AbortError') throw new Error(action+' timed out. Redeploy the fixed Apps Script as a New version and run Repair / Setup Sheets once.');
+    throw new Error(err.message || 'Request failed. Check Apps Script deployment permissions and Drive folder access.');
   }finally{
+    clearTimeout(timer);
     hideSync();
   }
 }
@@ -179,7 +184,7 @@ function login(){document.getElementById('loginErr').textContent='Synchronising 
 function setupNow(){document.getElementById('loginErr').textContent='Repairing sheets...';postApi('setup',{}).then(()=>{loginErr.textContent='Sheets repaired. Try login again. Your Users tab headings now match: UserID, Name, Email, Phone, WhatsApp, Username, Password, Role, Department, IsActive, CreatedAt, LastLogin, Cost Center. Try login again. If Users tab was empty use admin / admin123.';}).catch(e=>loginErr.textContent=e.message);}
 function logout(){showSync('Synchronising logout...');localStorage.removeItem('ob_user');alert('Logout successful.');location.reload();}
 function start(){document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide');userPill.textContent=USER.Name+' · '+USER.Role;initDates();applyRoleVisibility();refresh();}
-function refresh(){postApi('bootstrap',{userId:USER.UserID}).then(data=>{STATE=data;fillLists();applyRoleVisibility();render();}).catch(alertErr);}
+function refresh(){postApi('bootstrap',{userId:USER.UserID}).then(data=>{STATE=data;fillLists();applyRoleVisibility();render();}).catch(e=>{hideSync(); alert('Bootstrap loading failed: '+(e.message||e)+'\n\nUse the new Apps Script file, deploy as NEW VERSION, then run Repair / Setup Sheets once.');});}
 function loadTicketsView(view, max){
   if(!USER) return;
   postApi('getTicketsByView',{userId:USER.UserID,view:view||'all',max:max||300}).then(data=>{
