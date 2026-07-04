@@ -124,7 +124,7 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwwSkrMg0N_Ibyyr1VZ00YHvklwNwWyAorG27YgzWaohV004I6kWKZ_JPxMA-glZ4ysig/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx2cECtzY0QLTaC1UriurPwc04sclRbN3bQ0VuYrb7XZdPQ6gZf5qwHk6Hnll7K7_6tOg/exec';
 let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
 let STATE = {tickets:[], users:[], referenceData:[], summary:{}};
 let CURRENT_FILTER = 'all';
@@ -181,10 +181,10 @@ async function postApi(action, data={}){
 
 function initDates(){const d=new Date(); const iso=d.toISOString().slice(0,10); ['ntIssue','ntDue','rtStart'].forEach(id=>{const el=document.getElementById(id); if(el) el.value=iso;});}
 function login(){document.getElementById('loginErr').textContent='Synchronising login...';postApi('login',{username:loginUser.value.trim(),password:loginPass.value.trim()}).then(u=>{USER=u;localStorage.setItem('ob_user',JSON.stringify(u));start();alert('Login successful.');}).catch(e=>loginErr.textContent=e.message);}
-function setupNow(){document.getElementById('loginErr').textContent='Repairing sheets...';postApi('setup',{}).then(()=>{loginErr.textContent='Sheets repaired. Try login again. Your Users tab headings now match: UserID, Name, Email, Phone, WhatsApp, Username, Password, Role, Department, IsActive, CreatedAt, LastLogin, Cost Center. Try login again. If Users tab was empty use admin / admin123.';}).catch(e=>loginErr.textContent=e.message);}
+function setupNow(){document.getElementById('loginErr').textContent='Repairing sheets...';postApi('setup',{}).then(()=>{loginErr.textContent='Sheets repaired. Try login again. This setup only fixes tabs/headings; heavy score repair is no longer run during setup/login.';}).catch(e=>loginErr.textContent=e.message);}
 function logout(){showSync('Synchronising logout...');localStorage.removeItem('ob_user');alert('Logout successful.');location.reload();}
 function start(){document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide');userPill.textContent=USER.Name+' · '+USER.Role;initDates();applyRoleVisibility();refresh();}
-function refresh(){postApi('bootstrap',{userId:USER.UserID}).then(data=>{STATE=data;fillLists();applyRoleVisibility();render();}).catch(e=>{hideSync(); alert('Bootstrap loading failed: '+(e.message||e)+'\n\nUse the new Apps Script file, deploy as NEW VERSION, then run Repair / Setup Sheets once.');});}
+function refresh(){postApi('bootstrap',{userId:USER.UserID,max:150}).then(data=>{STATE=data;fillLists();applyRoleVisibility();render();}).catch(e=>{hideSync(); alert('Bootstrap loading failed: '+(e.message||e)+'\n\nUse the FAST_LOGIN_LAZY_LOADING Apps Script, deploy as NEW VERSION, then run Repair / Setup Sheets once.');});}
 function loadTicketsView(view, max){
   if(!USER) return;
   postApi('getTicketsByView',{userId:USER.UserID,view:view||'all',max:max||300}).then(data=>{
