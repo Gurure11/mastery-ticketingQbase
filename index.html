@@ -124,7 +124,7 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzA8sawnO-QveyrOwQg_-ld4f8prqkQfA0MbzYpaN3mgBNCGys-I9Ggadxg2OfCxc8p/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwetRr18G_pZsVs2n6URTWwS1Co-MJ7btXH6IyTIQ5e76dFxD_5RPwiz-10ivZEgQA/exec';
 let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
 let STATE = {tickets:[], users:[], referenceData:[], summary:{}};
 let CURRENT_FILTER = 'all';
@@ -270,8 +270,8 @@ function filterTickets(kind){
   if(kind==='critical') return tickets.filter(t=>String(t.Priority)==='Critical' && t.Status!=='Closed' && (isExecutiveUser() || isMineAsAssignee(t)));
   if(kind==='openOnTime') return tickets.filter(t=>isOpenOnTime(t) && (isExecutiveUser() || isMineAsAssignee(t)));
   if(kind==='openLate') return tickets.filter(t=>t.Status!=='Closed' && isLate(t) && (isExecutiveUser() || isMineAsAssignee(t)));
-  if(kind==='review1') return isReviewAllowed('review1') ? tickets.filter(t=>t.CurrentBasket==='Executive1' && t.Status!=='Closed') : [];
-  if(kind==='review2') return isReviewAllowed('review2') ? tickets.filter(t=>t.CurrentBasket==='Executive2' && t.Status!=='Closed') : [];
+  if(kind==='review1') return isReviewAllowed('review1') ? tickets.filter(t=>t.CurrentBasket==='Executive1') : [];
+  if(kind==='review2') return isReviewAllowed('review2') ? tickets.filter(t=>t.CurrentBasket==='Executive2') : [];
   if(kind==='closed') return tickets.filter(t=>t.Status==='Closed' || t.CurrentBasket==='Closed');
   if(kind==='assigned') return tickets.filter(t=>t.CurrentBasket==='Assignee' && t.Status!=='Closed' && (isExecutiveUser() || isMineAsAssignee(t)));
   return myTickets();
@@ -408,27 +408,15 @@ async function uploadFileChunked(file, ticketId, comment){
 async function submitTicket(){
   const f=document.getElementById('fileUp')?.files?.[0];
   try{
-    const ticketId = DETAIL.ticket.TicketID;
-    if(f) await uploadFileChunked(f, ticketId, commentTxt?.value||'');
-    await postApi('submitTicket',{userId:USER.UserID,ticketId:ticketId,comment:commentTxt?.value||''});
+    if(f) await uploadFileChunked(f, DETAIL.ticket.TicketID, commentTxt?.value||'');
+    await postApi('submitTicket',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,comment:commentTxt?.value||''});
     alert('Ticket submitted successfully. It has moved to Executive1 Review and disappeared from the assignee open basket.');
     closeDrawer();
-    CURRENT_FILTER='all';
     loadTicketsView('task',300);
   }catch(e){alertErr(e);}
 }
-function approve1(){
-  const ticketId = DETAIL.ticket.TicketID;
-  postApi('executive1Approve',{userId:USER.UserID,ticketId:ticketId,score:scoreIn.value,comment:scoreComment.value})
-    .then(()=>{alert('Executive1 approval successful. Ticket moved to Executive2 and disappeared from Executive1 Review.');closeDrawer();CURRENT_FILTER='review1';loadTicketsView('review1',300);})
-    .catch(alertErr)
-}
-function approve2(){
-  const ticketId = DETAIL.ticket.TicketID;
-  postApi('executive2Approve',{userId:USER.UserID,ticketId:ticketId,score:scoreIn.value,comment:scoreComment.value})
-    .then(()=>{alert('Executive2 approval successful. Ticket is permanently closed and removed from Executive2 Review.');closeDrawer();CURRENT_FILTER='review2';loadTicketsView('review2',300);})
-    .catch(alertErr)
-}
+function approve1(){postApi('executive1Approve',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,score:scoreIn.value,comment:scoreComment.value}).then(()=>{alert('Executive1 approval successful. Ticket moved to Executive2 and disappeared from Executive1 Review.');closeDrawer();loadTicketsView('review1',300);}).catch(alertErr)}
+function approve2(){postApi('executive2Approve',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,score:scoreIn.value,comment:scoreComment.value}).then(()=>{alert('Executive2 approval successful. Ticket is permanently closed and removed from Executive2 Review.');closeDrawer();loadTicketsView('review2',300);}).catch(alertErr)}
 function uploadFile(){
   const f=fileUp.files[0];
   if(!f) return alert('Choose a file first.');
