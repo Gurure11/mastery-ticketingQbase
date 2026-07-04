@@ -124,7 +124,7 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwetRr18G_pZsVs2n6URTWwS1Co-MJ7btXH6IyTIQ5e76dFxD_5RPwiz-10ivZEgQA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxRAS5rqesHm8-4ZiRtJej0GhTtfU_XVGionLJOrFPkIaRexOlZEDNBip23YMmusNOM/exec';
 let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
 let STATE = {tickets:[], users:[], referenceData:[], summary:{}};
 let CURRENT_FILTER = 'all';
@@ -184,7 +184,7 @@ function login(){document.getElementById('loginErr').textContent='Synchronising 
 function setupNow(){document.getElementById('loginErr').textContent='Repairing sheets...';postApi('setup',{}).then(()=>{loginErr.textContent='Sheets repaired. Try login again. This setup only fixes tabs/headings; heavy score repair is no longer run during setup/login.';}).catch(e=>loginErr.textContent=e.message);}
 function logout(){showSync('Synchronising logout...');localStorage.removeItem('ob_user');alert('Logout successful.');location.reload();}
 function start(){document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide');userPill.textContent=USER.Name+' · '+USER.Role;initDates();applyRoleVisibility();refresh();}
-function refresh(){postApi('bootstrap',{userId:USER.UserID,max:150}).then(data=>{STATE=data;fillLists();applyRoleVisibility();render();}).catch(e=>{hideSync(); alert('Bootstrap loading failed: '+(e.message||e)+'\n\nUse the FAST_LOGIN_LAZY_LOADING Apps Script, deploy as NEW VERSION, then run Repair / Setup Sheets once.');});}
+function refresh(){postApi('bootstrap',{userId:USER.UserID,max:120}).then(data=>{STATE=data;fillLists();applyRoleVisibility();render();}).catch(e=>{hideSync(); alert('Bootstrap loading failed: '+(e.message||e)+'\n\nDeploy the matching FAST LAZY BULLETPROOF Apps Script as a NEW VERSION, then refresh. If it still fails, check the Apps Script error shown above.');});}
 function loadTicketsView(view, max){
   if(!USER) return;
   postApi('getTicketsByView',{userId:USER.UserID,view:view||'all',max:max||300}).then(data=>{
