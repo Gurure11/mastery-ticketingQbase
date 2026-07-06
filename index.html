@@ -124,10 +124,10 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzV4pHAry2eCctdgwWZfvlNDYJSht7tIiRD7Fq7dW2EuQSbtPZjjsOQn6l1XTaqDodJuA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyWvOuJ20pSb9jnWFXcPcmw-FU1ht3k9x8Kz71jRv33_hcxt8FHlnMyeyj5nOkeOXQV2Q/exec';
 let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
-let STATE = {tickets:[], globalTickets:[], users:[], referenceData:[], summary:{}, performanceLoaded:false};
-let LAST_GOOD_STATE = {tickets:[], globalTickets:[], users:[], referenceData:[], summary:{}, performanceLoaded:false};
+let STATE = {tickets:[], users:[], referenceData:[], summary:{}};
+let LAST_GOOD_STATE = {tickets:[], users:[], referenceData:[], summary:{}};
 let CURRENT_FILTER = 'all';
 let REQUEST_SEQ = 0;
 let ACTIVE_DATA_VIEW = 'all';
@@ -143,9 +143,6 @@ function keepLastGoodState(data, opts={}){
   if(Array.isArray(data.users) && (data.users.length || !LAST_GOOD_STATE.users.length)) next.users = data.users;
   if(Array.isArray(data.referenceData)) next.referenceData = data.referenceData;
   if(data.summary && typeof data.summary === 'object') next.summary = data.summary;
-  if(Array.isArray(data.globalTickets)) next.globalTickets = data.globalTickets;
-  if(Array.isArray(data.dashboardTickets)) next.globalTickets = data.dashboardTickets;
-  if(data.performanceLoaded) next.performanceLoaded = true;
   if(Array.isArray(data.tickets)){
     if(data.tickets.length || allowEmpty || !LAST_GOOD_STATE.tickets.length){
       next.tickets = data.tickets;
@@ -186,13 +183,13 @@ function mergeTicketsForView(view, incoming){
     });
   }
   STATE.tickets = merged;
-  LAST_GOOD_STATE = JSON.parse(JSON.stringify({...LAST_GOOD_STATE, tickets: merged, globalTickets: STATE.globalTickets||LAST_GOOD_STATE.globalTickets||[], users: STATE.users||LAST_GOOD_STATE.users||[], referenceData: STATE.referenceData||LAST_GOOD_STATE.referenceData||[], summary: STATE.summary||LAST_GOOD_STATE.summary||{}, performanceLoaded: !!STATE.performanceLoaded}));
+  LAST_GOOD_STATE = JSON.parse(JSON.stringify({...LAST_GOOD_STATE, tickets: merged, users: STATE.users||LAST_GOOD_STATE.users||[], referenceData: STATE.referenceData||LAST_GOOD_STATE.referenceData||[]}));
 }
 function startAutoRefresh(){
   if(AUTO_REFRESH_TIMER) clearInterval(AUTO_REFRESH_TIMER);
   AUTO_REFRESH_TIMER = setInterval(()=>{
     if(!USER) return;
-    loadTicketsView(ACTIVE_DATA_VIEW || 'all', 120, {silent:true, background:true});
+    loadTicketsView(ACTIVE_DATA_VIEW || 'all', 500, {silent:true, background:true});
   }, REFRESH_INTERVAL_MS);
 }
 
@@ -254,7 +251,7 @@ function start(){document.getElementById('login').classList.add('hide');document
 function refresh(){
   const seq=++REQUEST_SEQ;
   ACTIVE_DATA_VIEW='all';
-  postApi('bootstrap',{userId:USER.UserID,max:120,dashboardMax:120}).then(data=>{
+  postApi('bootstrap',{userId:USER.UserID,max:500}).then(data=>{
     if(seq!==REQUEST_SEQ) return; // Prevent older responses from overwriting newer data.
     keepLastGoodState(data,{allowEmpty:false});
     fillLists();applyRoleVisibility();render();startAutoRefresh();LAST_REFRESH_AT=Date.now();
@@ -270,27 +267,14 @@ function loadTicketsView(view, max, opts={}){
   const seq=++REQUEST_SEQ;
   const useBootstrap = !(STATE.users||[]).length && ACTIVE_DATA_VIEW==='all';
   const action = useBootstrap ? 'bootstrap' : 'getTicketsByView';
-  const payload = useBootstrap ? {userId:USER.UserID,max:max||120,dashboardMax:120} : {userId:USER.UserID,view:ACTIVE_DATA_VIEW,max:max||300,includeGlobal:!!opts.includeGlobal};
+  const payload = useBootstrap ? {userId:USER.UserID,max:max||500} : {userId:USER.UserID,view:ACTIVE_DATA_VIEW,max:max||500};
   return postApi(action,payload).then(data=>{
     if(seq!==REQUEST_SEQ) return; // Ignore stale late responses.
-    if(opts.includeGlobal && data && Array.isArray(data.globalTickets)){
-      STATE.globalTickets = data.globalTickets;
-      STATE.performanceLoaded = true;
-      if(data.summary) STATE.summary = data.summary;
-      if(data.users) STATE.users = data.users;
-      if(data.referenceData) STATE.referenceData = data.referenceData;
-      LAST_GOOD_STATE = JSON.parse(JSON.stringify({...LAST_GOOD_STATE, globalTickets: STATE.globalTickets, summary: STATE.summary||{}, users: STATE.users||LAST_GOOD_STATE.users||[], referenceData: STATE.referenceData||LAST_GOOD_STATE.referenceData||[], performanceLoaded:true}));
-      if(useBootstrap || (data&&data.users)) fillLists();
-      applyRoleVisibility();render();LAST_REFRESH_AT=Date.now();startAutoRefresh();
-      return;
-    }
     if(!useBootstrap && ACTIVE_DATA_VIEW!=='all' && data && Array.isArray(data.tickets)){
       mergeTicketsForView(ACTIVE_DATA_VIEW, data.tickets);
       if(data.users) STATE.users = data.users;
       if(data.referenceData) STATE.referenceData = data.referenceData;
-      if(data.summary) STATE.summary = data.summary;
-      if(Array.isArray(data.globalTickets)){ STATE.globalTickets = data.globalTickets; if(opts.includeGlobal) STATE.performanceLoaded = true; }
-      if(Array.isArray(data.dashboardTickets)) STATE.globalTickets = data.dashboardTickets;
+      if(data.summary && typeof data.summary === 'object') STATE.summary = data.summary;
     }else{
       keepLastGoodState(data,{allowEmpty:!!opts.allowEmpty});
     }
@@ -303,17 +287,12 @@ function loadTicketsView(view, max, opts={}){
   });
 }
 function alertErr(e){alert(e.message||e);}
-function showTab(id){if((id==='review1'||id==='review2')&&!isReviewAllowed(id)){id='task';}showSync('Synchronising navigation...');document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.tab===id;b.classList.toggle('on',on);b.classList.toggle('active',on);});document.querySelectorAll('.section').forEach(s=>s.classList.toggle('on',s.id===id));setTimeout(hideSync,250);
+function showTab(id, opts={}){if((id==='review1'||id==='review2')&&!isReviewAllowed(id)){id='task';}showSync('Synchronising navigation...');document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.tab===id;b.classList.toggle('on',on);b.classList.toggle('active',on);});document.querySelectorAll('.section').forEach(s=>s.classList.toggle('on',s.id===id));setTimeout(hideSync,250);
   // Use local cache for navigation so counters do not disappear during tab changes.
   render();
   const view = id==='review1'?'review1':id==='review2'?'review2':id==='closed'?'closed':id==='task'?'task':id==='performance'?'all':null;
   // Always refresh workflow baskets when opened. Keep cache visible while fresh data loads.
-  // Full executive performance data is lazy-loaded only when Performance is opened.
-  if(id==='performance'){
-    if(!STATE.performanceLoaded) loadTicketsView('all', 2000, {silent:true, background:true, includeGlobal:true});
-  }else if(view){
-    loadTicketsView(view, 300, {silent:true, background:true});
-  }
+  if(view && !opts.skipLoad) loadTicketsView(view, id==='performance'?500:300, {silent:true, background:true});
 }
 function modeChange(){const rec=document.querySelector('[name=mode]:checked').value==='recurring';document.querySelectorAll('.recOnly').forEach(e=>e.classList.toggle('hide',!rec));document.querySelectorAll('.singleOnly').forEach(e=>e.classList.toggle('hide',rec));}
 function activeUsers(){return (STATE.users||[]).filter(u=>String(u.IsActive).toUpperCase()!=='FALSE');}
@@ -379,18 +358,6 @@ function myTickets(){
 }
 function isLate(t){return String(t.TimeRemainingText||'').toLowerCase().includes('late') || String(t.ClosedTiming||'').toLowerCase().includes('late');}
 function isOpenOnTime(t){return t.Status!=='Closed' && !isLate(t) && (t.CurrentBasket==='Assignee'||t.Status==='Open');}
-
-function filterTicketsFrom(source, kind){
-  const tickets=source||[];
-  if(kind==='critical') return tickets.filter(t=>String(t.Priority)==='Critical' && t.Status!=='Closed' && (isExecutiveUser() || isMineAsAssignee(t)));
-  if(kind==='openOnTime') return tickets.filter(t=>isOpenOnTime(t) && (isExecutiveUser() || isMineAsAssignee(t)));
-  if(kind==='openLate') return tickets.filter(t=>t.Status!=='Closed' && isLate(t) && (isExecutiveUser() || isMineAsAssignee(t)));
-  if(kind==='review1') return isReviewAllowed('review1') ? tickets.filter(t=>t.CurrentBasket==='Executive1') : [];
-  if(kind==='review2') return isReviewAllowed('review2') ? tickets.filter(t=>t.CurrentBasket==='Executive2') : [];
-  if(kind==='closed') return tickets.filter(t=>t.Status==='Closed' || t.CurrentBasket==='Closed');
-  if(kind==='assigned') return tickets.filter(t=>t.CurrentBasket==='Assignee' && t.Status!=='Closed' && (isExecutiveUser() || isMineAsAssignee(t)));
-  return tickets;
-}
 function filterTickets(kind){
   const tickets=STATE.tickets||[];
   if(kind==='critical') return tickets.filter(t=>String(t.Priority)==='Critical' && t.Status!=='Closed' && (isExecutiveUser() || isMineAsAssignee(t)));
@@ -405,35 +372,23 @@ function filterTickets(kind){
 function openTicketWindow(kind){
   if((kind==='review1'||kind==='review2')&&!isReviewAllowed(kind)){kind='all';}
   CURRENT_FILTER=kind;
-  if(kind==='review1') showTab('review1');
-  else if(kind==='review2') showTab('review2');
-  else if(kind==='closed') showTab('closed');
-  else showTab('task');
+  if(kind==='review1') showTab('review1',{skipLoad:true});
+  else if(kind==='review2') showTab('review2',{skipLoad:true});
+  else if(kind==='closed') showTab('closed',{skipLoad:true});
+  else showTab('task',{skipLoad:true});
   render();
   loadTicketsView(kind==='all'?'task':kind,300,{silent:true,background:true});
   const el=document.getElementById('taskRows'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
-
-function dashboardTickets(){return (Array.isArray(STATE.globalTickets) && STATE.globalTickets.length) ? STATE.globalTickets : (STATE.tickets||[]);}
-function summaryNumber(keys, fallback){
-  const s=STATE.summary||{};
-  for(const k of keys){ if(s[k]!==undefined && s[k]!==null && s[k]!=='' && !isNaN(Number(s[k]))) return Number(s[k]); }
-  return fallback;
-}
-function dashboardSummaryFrom(tickets){
-  const calc={critical:0,openOnTime:0,e1:0,e2:0,closed:0,late:0};
-  (tickets||[]).forEach(t=>{if(String(t.Priority)==='Critical'&&t.Status!=='Closed')calc.critical++; if(isOpenOnTime(t))calc.openOnTime++; if(t.CurrentBasket==='Executive1')calc.e1++; if(t.CurrentBasket==='Executive2')calc.e2++; if(t.Status==='Closed'||t.CurrentBasket==='Closed')calc.closed++; if(t.Status!=='Closed'&&isLate(t))calc.late++;});
-  return {
-    critical: summaryNumber(['critical','Critical','criticalTickets','CriticalTickets'], calc.critical),
-    openOnTime: summaryNumber(['openOnTime','OpenOnTime','openOntime','openAndOntime'], calc.openOnTime),
-    e1: summaryNumber(['e1','review1','executive1','Executive1','executive1Basket'], calc.e1),
-    e2: summaryNumber(['e2','review2','executive2','Executive2','executive2Basket'], calc.e2),
-    closed: summaryNumber(['closed','Closed','closedTickets'], calc.closed),
-    late: summaryNumber(['late','openLate','OpenLate','openAndLate'], calc.late)
-  };
-}
-function render(){const s=(searchTask?.value||'').toLowerCase();const tickets=STATE.tickets||[];const global=dashboardTickets();const sum=dashboardSummaryFrom(global);// Dashboard counters use stable backend summary/global executive cache, not the current basket cache.
-  if(document.getElementById('stCritical'))stCritical.textContent=sum.critical; if(document.getElementById('stOpenOnTime'))stOpenOnTime.textContent=sum.openOnTime; stE1.textContent=sum.e1;stE2.textContent=sum.e2;stClosed.textContent=sum.closed;stLate.textContent=sum.late; renderDashboard(global,sum); buildPerfOptions(); renderPerformance();
+function render(){const s=(searchTask?.value||'').toLowerCase();const tickets=STATE.tickets||[];const sum={critical:0,openOnTime:0,e1:0,e2:0,closed:0,late:0};tickets.forEach(t=>{if(String(t.Priority)==='Critical'&&t.Status!=='Closed')sum.critical++; if(isOpenOnTime(t))sum.openOnTime++; if(t.CurrentBasket==='Executive1')sum.e1++; if(t.CurrentBasket==='Executive2')sum.e2++; if(t.Status==='Closed'||t.CurrentBasket==='Closed')sum.closed++; if(t.Status!=='Closed'&&isLate(t))sum.late++;});
+  // Executive2 uses the complete shared server summary, even when a smaller ticket view is loaded.
+  if((userRoleKey()==='executive2'||userRoleKey()==='exec2') && STATE.summary && Object.keys(STATE.summary).length){
+    sum.critical=Number(STATE.summary.critical||0); sum.openOnTime=Number(STATE.summary.openOnTime||0);
+    sum.e1=Number(STATE.summary.review1||0); sum.e2=Number(STATE.summary.review2||0);
+    sum.closed=Number(STATE.summary.closed||0); sum.late=Number(STATE.summary.late||0);
+  }// Dashboard counters use the stable shared summary for Executive2.
+  // This prevents flickering caused by a delayed or partial server summary.
+  if(document.getElementById('stCritical'))stCritical.textContent=sum.critical; if(document.getElementById('stOpenOnTime'))stOpenOnTime.textContent=sum.openOnTime; stE1.textContent=sum.e1;stE2.textContent=sum.e2;stClosed.textContent=sum.closed;stLate.textContent=sum.late; renderDashboard(tickets,sum); buildPerfOptions(); renderPerformance();
   const filtered=filterTickets(CURRENT_FILTER).filter(t=>(t.Title+t.TicketID+t.AssignedToName+t.Department+t.CostCenter).toLowerCase().includes(s));
   taskRows.innerHTML=(`<tr><td colspan="8" class="filterTitle">Showing: ${esc(filterLabel(CURRENT_FILTER))}</td></tr>`)+ (filtered.map(rowTask).join('')||empty(8));
   review1Rows.innerHTML=isReviewAllowed('review1')?(tickets.filter(t=>t.CurrentBasket==='Executive1' && t.Status!=='Closed').map(rowReview1).join('')||empty(6)):empty(6);
@@ -451,7 +406,7 @@ function renderDashboard(tickets,sum){
   dashBody.innerHTML=`<div class="card"><h3>Workflow Split</h3>${dashBars(split,'workflow')}</div><div class="card clickable" onclick="showDashboardList('score','Average Final Score')"><h3>Performance</h3><div class="stat"><div class="l">Average final score</div><div class="v">${avg}%</div></div><p class="muted">Click to show closed ticket score data.</p></div><div class="card"><h3>By Department</h3>${dashBars(byDept,'Department')}</div><div class="card"><h3>By Cost Center</h3>${dashBars(byCC,'CostCenter')}</div>`;
 }
 function dashBars(obj,type){const max=Math.max(1,...Object.values(obj).map(Number));return Object.keys(obj).map(k=>{let kind= type==='workflow'?({'Critical Tickets':'critical','Open & Ontime':'openOnTime','Executive1 Review':'review1','Executive2 Review':'review2','Open & Late':'openLate','Closed':'closed'}[k]||'all') : type+':'+k; let click=type.startsWith('perfGroup:')?`showPerformanceGroup('${esc(type.split(':')[1])}','${esc(k)}')`:`showDashboardList('${esc(kind)}','${esc(k)}')`; let cls=(k.includes('Critical')||k.includes('Late'))?'bad':(k.includes('Ontime')?'good':'');return `<div class="barrow clickable ${cls}" onclick="${click}"><div class="lbl">${esc(k)}</div><div class="track"><div class="fill" style="width:${Math.round(Number(obj[k])/max*100)}%"></div></div><div class="num">${obj[k]}${type.startsWith('perfGroup:')?'%':''}</div></div>`}).join('')||'<p class="muted">No data.</p>';}
-function showDashboardList(kind,title){let rows=[]; const global=dashboardTickets(); if(kind==='score') rows=global.filter(t=>t.Status==='Closed'||t.CurrentBasket==='Closed'); else if(kind.includes(':')){const [field,val]=kind.split(':'); rows=global.filter(t=>String(t[field]||'Unassigned')===val);} else rows=filterTicketsFrom(global,kind); dashList.innerHTML=miniTicketTable(title,rows);}
+function showDashboardList(kind,title){let rows=[]; if(kind==='score') rows=(STATE.tickets||[]).filter(t=>t.Status==='Closed'||t.CurrentBasket==='Closed'); else if(kind.includes(':')){const [field,val]=kind.split(':'); rows=(STATE.tickets||[]).filter(t=>String(t[field]||'Unassigned')===val);} else rows=filterTickets(kind); dashList.innerHTML=miniTicketTable(title,rows);}
 function miniTicketTable(title,rows){return `<div class="panel"><h2>${esc(title)} Data</h2><div class="scroll"><table><thead><tr><th>Ref</th><th>Title</th><th>Assignee</th><th>Department</th><th>Cost Center</th><th>Status</th><th>Priority</th><th>System %</th><th>Exec1 %</th><th>Exec2 %</th><th>Final %</th></tr></thead><tbody>${rows.map(t=>`<tr><td><a class="ticket-link" onclick="openTicket('${t.TicketID}')">${esc(t.TicketID)}</a></td><td>${esc(t.Title)}</td><td>${esc(t.AssignedToName)}</td><td>${esc(t.Department)}</td><td>${esc(t.CostCenter)}</td><td>${status(t)}</td><td class="priority-${t.Priority}">${esc(t.Priority)}</td><td>${score(t.SystemScore)}</td><td>${score(t.Executive1Score)}</td><td>${score(t.Executive2Score)}</td><td>${finalScore(computedFinalNumber(t))}</td></tr>`).join('')||empty(11)}</tbody></table></div></div>`}
 function buildPerfOptions(){
   const mode=document.getElementById('perfMode')?.value||'individual';
@@ -469,23 +424,23 @@ function buildPerfOptions(){
   if(vals.includes(old) || old==='__ALL__') sel.value=old; else sel.value='__ALL__';
 }
 function avgScore(rows){return avgComputedFinal(rows);}
-function groupPerformanceRows(field, sourceValues){const tickets=dashboardTickets(); const names=[...new Set([...(sourceValues||[]),...tickets.map(t=>t[field]||'Unassigned')].filter(Boolean))].sort();return names.map(name=>{const rows=tickets.filter(t=>String(t[field]||'Unassigned')===String(name));const closed=rows.filter(t=>t.Status==='Closed'||t.CurrentBasket==='Closed');const late=rows.filter(t=>t.Status!=='Closed'&&isLate(t));return {name,rows,total:rows.length,closed:closed.length,late:late.length,avg:avgScore(rows)};});}
+function groupPerformanceRows(field, sourceValues){const tickets=STATE.tickets||[]; const names=[...new Set([...(sourceValues||[]),...tickets.map(t=>t[field]||'Unassigned')].filter(Boolean))].sort();return names.map(name=>{const rows=tickets.filter(t=>String(t[field]||'Unassigned')===String(name));const closed=rows.filter(t=>t.Status==='Closed'||t.CurrentBasket==='Closed');const late=rows.filter(t=>t.Status!=='Closed'&&isLate(t));return {name,rows,total:rows.length,closed:closed.length,late:late.length,avg:avgScore(rows)};});}
 function avgField(rows, field){const vals=rows.map(t=>Number(t[field])).filter(n=>!isNaN(n));return vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):'';}
 function performanceSummaryTable(title, groups, field){return `<div class="panel"><h2>${esc(title)}</h2><div class="scroll"><table><thead><tr><th>Name</th><th>Total Tickets</th><th>Closed</th><th>Open Late</th><th>System %</th><th>Exec1 %</th><th>Exec2 %</th><th>Final %</th><th>Action</th></tr></thead><tbody>${groups.map(g=>`<tr><td>${esc(g.name)}</td><td>${g.total}</td><td>${g.closed}</td><td>${g.late}</td><td>${score(avgField(g.rows,'SystemScore'))}</td><td>${score(avgField(g.rows,'Executive1Score'))}</td><td>${score(avgField(g.rows,'Executive2Score'))}</td><td>${finalScore(avgComputedFinal(g.rows))}</td><td><button class="btn" onclick="showPerformanceGroup('${esc(field)}','${esc(g.name)}')">Open Data</button></td></tr>`).join('')||empty(9)}</tbody></table></div></div>`;}
-function showPerformanceGroup(field,name){const rows=dashboardTickets().filter(t=>String(t[field]||'Unassigned')===String(name));perfList.innerHTML=miniTicketTable('Performance Report - '+name, rows);}
+function showPerformanceGroup(field,name){const rows=(STATE.tickets||[]).filter(t=>String(t[field]||'Unassigned')===String(name));perfList.innerHTML=miniTicketTable('Performance Report - '+name, rows);}
 function renderPerformance(){const mode=document.getElementById('perfMode')?.value||'individual'; const val=document.getElementById('perfValue')?.value||''; const users=activeUsers(); const field=mode==='individual'?'AssignedToName':mode==='department'?'Department':'CostCenter'; if(!document.getElementById('perfBody'))return;
   if(mode==='department' || mode==='costcenter'){
     const sourceValues=users.map(u=>mode==='department'?(u.Department||'Unassigned'):(u.CostCenter||'Unassigned'));
     const groups=groupPerformanceRows(field, sourceValues);
     const selected=val && val!=='__ALL__'?groups.find(g=>String(g.name)===String(val)):null;
-    const allRows=selected?selected.rows:dashboardTickets();
-    const overall=selected?selected.avg:avgComputedFinal(dashboardTickets());
+    const allRows=selected?selected.rows:(STATE.tickets||[]);
+    const overall=selected?selected.avg:avgComputedFinal(STATE.tickets||[]);
     const chartObj={}; groups.forEach(g=>chartObj[g.name]=g.avg);
     perfBody.innerHTML=`<div class="card"><h3>${esc(selected?selected.name:(mode==='department'?'All Departments':'All Cost Centers'))}</h3><div class="stat"><div class="l">Average performance</div><div class="v">${overall}%</div></div><p class="muted">Scores are averaged from closed ticket final scores stored in the Scores tab.</p></div><div class="card"><h3>${esc(mode==='department'?'Department Scores':'Cost Center Scores')}</h3>${dashBars(chartObj,'perfGroup:'+field)}</div>`;
     perfList.innerHTML=performanceSummaryTable(mode==='department'?'All Department Scores':'All Cost Center Scores',groups,field)+(selected?miniTicketTable('Selected Data - '+selected.name, selected.rows):'');
     return;
   }
-  const perfTickets=dashboardTickets(); const rows=val==='__ALL__'?perfTickets:perfTickets.filter(t=>String(t[field]||'Unassigned')===String(val)); const title=val==='__ALL__'?'All Users':(val||'No Selection'); const closed=rows.filter(t=>t.Status==='Closed'||t.CurrentBasket==='Closed'); const late=rows.filter(t=>t.Status!=='Closed'&&isLate(t)); const critical=rows.filter(t=>String(t.Priority)==='Critical'&&t.Status!=='Closed'); const avg=avgScore(rows); const sysAvg=avgField(rows,'SystemScore'); const e1Avg=avgField(rows,'Executive1Score'); const e2Avg=avgField(rows,'Executive2Score'); perfBody.innerHTML=`<div class="card"><h3>${esc(title)}</h3><div class="stat"><div class="l">${esc(mode)} report</div><div class="v">${rows.length}</div></div><p class="muted">Total visible tickets.</p></div><div class="card"><h3>Scores</h3><p><b>System:</b> ${score(sysAvg)} &nbsp; <b>Exec1:</b> ${score(e1Avg)} &nbsp; <b>Exec2:</b> ${score(e2Avg)} &nbsp; <b>Final:</b> ${finalScore(avg)}</p></div><div class="card"><h3>Open Exceptions</h3>${dashBars({'Critical':critical.length,'Open Late':late.length,'Closed':closed.length},'perf')}</div>`; perfList.innerHTML=miniTicketTable('Performance Report - '+title, rows);}
+  const rows=val==='__ALL__'?(STATE.tickets||[]):(STATE.tickets||[]).filter(t=>String(t[field]||'Unassigned')===String(val)); const title=val==='__ALL__'?'All Users':(val||'No Selection'); const closed=rows.filter(t=>t.Status==='Closed'||t.CurrentBasket==='Closed'); const late=rows.filter(t=>t.Status!=='Closed'&&isLate(t)); const critical=rows.filter(t=>String(t.Priority)==='Critical'&&t.Status!=='Closed'); const avg=avgScore(rows); const sysAvg=avgField(rows,'SystemScore'); const e1Avg=avgField(rows,'Executive1Score'); const e2Avg=avgField(rows,'Executive2Score'); perfBody.innerHTML=`<div class="card"><h3>${esc(title)}</h3><div class="stat"><div class="l">${esc(mode)} report</div><div class="v">${rows.length}</div></div><p class="muted">Total visible tickets.</p></div><div class="card"><h3>Scores</h3><p><b>System:</b> ${score(sysAvg)} &nbsp; <b>Exec1:</b> ${score(e1Avg)} &nbsp; <b>Exec2:</b> ${score(e2Avg)} &nbsp; <b>Final:</b> ${finalScore(avg)}</p></div><div class="card"><h3>Open Exceptions</h3>${dashBars({'Critical':critical.length,'Open Late':late.length,'Closed':closed.length},'perf')}</div>`; perfList.innerHTML=miniTicketTable('Performance Report - '+title, rows);}
 function printPerformance(){document.querySelectorAll('.section').forEach(s=>s.classList.remove('printTarget'));document.getElementById('performance').classList.add('printTarget');window.print();}
 function empty(n){return `<tr><td colspan="${n}" class="muted" style="text-align:center;padding:28px">No tickets found.</td></tr>`}
 function lateText(t){if(Number(t.LateDays||0)>0)return Number(t.LateDays)+' day(s) late';return t.TimeRemainingText||'0 days late';}
