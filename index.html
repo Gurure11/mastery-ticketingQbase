@@ -519,7 +519,7 @@
 <div class="form-group"><label>TRACKING COMPANY</label><select id="trackingCompany"><option value="">Select Tracking</option><option>Netstar</option><option>Car Tracker</option><option>The Both(Car Tracker &amp; Netstar)</option></select></div>
 <div class="form-group"><label>Installment Amount</label><input id="installmentAmount" type="number"/></div>
 <div class="form-group"><label>Last Installment date</label><input id="lastInstallmentDate" type="date"/></div>
-<div class="form-group"><label>eTag Toll</label><select id="eTagToll"><option value="">Select eTag</option><option>Yes</option><option>No</option></select></div><div class="form-group"><label>Spare Keys</label><label style="font-weight:normal;margin-right:12px;"><input id="spareKeysYes" name="spareKeys" type="radio" value="Yes"/> Yes</label><label style="font-weight:normal;"><input id="spareKeysNo" name="spareKeys" type="radio" value="No"/> No</label></div>
+<div class="form-group"><label>eTag Toll</label><select id="eTagToll"><option value="">Select eTag</option><option>Yes</option><option>No</option></select></div><div class="form-group"><label>Spare Keys</label><label style="font-weight:normal;margin-right:12px;"><input id="spareKeysYes" name="spareKeys" type="radio" value="Yes"/> Yes</label><label style="font-weight:normal;"><input id="spareKeysNo" name="spareKeys" type="radio" value="No"/> No</label><input type="hidden" id="spareKeysHidden"></div>
 <div class="form-group"><label>NOTES</label><textarea id="notes"></textarea></div>
 <div class="form-group"><label>Reg. Boo</label><input id="regBoo" type="text"/></div>
 <div class="form-group"><label>Useful life</label><input id="usefulLife" type="number"/></div>
@@ -560,7 +560,7 @@
 <table id="assetTable">
 <thead><tr>
 <th>Code</th><th>Asset Class</th><th>Purchase Date</th><th>Purchased by</th><th>Financing</th><th>Description</th><th>Model</th><th>Make of Vehicle</th><th>Body Type</th><th>Registration no</th><th>Engine no</th><th>Vin no</th><th>Cost</th><th>Market Value</th><th>ZOHO</th><th>Location</th><th>Driver/Operator</th>
-<th>Allocation/Dept</th><th>Registered Entity</th><th>Covered by</th><th>TRACKING COMPANY</th><th>Installment Amount</th><th>Last Installment date</th><th>eTag Toll</th><th>NOTES</th><th>Reg. Boo</th><th>Useful life</th><th>Recharge</th><th>Monthly dpn</th><th>Year</th><th>Months Dpn</th><th>Accum dpn</th><th>NBV</th><th>Outstanding VAF</th><th>Value</th><th>Vehicle Reg Book</th><th>Tracking Certificate</th><th>Images</th><th>Status</th><th>Status Date</th><th>Sold Value</th>
+<th>Allocation/Dept</th><th>Registered Entity</th><th>Covered by</th><th>TRACKING COMPANY</th><th>Installment Amount</th><th>Last Installment date</th><th>eTag Toll</th><th>Spare Keys</th><th>NOTES</th><th>Reg. Boo</th><th>Useful life</th><th>Recharge</th><th>Monthly dpn</th><th>Year</th><th>Months Dpn</th><th>Accum dpn</th><th>NBV</th><th>Outstanding VAF</th><th>Value</th><th>Vehicle Reg Book</th><th>Tracking Certificate</th><th>Images</th><th>Status</th><th>Status Date</th><th>Sold Value</th>
 <th class="action-col">Actions</th>
 </tr></thead>
 <tbody></tbody>
@@ -574,14 +574,14 @@
   const MAIN_SHEET_NAME = "Asssert Reg";
   const EQUIPMENT_SHEET_NAME = "Drilling_Equipment";
   const EQUIPMENT_FILTERS = ["Drilling", "Yellow Plant", "Small Plant"];
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzELvybIbIv1vzkG39muWsSczAdj3wxL-2TP6XeAjgWYBulKr3lxgzQwzDIGj40RII/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxbBVA16IVpHgxpt8fa56ijb-KiE-ikl-iWQg6dK3GwGkEmZnXeDHsYLuDQERCZvXR6/exec";
 
   const FIELD_IDS = [
     "code","assetClass","purchaseDate","purchasedBy","financing","description",
     "model","makeOfVehicle","bodyType","registrationNo","engineNo","vinNo","cost","marketValue",
     "zoho","location","driverOperator",
     "allocationDept","registeredEntity","coveredBy","trackingCompany","installmentAmount",
-    "lastInstallmentDate","eTagToll","notes","regBoo","usefulLife","recharge",
+    "lastInstallmentDate","eTagToll","spareKeys","notes","regBoo","usefulLife","recharge",
     "monthlyDpn","year","monthsDpn","accumDpn","nbv","oustandingVaf","value",
     "imageLinks","assetStatus","statusDate","soldValue"
   ];
@@ -611,6 +611,7 @@
     installmentAmount: ["installmentAmount","Installment Amount"],
     lastInstallmentDate: ["lastInstallmentDate","Last Installment date","Last Installment Date"],
     eTagToll: ["eTagToll","eTag Toll","ETag Toll"],
+    spareKeys: ["spareKeys","Spare Keys","Spare keys","Has Spare Keys"],
     notes: ["notes","NOTES","Notes"],
     regBoo: ["regBoo","Reg. Boo","Reg Book"],
     usefulLife: ["usefulLife","Useful life","Useful Life"],
@@ -690,6 +691,25 @@
     return toNumber(getField(row, "value")) || toNumber(getField(row, "nbv")) || toNumber(getField(row, "marketValue")) || toNumber(getField(row, "cost"));
   }
 
+  function assetStatus(row) {
+    return String(getField(row, "assetStatus") || "Active").trim().toLowerCase();
+  }
+
+  function isActiveAsset(row) {
+    const status = assetStatus(row);
+    return status !== "sold" && status !== "stolen";
+  }
+
+  function entitySummary(rows) {
+    const map = {};
+    rows.forEach(a => {
+      const entity = String(getField(a, "purchasedBy") || getField(a, "registeredEntity") || "Unknown").trim() || "Unknown";
+      map[entity] = (map[entity] || 0) + 1;
+    });
+    return Object.keys(map).sort().map(k => `${k}: ${map[k]}`).join(" · ");
+  }
+
+
   function isEquipmentFilter(filter) {
     return EQUIPMENT_FILTERS.some(f => f.toLowerCase() === String(filter || "").toLowerCase());
   }
@@ -761,8 +781,12 @@
     const counts = {};
     Object.keys(classMap).forEach(key => counts[key] = 0);
 
+    const activeRows = allAssets.filter(isActiveAsset);
+    const stolenRows = allAssets.filter(a => assetStatus(a) === "stolen");
+    const soldRows = allAssets.filter(a => assetStatus(a) === "sold");
+
     Object.keys(classMap).forEach(key => {
-      const source = isEquipmentFilter(key) ? equipmentAssets : mainAssets;
+      const source = (isEquipmentFilter(key) ? equipmentAssets : mainAssets).filter(isActiveAsset);
       source.forEach(a => {
         const cls = String(getField(a, "assetClass")).trim().toLowerCase();
         if (classMap[key].some(kw => cls.includes(kw) || cls === kw)) counts[key]++;
@@ -779,15 +803,14 @@
     document.getElementById("cntAdmin").textContent = counts['Admin'];
     document.getElementById("cntProjects").textContent = counts['Projects & Tender'];
 
-    const activeRows = allAssets.filter(a => String(getField(a, "assetStatus") || "Active").toLowerCase() !== "sold" && String(getField(a, "assetStatus") || "Active").toLowerCase() !== "stolen");
-    const stolenRows = allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === "stolen");
-    const soldRows = allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === "sold");
     document.getElementById("totalAssetValue").textContent = money(activeRows.reduce((sum, a) => sum + calcAssetValue(a), 0));
     document.getElementById("totalDepreciation").textContent = money(activeRows.reduce((sum, a) => sum + toNumber(getField(a, "accumDpn")), 0));
+
     document.getElementById("cntStolen").textContent = stolenRows.length;
-    document.getElementById("valStolen").textContent = money(stolenRows.reduce((sum, a) => sum + calcAssetValue(a), 0));
+    document.getElementById("valStolen").innerHTML = money(stolenRows.reduce((sum, a) => sum + calcAssetValue(a), 0)) + (stolenRows.length ? "<br>" + entitySummary(stolenRows) : "");
+
     document.getElementById("cntSold").textContent = soldRows.length;
-    document.getElementById("valSold").textContent = money(soldRows.reduce((sum, a) => sum + (toNumber(getField(a, "soldValue")) || calcAssetValue(a)), 0));
+    document.getElementById("valSold").innerHTML = money(soldRows.reduce((sum, a) => sum + (toNumber(getField(a, "soldValue")) || calcAssetValue(a)), 0)) + (soldRows.length ? "<br>" + entitySummary(soldRows) : "");
 
     document.querySelectorAll('.stat-card[data-filter]').forEach(card => {
       const filter = card.dataset.filter;
@@ -804,7 +827,7 @@
     document.querySelectorAll('.stat-card').forEach(c => c.classList.toggle('filter-active', c.dataset.filter === filter));
     document.getElementById('filterIndicator').textContent = `Filter: ${filter}`;
 
-    const source = isEquipmentFilter(filter) ? equipmentAssets : mainAssets;
+    const source = (isEquipmentFilter(filter) ? equipmentAssets : mainAssets).filter(isActiveAsset);
     renderTable(source, filter);
   }
 
@@ -822,7 +845,7 @@
     currentFilter = null;
     document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('filter-active'));
     document.getElementById('filterIndicator').textContent = '';
-    renderTable(allAssets);
+    renderTable(allAssets.filter(isActiveAsset));
   }
 
   
@@ -872,7 +895,7 @@ function renderTable(assets, filter) {
 
       ["assetStatus", "statusDate", "soldValue"].forEach(field => {
         const td = document.createElement("td");
-        td.textContent = field === "soldValue" ? money(getField(data, field)) : valueOrBlank(getField(data, field) || (field === "assetStatus" ? "Active" : ""));
+        td.textContent = field === "soldValue" ? money(getField(data, field)) : (field === "statusDate" ? formatDateDisplay(valueOrBlank(getField(data, field))) : valueOrBlank(getField(data, field) || (field === "assetStatus" ? "Active" : "")));
         row.appendChild(td);
       });
 
@@ -889,7 +912,13 @@ function renderTable(assets, filter) {
         e.stopPropagation();
         FIELD_IDS.forEach(id => {
           const el = document.getElementById(id);
-          if (el) el.value = valueOrBlank(getField(data, id));
+          if (id === "spareKeys") {
+            const spareVal = valueOrBlank(getField(data, "spareKeys"));
+            const yes = document.getElementById("spareKeysYes");
+            const no = document.getElementById("spareKeysNo");
+            if (yes) yes.checked = spareVal === "Yes";
+            if (no) no.checked = spareVal === "No";
+          } else if (el) el.value = valueOrBlank(getField(data, id));
         });
         document.getElementById("rowNumber").value = data.rowNumber || "";
         document.getElementById("vehicleRegBookLink").value = getField(data, "vehicleRegBookLink") || "";
@@ -953,7 +982,7 @@ function renderTable(assets, filter) {
       function makeStatusButton(status) {
         const btn = document.createElement("button");
         btn.className = status === "Sold" ? "btn-sm-sold" : "btn-sm-stolen";
-        btn.innerHTML = status === "Sold" ? '<i class="fas fa-dollar-sign"></i>' : '<i class="fas fa-exclamation-triangle"></i>';
+        btn.innerHTML = status === "Sold" ? '<span style="font-weight:900;">R</span>' : '<i class="fas fa-exclamation-triangle"></i>';
         btn.title = "Move to " + status + " window";
         btn.addEventListener("click", function(e) {
           e.stopPropagation();
@@ -1038,12 +1067,13 @@ function renderTable(assets, filter) {
       allAssets = [...mainAssets, ...equipmentAssets];
 
       updateDashboard();
-      const initialRows = allAssets.slice(0, 120);
+      const activeRows = allAssets.filter(isActiveAsset);
+      const initialRows = activeRows.slice(0, 120);
       if (currentFilter) applyFilter(currentFilter);
       else {
         renderTable(initialRows);
         if (allAssets.length > initialRows.length) {
-          const renderFull = () => renderTable(allAssets);
+          const renderFull = () => renderTable(activeRows);
           if ("requestIdleCallback" in window) requestIdleCallback(renderFull, { timeout: 1500 });
           else setTimeout(renderFull, 250);
         }
@@ -1063,7 +1093,15 @@ function renderTable(assets, filter) {
   document.getElementById("assetForm").addEventListener("submit", async function(e){
     e.preventDefault();
     const data = {};
-    FIELD_IDS.forEach(id => { data[id] = document.getElementById(id).value; });
+    FIELD_IDS.forEach(id => {
+      if (id === "spareKeys") {
+        const selectedSpare = document.querySelector('input[name="spareKeys"]:checked');
+        data.spareKeys = selectedSpare ? selectedSpare.value : "";
+      } else {
+        const el = document.getElementById(id);
+        data[id] = el ? el.value : "";
+      }
+    });
     const rowNum = document.getElementById("rowNumber").value;
     if (rowNum) data.rowNumber = rowNum;
     data.vehicleRegBookLink = document.getElementById("vehicleRegBookLink").value || "";
@@ -1127,7 +1165,7 @@ function renderTable(assets, filter) {
     document.getElementById("saveBtn").textContent = "Save Asset";
     showStatus("");
     window.scrollTo({ top: 0, behavior: "smooth" });
-    if (currentFilter) applyFilter(currentFilter); else renderTable(allAssets);
+    if (currentFilter) applyFilter(currentFilter); else renderTable(allAssets.filter(isActiveAsset));
   });
 
   document.getElementById("cancelEntryBtn").addEventListener("click", function(){
@@ -1139,7 +1177,7 @@ function renderTable(assets, filter) {
     document.getElementById("regBookLink").value = "";
     document.getElementById("saveBtn").textContent = "Save Asset";
     showStatus("");
-    if (currentFilter) applyFilter(currentFilter); else renderTable(allAssets);
+    if (currentFilter) applyFilter(currentFilter); else renderTable(allAssets.filter(isActiveAsset));
   });
 
   document.getElementById("refreshDashBtn").addEventListener("click", loadAssets);
@@ -1147,9 +1185,10 @@ function renderTable(assets, filter) {
   document.getElementById("printBtn").addEventListener("click", () => window.print());
 
   document.getElementById("excelBtn").addEventListener("click", function(){
-    let rows = allAssets;
+    let rows = allAssets.filter(isActiveAsset);
     if (currentFilter) {
-      rows = (isEquipmentFilter(currentFilter) ? equipmentAssets : mainAssets).filter(a => String(getField(a, "assetClass")).toLowerCase().includes(currentFilter.toLowerCase()));
+      if (currentFilter === "Sold" || currentFilter === "Stolen") rows = allAssets.filter(a => assetStatus(a) === currentFilter.toLowerCase());
+      else rows = (isEquipmentFilter(currentFilter) ? equipmentAssets : mainAssets).filter(isActiveAsset).filter(a => String(getField(a, "assetClass")).toLowerCase().includes(currentFilter.toLowerCase()));
     }
     const displayFields = FIELD_IDS.filter(id => !["licenced","typeOfLicence","validityOfLicence","imageLinks","assetStatus","statusDate","soldValue"].includes(id));
     const headers = [...displayFields, "vehicleRegBookLink", "trackingCertificateLink", "imageLinks", "assetStatus", "statusDate", "soldValue"];
@@ -1200,7 +1239,15 @@ function renderTable(assets, filter) {
       if (!el) return;
       el.addEventListener("input", () => {
         const data = {};
-        FIELD_IDS.forEach(fid => { const f = document.getElementById(fid); if (f) data[fid] = f.value; });
+        FIELD_IDS.forEach(fid => {
+          if (fid === "spareKeys") {
+            const selectedSpare = document.querySelector('input[name="spareKeys"]:checked');
+            data.spareKeys = selectedSpare ? selectedSpare.value : "";
+          } else {
+            const f = document.getElementById(fid);
+            if (f) data[fid] = f.value;
+          }
+        });
         applyDepreciationToData(data);
         ["monthlyDpn", "accumDpn", "nbv", "value"].forEach(fid => {
           const f = document.getElementById(fid);
