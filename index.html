@@ -807,10 +807,10 @@
     document.getElementById("totalDepreciation").textContent = money(activeRows.reduce((sum, a) => sum + toNumber(getField(a, "accumDpn")), 0));
 
     document.getElementById("cntStolen").textContent = stolenRows.length;
-    document.getElementById("valStolen").innerHTML = money(stolenRows.reduce((sum, a) => sum + calcAssetValue(a), 0)) + (stolenRows.length ? "<br>" + entitySummary(stolenRows) : "");
+    document.getElementById("valStolen").innerHTML = money(stolenRows.reduce((sum, a) => sum + toNumber(getField(a, "nbv")), 0)) + (stolenRows.length ? "<br>" + entitySummary(stolenRows) : "");
 
     document.getElementById("cntSold").textContent = soldRows.length;
-    document.getElementById("valSold").innerHTML = money(soldRows.reduce((sum, a) => sum + (toNumber(getField(a, "soldValue")) || calcAssetValue(a)), 0)) + (soldRows.length ? "<br>" + entitySummary(soldRows) : "");
+    document.getElementById("valSold").innerHTML = money(soldRows.reduce((sum, a) => sum + toNumber(getField(a, "nbv")), 0)) + (soldRows.length ? "<br>" + entitySummary(soldRows) : "");
 
     document.querySelectorAll('.stat-card[data-filter]').forEach(card => {
       const filter = card.dataset.filter;
@@ -831,6 +831,53 @@
     renderTable(source, filter);
   }
 
+
+  function renderStatusBasket(rows, status) {
+    const tbody = document.querySelector("#assetTable tbody");
+    tbody.innerHTML = "";
+    document.getElementById('filterIndicator').textContent = `Filter: ${status} - Registration No and NBV Value`;
+
+    if (!rows.length) {
+      const colCount = document.querySelector("#assetTable thead tr").children.length;
+      tbody.innerHTML = `<tr><td colspan="${colCount}">No ${status} vehicles found.</td></tr>`;
+      return;
+    }
+
+    rows.forEach(function(data){
+      const row = document.createElement("tr");
+
+      const regTd = document.createElement("td");
+      regTd.textContent = valueOrBlank(getField(data, "registrationNo"));
+      row.appendChild(regTd);
+
+      const valueTd = document.createElement("td");
+      valueTd.textContent = money(getField(data, "nbv"));
+      row.appendChild(valueTd);
+
+      const statusTd = document.createElement("td");
+      statusTd.textContent = valueOrBlank(getField(data, "assetStatus") || status);
+      row.appendChild(statusTd);
+
+      const dateTd = document.createElement("td");
+      dateTd.textContent = formatDateDisplay(valueOrBlank(getField(data, "statusDate")));
+      row.appendChild(dateTd);
+
+      const entityTd = document.createElement("td");
+      entityTd.textContent = valueOrBlank(getField(data, "purchasedBy") || getField(data, "registeredEntity"));
+      row.appendChild(entityTd);
+
+      const colCount = document.querySelector("#assetTable thead tr").children.length;
+      const padCount = Math.max(0, colCount - 5);
+      for (let i = 0; i < padCount; i++) {
+        const td = document.createElement("td");
+        td.textContent = "";
+        row.appendChild(td);
+      }
+
+      tbody.appendChild(row);
+    });
+  }
+
   function applyStatusFilter(status) {
     currentFilter = status;
     document.querySelectorAll('.stat-card').forEach(c => c.classList.toggle('filter-active', c.dataset.specialFilter === status));
@@ -838,7 +885,12 @@
     const rows = status === 'all-active'
       ? allAssets.filter(a => !['sold','stolen'].includes(String(getField(a, "assetStatus") || "Active").toLowerCase()))
       : allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === status.toLowerCase());
-    renderTable(rows);
+
+    if (status === "Sold" || status === "Stolen") {
+      renderStatusBasket(rows, status);
+    } else {
+      renderTable(rows);
+    }
   }
 
   function clearFilter() {
