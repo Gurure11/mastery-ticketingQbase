@@ -123,9 +123,8 @@
 <div id="syncbar" class="syncbar hide"><b>Synchronising...</b> please wait</div>
 
 <script>
-// FIX BUILD: EXEC2_GLOBAL_DASHBOARD_NO_UPLOAD_DRIVE_EMAILS_V2_20260707
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbweQrveHaYSrslUbC6EJ6bJ52DaDFGV_C7_2-_fs4YMmlPtA5y96GYx8MrTvJ0-vKqeiw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzw7dKkpz7ZxdsKqj-vWaYG7vIiuoHRxSen0-47k_wnojogFFF5qLjuFzb4-9WjJswH6w/exec';
 let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
 let STATE = {tickets:[], globalTickets:[], dashboardTickets:[], users:[], referenceData:[], summary:{}};
 let LAST_GOOD_STATE = {tickets:[], globalTickets:[], dashboardTickets:[], users:[], referenceData:[], summary:{}};
@@ -253,7 +252,7 @@ function refresh(){
   }).catch(e=>{
     hideSync();
     if((LAST_GOOD_STATE.tickets||[]).length){STATE=JSON.parse(JSON.stringify(LAST_GOOD_STATE));render();return alert('Temporary loading issue. The last stable dashboard data has been kept on screen. '+(e.message||e));}
-    alert('Bootstrap loading failed: '+(e.message||e)+'\n\nDeploy the matching V2 Apps Script file: onpoint_base_LAZY_FAST_BULLETPROOF_EXEC2_DASHBOARD_UPLOAD_EMAIL_FIXED_V2.gs as a NEW VERSION, then refresh. If it still fails, check the Apps Script error shown above.');
+    alert('Bootstrap loading failed: '+(e.message||e)+'\n\nDeploy the matching FAST LAZY BULLETPROOF Apps Script as a NEW VERSION, then refresh. If it still fails, check the Apps Script error shown above.');
   });
 }
 function loadTicketsView(view, max, opts={}){
