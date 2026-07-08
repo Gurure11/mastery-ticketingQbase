@@ -1,998 +1,1264 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fuel Log Dashboard</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Distinct Infrastructure · Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    * {
-      box-sizing: border-box;
+    :root {
+      --primary-blue: #0b2f6b;
+      --deep-blue: #071f47;
+      --bright-blue: #1464d2;
+      --soft-blue: #eaf3ff;
+      --gold: #d4af37;
+      --gold-light: #ffe7a3;
+      --gold-deep: #9a7416;
+      --white: #ffffff;
+      --text: #12304f;
+      --muted: #6b7a90;
+      --line: rgba(20,68,126,0.16);
+      --shadow: 0 20px 60px rgba(7,31,71,0.18);
+      --card-radius: 22px;
+      --transition: 0.2s ease;
     }
-
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Roboto, Arial, sans-serif; }
     body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f4f6f8;
-      color: #222;
+      min-height:100vh;
+      background: radial-gradient(circle at top left, rgba(212,175,55,0.32), transparent 30%),
+                  linear-gradient(135deg, var(--deep-blue) 0%, var(--primary-blue) 45%, var(--bright-blue) 100%);
+      padding:24px;
+      color:var(--text);
+      overflow-x:hidden;
     }
-
-    header {
-      background: #1f2937;
-      color: white;
-      padding: 20px;
+    body::before {
+      content:"";
+      position:fixed;
+      inset:-30%;
+      background:linear-gradient(120deg, transparent, rgba(255,255,255,0.12), transparent);
+      animation:shine 8s linear infinite;
+      pointer-events:none;
     }
-
-    h1 {
-      margin: 0;
-      font-size: 26px;
+    @keyframes shine {
+      0%{transform:translateX(-40%) rotate(10deg)}
+      100%{transform:translateX(40%) rotate(10deg)}
     }
-
-    h3 {
-      margin-top: 0;
-    }
-
     .container {
-      padding: 20px;
+      max-width:1400px;
+      margin:auto;
+      background:rgba(255,255,255,0.96);
+      padding:28px;
+      border-radius:26px;
+      box-shadow:var(--shadow);
+      border:1px solid rgba(255,255,255,0.5);
+      animation:pageIn 0.75s ease both;
     }
-
-    .notice {
-      background: #fff7ed;
-      border-left: 5px solid #f97316;
-      padding: 12px 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      display: none;
+    @keyframes pageIn {
+      from{opacity:0; transform:translateY(18px)}
+      to{opacity:1; transform:translateY(0)}
     }
-
-    .filters,
-    .cards,
-    .charts,
-    .table-wrap {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    .header {
+      text-align:center;
+      margin-bottom:28px;
+      padding:28px 20px;
+      border-radius:22px;
+      background:linear-gradient(135deg, var(--primary-blue), var(--bright-blue));
+      color:white;
+      box-shadow:0 14px 35px rgba(11,47,107,0.28);
+      position:relative;
+      overflow:hidden;
     }
+    .header::after {
+      content:"";
+      position:absolute;
+      width:180px;
+      height:180px;
+      border-radius:50%;
+      background:rgba(212,175,55,0.25);
+      right:-50px;
+      top:-70px;
+      animation:floatOrb 5s ease-in-out infinite alternate;
+    }
+    @keyframes floatOrb {
+      from{transform:translateY(0) scale(1)}
+      to{transform:translateY(22px) scale(1.08)}
+    }
+    .header h1 { color:white; margin-bottom:8px; font-size:clamp(26px, 4vw, 42px); letter-spacing:0.5px; }
+    .header p { color:#eef6ff; font-size:14px; line-height:1.5; position:relative; z-index:1; }
+    .header strong { color:var(--gold-light); }
 
-    .filters {
+    /* ----- DASHBOARD CARDS (clickable) ----- */
+    .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 15px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 18px;
+      margin: 28px 0 24px 0;
     }
-
-    label {
-      font-size: 13px;
-      font-weight: bold;
-      display: block;
-      margin-bottom: 6px;
-    }
-
-    select,
-    input {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+    .stat-card {
       background: white;
-    }
-
-    button {
-      padding: 10px 14px;
-      border: none;
-      border-radius: 8px;
-      background: #2563eb;
-      color: white;
+      padding: 18px 12px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 18px rgba(11,47,107,0.06);
+      text-align: center;
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+      backdrop-filter: blur(2px);
+      background: rgba(255,255,255,0.85);
       cursor: pointer;
-      width: 100%;
+      position: relative;
     }
-
-    button:hover {
-      background: #1d4ed8;
+    .stat-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 18px 30px rgba(11,47,107,0.18);
+      border-color: var(--gold);
     }
-
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 15px;
+    .stat-card:active {
+      transform: scale(0.96);
     }
-
-    .card {
-      background: #f9fafb;
-      border-radius: 10px;
-      padding: 15px;
-      border-left: 5px solid #2563eb;
-    }
-
-    .card h3 {
-      margin: 0;
-      font-size: 14px;
-      color: #555;
-    }
-
-    .card p {
-      margin: 8px 0 0;
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    .charts {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 25px;
-    }
-
-    .chart-box {
-      min-height: 360px;
-    }
-
-    canvas {
-      background: white;
-      max-height: 320px;
-    }
-
-    .table-scroll {
-      overflow-x: auto;
-      max-height: 500px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    th,
-    td {
+    .stat-card i {
+      font-size: 28px;
+      color: var(--bright-blue);
+      background: var(--soft-blue);
       padding: 10px;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    th {
-      background: #1f2937;
-      color: white;
-      position: sticky;
-      top: 0;
-      z-index: 2;
-    }
-
-    a {
-      color: #2563eb;
-      font-weight: bold;
-    }
-
-
-    .photo-button {
-      padding: 7px 10px;
-      border: none;
-      border-radius: 7px;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
-      width: auto;
-      white-space: nowrap;
-    }
-
-    .photo-button:hover {
-      background: #1d4ed8;
-    }
-
-    .photo-modal {
-      display: none;
-      position: fixed;
-      z-index: 9999;
-      inset: 0;
-      background: rgba(0,0,0,0.75);
-      padding: 24px;
-    }
-
-    .photo-modal-content {
-      background: white;
-      max-width: 1100px;
-      max-height: 90vh;
-      margin: 0 auto;
-      border-radius: 12px;
-      padding: 16px;
-      overflow: auto;
-    }
-
-    .photo-modal-close {
-      background: #dc2626;
-      color: white;
-      width: auto;
-      padding: 8px 12px;
-      border-radius: 8px;
+      border-radius: 50%;
       margin-bottom: 10px;
-      float: right;
+      display: inline-block;
     }
-
-    .photo-modal-actions {
-      clear: both;
-      margin-bottom: 12px;
+    .stat-card .count {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--primary-blue);
+      line-height: 1.2;
     }
-
-    .photo-modal-actions a {
-      color: #2563eb;
-      font-weight: bold;
+    .stat-card .label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      margin-top: 4px;
     }
-
-    .photo-preview-image {
-      display: block;
-      max-width: 100%;
-      max-height: 75vh;
-      margin: 0 auto;
-      border-radius: 8px;
+    .stat-card .sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
     }
-
-    .photo-preview-frame {
-      width: 100%;
-      height: 75vh;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-    }
-
-
-    .row-action-button {
-      padding: 7px 10px;
-      border: none;
-      border-radius: 7px;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
-      width: auto;
-      white-space: nowrap;
-      margin-right: 6px;
-    }
-
-    .row-action-button.save {
-      background: #16a34a;
-    }
-
-    .row-action-button.cancel {
-      background: #6b7280;
-    }
-
-    .row-action-button:hover {
-      filter: brightness(0.95);
-    }
-
-    .row-edit-input {
-      min-width: 120px;
-      padding: 7px;
-      border: 1px solid #94a3b8;
-      border-radius: 6px;
-    }
-
-    tr.editing td {
-      background: #eff6ff;
-    }
-
-    .loading {
-      padding: 15px;
-      background: white;
+    .stat-card .filter-badge {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      font-size: 10px;
+      background: var(--gold);
+      color: #071f47;
+      padding: 2px 8px;
       border-radius: 10px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      opacity: 0.7;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin: 12px 0 22px 0;
+      gap: 12px;
+    }
+    .action-row .btn-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+      color: #071f47;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 15px;
+      box-shadow: 0 10px 24px rgba(154,116,22,0.28);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-gold:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 32px rgba(154,116,22,0.36);
+      filter: saturate(1.1);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--primary-blue);
+      color: var(--primary-blue);
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-outline:hover {
+      background: var(--primary-blue);
+      color: white;
+    }
+    .btn-back {
+      background: linear-gradient(135deg, #6c7a8a, #4a5568);
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-back:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+
+    /* form section */
+    #entrySection {
+      margin-top: 28px;
+      border-top: 2px dashed var(--line);
+      padding-top: 20px;
+    }
+    #entrySection h2 {
+      color: var(--primary-blue);
+      margin-bottom: 16px;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .form-grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap:16px;
+      margin-bottom:22px;
+    }
+    .form-group {
+      display:flex;
+      flex-direction:column;
+      padding:14px;
+      background:linear-gradient(180deg, #ffffff, var(--soft-blue));
+      border:1px solid var(--line);
+      border-radius:18px;
+      transition:transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+      animation:cardIn 0.45s ease both;
+    }
+    .form-group:hover {
+      transform:translateY(-3px);
+      box-shadow:0 14px 28px rgba(11,47,107,0.12);
+      border-color:rgba(212,175,55,0.7);
+    }
+    @keyframes cardIn {
+      from{opacity:0; transform:translateY(10px)}
+      to{opacity:1; transform:translateY(0)}
+    }
+    label {
+      margin-bottom:7px;
+      font-weight:bold;
+      color:var(--primary-blue);
+      font-size:13px;
+    }
+    input, select, textarea {
+      width:100%;
+      padding:12px 13px;
+      border:1px solid rgba(11,47,107,0.22);
+      border-radius:12px;
+      font-size:14px;
+      background:white;
+      color:var(--text);
+      transition:border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline:none;
+      border-color:var(--gold);
+      box-shadow:0 0 0 4px rgba(212,175,55,0.2);
+      transform:translateY(-1px);
+    }
+    textarea { min-height:44px; resize:vertical; }
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 10px;
+    }
+    button {
+      background:linear-gradient(135deg, var(--gold), var(--gold-deep));
+      color:#071f47;
+      border:none;
+      padding:14px 30px;
+      border-radius:999px;
+      cursor:pointer;
+      font-size:15px;
+      font-weight:800;
+      box-shadow:0 12px 26px rgba(154,116,22,0.28);
+      transition:transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+    button:hover {
+      transform:translateY(-3px);
+      box-shadow:0 18px 34px rgba(154,116,22,0.36);
+      filter:saturate(1.1);
+    }
+    .btn-blue {
+      background:linear-gradient(135deg, var(--bright-blue), var(--primary-blue));
+      color:white;
+    }
+    .btn-danger {
+      background:linear-gradient(135deg, #ef4444, #991b1b);
+      color:white;
+    }
+    .status {
+      margin-top:16px;
+      font-weight:bold;
+      color:var(--primary-blue);
+      background:rgba(212,175,55,0.16);
+      border-left:5px solid var(--gold);
+      padding:12px 14px;
+      border-radius:12px;
+      min-height:20px;
+    }
+    .table-wrap {
+      width:100%;
+      overflow:auto;
+      border-radius:18px;
+      border:1px solid var(--line);
+      margin-top:20px;
+      box-shadow:0 10px 24px rgba(11,47,107,0.08);
+      max-height:72vh;
+    }
+    table {
+      width:100%;
+      min-width:700px;
+      border-collapse:collapse;
+      background:white;
+      table-layout:auto;
+    }
+    th {
+      background:linear-gradient(135deg, var(--primary-blue), var(--bright-blue));
+      color:white;
+      padding:9px;
+      text-align:left;
+      font-size:11px;
+      line-height:1.15;
+      white-space:nowrap;
+      border-bottom:2px solid var(--gold);
+      position:sticky;
+      top:0;
+      z-index:2;
+    }
+    td {
+      padding:8px 9px;
+      border-bottom:1px solid var(--line);
+      font-size:11px;
+      line-height:1.15;
+      color:var(--text);
+      white-space:nowrap;
+      max-width:170px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    tr:hover { background:#f4f8ff; }
+    .hidden { display:none !important; }
+    
+    /* Actions column - moved to right */
+    .action-col {
+      min-width: 110px;
+      text-align: right;
+      position:sticky;
+      right:0;
+      background:#fff;
+      z-index:1;
+    }
+    .action-col .row-actions {
+      display: flex;
+      gap: 4px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .row-actions button {
+      padding: 4px 8px;
+      font-size: 10px;
+      margin: 0;
+      border-radius: 14px;
+    }
+    .row-actions .btn-sm-edit { background: var(--bright-blue); color: white; }
+    .row-actions .btn-sm-edit:hover { filter: brightness(1.1); }
+    .row-actions .btn-sm-upload { background: var(--gold); color: #071f47; }
+    .row-actions .btn-sm-upload:hover { filter: brightness(1.1); }
+    .row-actions .btn-sm-delete { background: #ef4444; color: white; }
+    .row-actions .btn-sm-stolen { background: #f97316; color: white; }
+    .row-actions .btn-sm-sold { background: #16a34a; color: white; }
+
+    .regbook-link {
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .regbook-link a {
+      color: var(--bright-blue);
+      text-decoration: none;
+      border-bottom: 1px dotted var(--bright-blue);
+    }
+    .regbook-link a:hover { color: var(--gold-deep); }
+
+
+    th.action-col {
+      z-index:3;
+      background:linear-gradient(135deg, var(--primary-blue), var(--bright-blue));
+    }
+    #assetTable td:nth-child(6),
+    #assetTable td:nth-child(11),
+    #assetTable td:nth-child(12),
+    #assetTable td:nth-child(17),
+    #assetTable td:nth-child(18),
+    #assetTable td:nth-child(19),
+    #assetTable td:nth-child(25) {
+      max-width:130px;
+    }
+
+    .filter-active {
+      border-color: var(--gold) !important;
+      box-shadow: 0 0 0 3px rgba(212,175,55,0.3) !important;
+    }
+
+    @media (max-width: 768px) {
+      body { padding:12px; }
+      .container { padding:16px; border-radius:20px; }
+      .dashboard-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .action-row { flex-direction: column; align-items: stretch; }
+      .btn-gold, .btn-outline { justify-content: center; }
+      .form-actions { flex-direction: column; }
+      .form-actions button { width: 100%; justify-content: center; }
+      .action-col .row-actions { justify-content: center; }
+    }
+    @media print {
+      body { background:white; }
+      .header, .action-row, #entrySection, .toolbar, .connection-panel, .status, .btn-gold, .btn-outline { display:none !important; }
+      .container { box-shadow:none; border:none; max-width:none; padding:0; }
     }
   </style>
 </head>
-
 <body>
-  <header>
-    <h1>Fuel Log Dashboard</h1>
-  </header>
+<div class="container" id="appContainer">
+  <div class="header">
+    <h1>Distinct Infrastructure</h1>
+    <p>Vehicle & Asset Register · Dashboard</p>
+    <p><strong>Google Storage:</strong> Asset Register O/a Distinct Infrastructure</p>
+  </div>
 
-  <div class="container">
-    <div id="loadingMessage" class="loading">Loading Google Sheet data...</div>
-    <div id="errorMessage" class="notice"></div>
+  <!-- DASHBOARD CARDS (clickable) - Focus on Drilling, Yellow, and Small Plant -->
+  <div class="dashboard-grid" id="dashboardCards">
+    <div class="stat-card" data-filter="Drilling"><i class="fas fa-oil-can"></i><div class="count" id="cntDrilling">0</div><div class="label">Drilling Plant</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Yellow Plant"><i class="fas fa-digging"></i><div class="count" id="cntYellow">0</div><div class="label">Yellow Plant</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Small Plant"><i class="fas fa-th-list"></i><div class="count" id="cntSmallPlant">0</div><div class="label">Small Plant</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Trucks"><i class="fas fa-truck"></i><div class="count" id="cntTrucks">0</div><div class="label">Trucks</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Trailers"><i class="fas fa-trailer"></i><div class="count" id="cntTrailers">0</div><div class="label">Trailers</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Executive"><i class="fas fa-car"></i><div class="count" id="cntExecutive">0</div><div class="label">Executive Cars</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Bowser"><i class="fas fa-gas-pump"></i><div class="count" id="cntBowser">0</div><div class="label">Bowsers</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Admin"><i class="fas fa-building"></i><div class="count" id="cntAdmin">0</div><div class="label">Admin</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Projects &amp; Tender"><i class="fas fa-briefcase"></i><div class="count" id="cntProjects">0</div><div class="label">Projects &amp; Tender</div><span class="filter-badge">click</span></div>
+  </div>
 
-    <div class="filters">
-      <div>
-        <label for="departmentFilter">Department</label>
-        <select id="departmentFilter">
-          <option value="">All Departments</option>
-        </select>
-      </div>
+  <div class="dashboard-grid" id="executiveSummaryCards">
+    <div class="stat-card" data-special-filter="all-active"><i class="fas fa-coins"></i><div class="count" id="totalAssetValue">R 0.00</div><div class="label">Total Vehicle & Equipment Value</div><div class="sub">Active NBV / Value</div></div>
+    <div class="stat-card" data-special-filter="all-active"><i class="fas fa-chart-line"></i><div class="count" id="totalDepreciation">R 0.00</div><div class="label">Total Depreciation To Date</div><div class="sub">Accumulated DPN</div></div>
+    <div class="stat-card" data-special-filter="Stolen"><i class="fas fa-exclamation-triangle"></i><div class="count" id="cntStolen">0</div><div class="label">Stolen Vehicles / Equipment</div><div class="sub" id="valStolen">R 0.00</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-special-filter="Sold"><i class="fas fa-hand-holding-usd"></i><div class="count" id="cntSold">0</div><div class="label">Sold Vehicles / Equipment</div><div class="sub" id="valSold">R 0.00</div><span class="filter-badge">click</span></div>
+  </div>
 
-      <div>
-        <label for="driverFilter">Driver</label>
-        <select id="driverFilter">
-          <option value="">All Drivers</option>
-        </select>
-      </div>
-
-      <div>
-        <label for="regFilter">Reg Number / Vehicle / ER Number</label>
-        <select id="regFilter">
-          <option value="">All Vehicles</option>
-        </select>
-      </div>
-
-      <div>
-        <label for="fromDate">From Date</label>
-        <input type="date" id="fromDate">
-      </div>
-
-      <div>
-        <label for="toDate">To Date</label>
-        <input type="date" id="toDate">
-      </div>
-
-      <div style="display:flex; align-items:end;">
-        <button type="button" onclick="resetFilters()">Reset Filters</button>
-      </div>
+  <!-- ACTION ROW -->
+  <div class="action-row">
+    <div class="btn-group">
+      <button class="btn-gold" id="newEntryBtn"><i class="fas fa-plus-circle"></i> New Entry</button>
+      <button class="btn-outline" id="refreshDashBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+      <button class="btn-outline" id="clearFilterBtn"><i class="fas fa-times-circle"></i> Clear Filter</button>
     </div>
-
-    <div class="cards">
-      <div class="card">
-        <h3>Total Fuel Cost</h3>
-        <p id="totalFuel">R0.00</p>
-      </div>
-
-      <div class="card">
-        <h3>Total Fuel by Cost Center</h3>
-        <p id="totalFuelCostCenter">R0.00</p>
-      </div>
-
-      <div class="card">
-        <h3>Grand Total</h3>
-        <p id="grandTotal">R0.00</p>
-      </div>
-
-      <div class="card">
-        <h3>Total Liters</h3>
-        <p id="totalLiters">0</p>
-      </div>
-
-      <div class="card">
-        <h3>Total KM</h3>
-        <p id="totalKm">0</p>
-      </div>
-
-      <div class="card">
-        <h3>Average KM/Liter</h3>
-        <p id="avgKmLiter">0</p>
-      </div>
-    </div>
-
-    <div class="charts">
-      <div class="chart-box">
-        <h3>Fuel Total by Department</h3>
-        <canvas id="departmentChart"></canvas>
-      </div>
-
-      <div class="chart-box">
-        <h3>Fuel Total by Cost Center</h3>
-        <canvas id="costCenterChart"></canvas>
-      </div>
-
-      <div class="chart-box">
-        <h3>Fuel Total by Driver</h3>
-        <canvas id="driverChart"></canvas>
-      </div>
-
-      <div class="chart-box">
-        <h3>Fuel Liters by Vehicle / Reg</h3>
-        <canvas id="vehicleChart"></canvas>
-      </div>
-
-      <div class="chart-box">
-        <h3>Monthly Grand Total</h3>
-        <canvas id="monthlyChart"></canvas>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <h3>Fuel Log Records</h3>
-      <div class="table-scroll">
-        <table>
-          <thead id="tableHead"></thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
+    <div class="btn-group">
+      <button class="btn-outline" id="printBtn"><i class="fas fa-print"></i> Print</button>
+      <button class="btn-outline" id="excelBtn"><i class="fas fa-file-excel"></i> CSV</button>
     </div>
   </div>
 
-
-  <div id="photoModal" class="photo-modal" onclick="closePhotoModalOnBackdrop(event)">
-    <div class="photo-modal-content">
-      <button class="photo-modal-close" type="button" onclick="closePhotoModal()">Close</button>
-      <div class="photo-modal-actions">
-        <a id="openPhotoNewTab" href="#" target="_blank" rel="noopener">Open photo in new tab</a>
+  <!-- ENTRY SECTION -->
+  <div id="entrySection" class="hidden">
+    <h2>
+      <span><i class="fas fa-pen-alt" style="color:var(--gold);"></i> New Asset Entry</span>
+      <button class="btn-back" id="backToDashboardBtn"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
+    </h2>
+      <button type="button" class="btn-outline" onclick="window.location.href='insurance.html'"><i class="fas fa-shield-alt"></i> Insurance Report</button>
+    <form id="assetForm">
+      <div class="form-grid">
+        <div class="form-group"><label>Code</label><select id="code"><option value="">Select Code</option><option>73803</option><option>73802</option><option>82130</option><option>73801</option><option>73800</option></select></div>
+        <div class="form-group"><label>Asset Class</label><select id="assetClass"><option value="">Select Asset Class</option><option>Admin</option><option>Bowser</option><option>Drilling</option><option>Executive</option><option>Projects &amp; Tender</option><option>Small Plant</option><option>Trailers</option><option>Trucks</option><option>Yellow Plant</option></select></div>
+        <div class="form-group"><label>Purchase Date</label><input type="date" id="purchaseDate"></div>
+        <div class="form-group"><label>Purchased by</label><select id="purchasedBy"><option value="">Select Purchased By</option><option>Onpoint</option><option>Aqua Telecoms</option><option>Nkanyezi</option><option>Distinct</option></select></div>
+        <div class="form-group"><label>Financing</label><input type="text" id="financing"></div>
+        <div class="form-group"><label>Description</label><input type="text" id="description"></div>
+        <div class="form-group"><label>Model</label><select id="model"><option value="">Select Model Year</option><option value="2000">2000</option><option value="2001">2001</option><option value="2002">2002</option><option value="2003">2003</option><option value="2004">2004</option><option value="2005">2005</option><option value="2006">2006</option><option value="2007">2007</option><option value="2008">2008</option><option value="2009">2009</option><option value="2010">2010</option><option value="2011">2011</option><option value="2012">2012</option><option value="2013">2013</option><option value="2014">2014</option><option value="2015">2015</option><option value="2016">2016</option><option value="2017">2017</option><option value="2018">2018</option><option value="2019">2019</option><option value="2020">2020</option><option value="2021">2021</option><option value="2022">2022</option><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option><option value="2033">2033</option><option value="2034">2034</option><option value="2035">2035</option><option value="2036">2036</option><option value="2037">2037</option><option value="2038">2038</option><option value="2039">2039</option><option value="2040">2040</option><option value="2041">2041</option><option value="2042">2042</option><option value="2043">2043</option><option value="2044">2044</option><option value="2045">2045</option></select></div>
+        <div class="form-group"><label>Make of Vehicle</label><select id="makeOfVehicle"><option value="">Select Make</option><option>Toyota</option><option>Faw</option><option>Ford</option><option>Foton</option><option>Mahindra</option><option>Isuzu</option><option>Mercedes Benz</option><option>VW</option><option>Nissan</option></select></div>
+        <div class="form-group"><label>Body Type</label><select id="bodyType"><option value="">Select Body Type</option><option>Sedan</option><option>Hatchback</option><option>Truck</option><option>Minibus</option><option>SUV</option><option>Bakkie</option><option>Lorry</option></select></div>
+        <div class="form-group"><label>Registration no</label><input type="text" id="registrationNo"></div>
+        <div class="form-group"><label>Engine no</label><input type="text" id="engineNo"></div>
+        <div class="form-group"><label>Vin no</label><input type="text" id="vinNo"></div>
+        <div class="form-group"><label>Cost</label><input type="number" id="cost"></div>
+        <div class="form-group"><label>Market Value</label><input type="number" id="marketValue"></div>
+        <div class="form-group"><label>ZOHO</label><select id="zoho"><option value="">Select ZOHO</option><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label>Location</label><input type="text" id="location"></div>
+        <div class="form-group"><label>Driver/Operator</label><input type="text" id="driverOperator"></div>
+        <div class="form-group"><label>Allocation/Dept</label><input type="text" id="allocationDept"></div>
+        <div class="form-group"><label>Registered Entity</label><input type="text" id="registeredEntity"></div>
+        <div class="form-group"><label>Covered by</label><select id="coveredBy"><option value="">Select Insurance</option><option>Outsurance</option><option>Auto General</option><option>Standard Bank</option><option>Other</option></select></div>
+        <div class="form-group"><label>TRACKING COMPANY</label><select id="trackingCompany"><option value="">Select Tracking</option><option>Netstar</option><option>Car Tracker</option><option>The Both(Car Tracker & Netstar)</option></select></div>
+        <div class="form-group"><label>Installment Amount</label><input type="number" id="installmentAmount"></div>
+        <div class="form-group"><label>Last Installment date</label><input type="date" id="lastInstallmentDate"></div>
+        <div class="form-group"><label>eTag Toll</label><select id="eTagToll"><option value="">Select eTag</option><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label>NOTES</label><textarea id="notes"></textarea></div>
+        <div class="form-group"><label>Reg. Boo</label><input type="text" id="regBoo"></div>
+        <div class="form-group"><label>Useful life</label><input type="number" id="usefulLife"></div>
+        <div class="form-group"><label>Recharge</label><input type="number" id="recharge"></div>
+        <div class="form-group"><label>Monthly dpn</label><input type="number" id="monthlyDpn"></div>
+        <div class="form-group"><label>Year</label><select id="year"><option value="">Select Year</option><option value="2000">2000</option><option value="2001">2001</option><option value="2002">2002</option><option value="2003">2003</option><option value="2004">2004</option><option value="2005">2005</option><option value="2006">2006</option><option value="2007">2007</option><option value="2008">2008</option><option value="2009">2009</option><option value="2010">2010</option><option value="2011">2011</option><option value="2012">2012</option><option value="2013">2013</option><option value="2014">2014</option><option value="2015">2015</option><option value="2016">2016</option><option value="2017">2017</option><option value="2018">2018</option><option value="2019">2019</option><option value="2020">2020</option><option value="2021">2021</option><option value="2022">2022</option><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option><option value="2033">2033</option><option value="2034">2034</option><option value="2035">2035</option><option value="2036">2036</option><option value="2037">2037</option><option value="2038">2038</option><option value="2039">2039</option><option value="2040">2040</option><option value="2041">2041</option><option value="2042">2042</option><option value="2043">2043</option><option value="2044">2044</option><option value="2045">2045</option></select></div>
+        <div class="form-group"><label>Months Dpn</label><input type="number" id="monthsDpn"></div>
+        <div class="form-group"><label>Accum dpn</label><input type="number" id="accumDpn"></div>
+        <div class="form-group"><label>NBV</label><input type="number" id="nbv"></div>
+        <div class="form-group"><label>Outstanding VAF</label><input type="number" id="oustandingVaf"></div>
+        <div class="form-group"><label>Value</label><input type="number" id="value"></div>
+        <div class="form-group"><label>Vehicle Reg Book Upload</label><input type="file" id="vehicleRegBookFile" accept="image/*,application/pdf,.doc,.docx"></div>
+        <div class="form-group"><label>Tracking Certificate Upload</label><input type="file" id="trackingCertificateFile" accept="image/*,application/pdf,.doc,.docx"></div>
+        <div class="form-group"><label>Upload up to 5 Images</label><input type="file" id="imageFiles" accept="image/*" multiple><small style="color:var(--muted);margin-top:6px;">Maximum 5 images. Links post to Google Sheet.</small></div>
+        <input type="hidden" id="rowNumber">
+        <input type="hidden" id="vehicleRegBookLink">
+        <input type="hidden" id="trackingCertificateLink">
+        <input type="hidden" id="regBookLink">
+        <input type="hidden" id="imageLinks">
+        <input type="hidden" id="assetStatus">
+        <input type="hidden" id="statusDate">
+        <input type="hidden" id="soldValue">
       </div>
-      <div id="photoPreview"></div>
-    </div>
+      <div class="form-actions">
+        <button type="submit" id="saveBtn">Save Asset</button>
+        <button type="button" class="btn-blue" id="clearBtn">Clear Form</button>
+        <button type="button" class="btn-outline" id="cancelEntryBtn">Cancel</button>
+      </div>
+    </form>
+    <div class="status" id="status"></div>
   </div>
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwNC3MBg2r_dprYRuoEL7o7I0TsjCNZZHkZLuH5PJT3ldQt_gt_WpftFHna2-rQbPwCBg/exec";
+  <!-- transaction journal -->
+  <div class="table-wrap">
+    <h2 style="color:var(--primary-blue);margin-top:28px;margin-bottom:10px;">
+      Transaction Journal
+      <span id="filterIndicator" style="font-size:14px;font-weight:normal;color:var(--muted);margin-left:12px;"></span>
+    </h2>
+    <table id="assetTable">
+      <thead><tr>
+        <th>Code</th><th>Asset Class</th><th>Purchase Date</th><th>Purchased by</th><th>Financing</th><th>Description</th><th>Model</th><th>Make of Vehicle</th><th>Body Type</th><th>Registration no</th><th>Engine no</th><th>Vin no</th><th>Cost</th><th>Market Value</th><th>ZOHO</th><th>Location</th><th>Driver/Operator</th>
+        <th>Allocation/Dept</th><th>Registered Entity</th><th>Covered by</th><th>TRACKING COMPANY</th><th>Installment Amount</th><th>Last Installment date</th><th>eTag Toll</th><th>NOTES</th><th>Reg. Boo</th><th>Useful life</th><th>Recharge</th><th>Monthly dpn</th><th>Year</th><th>Months Dpn</th><th>Accum dpn</th><th>NBV</th><th>Outstanding VAF</th><th>Value</th><th>Vehicle Reg Book</th><th>Tracking Certificate</th><th>Images</th><th>Status</th><th>Status Date</th><th>Sold Value</th>
+        <th class="action-col">Actions</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
 
-    let fuelData = [];
-    let filteredData = [];
-    let editingRowKey = null;
+<script>
+  // ======================== CONFIG =========================
+  const SHEET_ID = "1eM_UPV9MRaEU9lDoNk-D2FHac9PXTpHzOUBBXvzEAfw";
+  const DRIVE_FOLDER_ID = "1wMxg8AdipSeDI5lmL8PNECzD_U3CVC8W";
+  const MAIN_SHEET_NAME = "Asssert Reg";
+  const EQUIPMENT_SHEET_NAME = "Drilling_Equipment";
+  const EQUIPMENT_FILTERS = ["Drilling", "Yellow Plant", "Small Plant"];
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJy_HUHvkXbbzlFOsg9IXj7zrCWwA1OJr1GQCS1XrISC7Lbl8yehvpGYq2NvmvLXDM/exec";
 
-    let departmentChart;
-    let costCenterChart;
-    let driverChart;
-    let vehicleChart;
-    let monthlyChart;
+  const FIELD_IDS = [
+    "code","assetClass","purchaseDate","purchasedBy","financing","description",
+    "model","makeOfVehicle","bodyType","registrationNo","engineNo","vinNo","cost","marketValue",
+    "zoho","location","driverOperator",
+    "allocationDept","registeredEntity","coveredBy","trackingCompany","installmentAmount",
+    "lastInstallmentDate","eTagToll","notes","regBoo","usefulLife","recharge",
+    "monthlyDpn","year","monthsDpn","accumDpn","nbv","oustandingVaf","value",
+    "imageLinks","assetStatus","statusDate","soldValue"
+  ];
 
-    // Exact Fuel Log Google Sheet headings. Do not change order.
-    const headings = [
-      "Timestamp", "Date", "Driver", "Vehicle", "ER Number", "Merchant",
-      "Odo Start", "Odo Finish", "Fuel Type", "Price/L", "Liters",
-      "Fuel Total", "Lubrication", "Lube Cost", "Tolls", "Toll Total",
-      "Grand Total", "Cost Center", "Department", "Notes", "KM Traveled",
-      "KM/Liter", "Submission ID", "Status", "Photo Link", "ER No.",
-      "Final Odo reading", "Price/L (R)", "Project Name"
-    ];
+  const FIELD_ALIASES = {
+    code: ["code","Code"],
+    assetClass: ["assetClass","Asset Class","AssetClass"],
+    purchaseDate: ["purchaseDate","Purchase Date"],
+    purchasedBy: ["purchasedBy","Purchased by","Purchased By"],
+    financing: ["financing","Financing"],
+    description: ["description","Description"],
+    model: ["model","Model"],
+    makeOfVehicle: ["makeOfVehicle","Make of Vehicle","Make Of Vehicle"],
+    bodyType: ["bodyType","Body Type"],
+    registrationNo: ["registrationNo","Registration no","Registration No"],
+    engineNo: ["engineNo","Engine no","Engine No"],
+    vinNo: ["vinNo","Vin no","Vin No"],
+    cost: ["cost","Cost"],
+    marketValue: ["marketValue","Market Value"],
+    zoho: ["zoho","ZOHO"],
+    location: ["location","Location"],
+    driverOperator: ["driverOperator","Driver/Operator","Driver Operator"],
+    allocationDept: ["allocationDept","Allocation/Dept","Allocation Dept"],
+    registeredEntity: ["registeredEntity","Registered Entity"],
+    coveredBy: ["coveredBy","Covered by","Covered By"],
+    trackingCompany: ["trackingCompany","TRACKING COMPANY","Tracking Company"],
+    installmentAmount: ["installmentAmount","Installment Amount"],
+    lastInstallmentDate: ["lastInstallmentDate","Last Installment date","Last Installment Date"],
+    eTagToll: ["eTagToll","eTag Toll","ETag Toll"],
+    notes: ["notes","NOTES","Notes"],
+    regBoo: ["regBoo","Reg. Boo","Reg Book"],
+    usefulLife: ["usefulLife","Useful life","Useful Life"],
+    recharge: ["recharge","Recharge"],
+    monthlyDpn: ["monthlyDpn","Monthly dpn","Monthly Dpn"],
+    year: ["year","Year"],
+    monthsDpn: ["monthsDpn","Months Dpn"],
+    accumDpn: ["accumDpn","Accum dpn","Accum Dpn"],
+    nbv: ["nbv","NBV"],
+    oustandingVaf: ["oustandingVaf","Outstanding VAF","Outstanding Vaf"],
+    value: ["value","Value"],
+    vehicleRegBookLink: ["vehicleRegBookLink","Vehicle Reg Book","Vehicle Reg Book Link","regBookLink"],
+    trackingCertificateLink: ["trackingCertificateLink","Tracking Certificate","Tracking Certificate Link"],
+    imageLinks: ["imageLinks", "Image Links", "Images", "Asset Images"],
+    assetStatus: ["assetStatus", "Asset Status", "Status"],
+    statusDate: ["statusDate", "Status Date"],
+    soldValue: ["soldValue", "Sold Value"]
+  };
 
-    function loadData() {
-      const callbackName = "handleFuelData_" + Date.now();
-      const script = document.createElement("script");
-      let completed = false;
+  let mainAssets = [];
+  let equipmentAssets = [];
+  let allAssets = [];
+  let currentFilter = null;
 
-      window[callbackName] = function(data) {
-        completed = true;
+  function getField(row, field) {
+    const aliases = FIELD_ALIASES[field] || [field];
+    for (const key of aliases) {
+      if (row && row[key] !== undefined && row[key] !== null && row[key] !== "") return row[key];
+    }
+    return "";
+  }
 
-        try {
-          handleFuelData(data);
-        } finally {
-          delete window[callbackName];
-          script.remove();
-        }
-      };
+  function valueOrBlank(v) {
+    if (v === undefined || v === null) return "";
+    if (typeof v === "string" && v.includes("T")) {
+      const d = new Date(v);
+      if (!isNaN(d)) return d.toISOString().split('T')[0];
+    }
+    return v;
+  }
 
-      script.src = API_URL + "?callback=" + encodeURIComponent(callbackName) + "&cacheBust=" + Date.now();
 
-      script.onerror = function() {
-        completed = true;
-        delete window[callbackName];
 
-        showError("Failed to connect to Google Sheet. Make sure your Apps Script is deployed as a Web App, access is set to Anyone, and the URL ends with /exec.");
-        document.getElementById("loadingMessage").style.display = "none";
-      };
+  const CURRENCY_FIELDS = new Set(["cost","marketValue","installmentAmount","recharge","monthlyDpn","accumDpn","nbv","oustandingVaf","value","soldValue"]);
 
-      document.body.appendChild(script);
+  function toNumber(v) {
+    if (v === undefined || v === null || v === "") return 0;
+    const n = Number(String(v).replace(/[^0-9.\-]/g, ""));
+    return isNaN(n) ? 0 : n;
+  }
 
-      setTimeout(function() {
-        if (!completed) {
-          delete window[callbackName];
-          script.remove();
+  function money(v) {
+    return "R " + toNumber(v).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 
-          showError("Google Sheet connection timed out. Your Apps Script may not be returning JSONP. Redeploy the Apps Script as a new version and make sure doGet(e) supports the callback parameter.");
-          document.getElementById("loadingMessage").style.display = "none";
-        }
-      }, 15000);
+  function getAnyNumber(data, keys) {
+    for (const key of keys) {
+      const direct = data && data[key];
+      const aliasValue = getField(data, key);
+      const n = toNumber(direct !== undefined && direct !== null && direct !== "" ? direct : aliasValue);
+      if (n) return n;
+    }
+    return 0;
+  }
+
+  function parseAssetDate(value) {
+    if (!value) return null;
+    if (value instanceof Date && !isNaN(value)) return value;
+    const text = String(value).trim();
+    let d = new Date(text);
+    if (!isNaN(d)) return d;
+    const m = text.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+    if (m) {
+      d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+      if (!isNaN(d)) return d;
+    }
+    return null;
+  }
+
+  function depreciationMonthsFromPurchase(purchaseDate, asAtDate = new Date()) {
+    const p = parseAssetDate(purchaseDate);
+    if (!p) return 0;
+    const start = new Date(p.getFullYear(), p.getMonth(), 1);
+    const asAt = new Date(asAtDate.getFullYear(), asAtDate.getMonth(), 1);
+    if (asAt < start) return 0;
+    return ((asAt.getFullYear() - start.getFullYear()) * 12) + (asAt.getMonth() - start.getMonth()) + 1;
+  }
+
+  function applyDepreciationToData(data) {
+    const purchasePrice = getAnyNumber(data, ["purchasePrice", "Purchase Price", "cost", "Cost"]);
+    const residualValue = getAnyNumber(data, ["residualValue", "Residual Value", "residual", "Residual"]);
+    const usefulLifeYears = getAnyNumber(data, ["usefulLife", "Useful life", "Useful Life"]);
+    const purchaseDate = getField(data, "purchaseDate") || data.purchaseDate || data["Purchase Date"];
+
+    if (purchasePrice <= 0 || usefulLifeYears <= 0) {
+      data.monthsDpn = 0;
+      data.monthlyDpn = 0;
+      data.accumDpn = 0;
+      data.nbv = purchasePrice;
+      data.value = purchasePrice;
+      return data;
     }
 
-    function handleFuelData(data) {
-      if (data && data.error) {
-        showError("Apps Script error: " + data.message);
-        document.getElementById("loadingMessage").style.display = "none";
-        return;
-      }
+    const depreciableAmount = Math.max(0, purchasePrice - residualValue);
+    const monthlyDpn = depreciableAmount / usefulLifeYears / 12;
+    const usefulLifeMonths = Math.max(1, Math.round(usefulLifeYears * 12));
+    const monthsDpn = Math.min(depreciationMonthsFromPurchase(purchaseDate), usefulLifeMonths);
+    const accumDpn = Math.min(depreciableAmount, monthlyDpn * monthsDpn);
+    const nbv = Math.max(residualValue, purchasePrice - accumDpn);
 
-      if (!Array.isArray(data)) {
-        showError("The Apps Script did not return a valid data array. Check that the Apps Script code returns JSONP when a callback is provided.");
-        document.getElementById("loadingMessage").style.display = "none";
-        return;
-      }
+    data.monthsDpn = monthsDpn;
+    data.monthlyDpn = monthlyDpn;
+    data.accumDpn = accumDpn;
+    data.nbv = nbv;
+    data.value = nbv;
+    return data;
+  }
 
-      fuelData = data;
-      filteredData = data;
+  function linkListCell(links, label) {
+    const parts = String(links || "").split(/\s*\|\s*/).filter(Boolean).slice(0, 5);
+    if (!parts.length) return `<span style="color:#aaa;">—</span>`;
+    return parts.map((link, i) => `<div class="regbook-link"><a href="${link}" target="_blank"><i class="fas fa-image"></i> ${label || 'Image'} ${i + 1}</a></div>`).join("");
+  }
 
-      populateFilters();
-      attachFilterEvents();
-      renderDashboard();
+  function calcAssetValue(row) {
+    return toNumber(getField(row, "value")) || toNumber(getField(row, "nbv")) || toNumber(getField(row, "marketValue")) || toNumber(getField(row, "cost"));
+  }
 
-      document.getElementById("loadingMessage").style.display = "none";
-    }
+  function isEquipmentFilter(filter) {
+    return EQUIPMENT_FILTERS.some(f => f.toLowerCase() === String(filter || "").toLowerCase());
+  }
 
-    function showError(message) {
-      const errorBox = document.getElementById("errorMessage");
-      errorBox.textContent = message;
-      errorBox.style.display = "block";
-    }
+  function sheetForAsset(asset) {
+    const cls = String(getField(asset, "assetClass") || "").toLowerCase();
+    return EQUIPMENT_FILTERS.some(f => cls.includes(f.toLowerCase())) ? EQUIPMENT_SHEET_NAME : MAIN_SHEET_NAME;
+  }
 
+  function apiPost(payload) {
+    return fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    }).then(res => res.json());
+  }
 
-    function apiRequest(action, payload) {
-      return new Promise((resolve, reject) => {
-        const callbackName = "fuelApi_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-        const script = document.createElement("script");
-        let completed = false;
-
-        window[callbackName] = function(response) {
-          completed = true;
-          try {
-            if (response && response.error) {
-              reject(new Error(response.message || "Apps Script request failed."));
-            } else {
-              resolve(response);
-            }
-          } finally {
-            delete window[callbackName];
-            script.remove();
-          }
-        };
-
-        const requestPayload = encodeURIComponent(JSON.stringify(payload || {}));
-        script.src = API_URL
-          + "?callback=" + encodeURIComponent(callbackName)
-          + "&action=" + encodeURIComponent(action)
-          + "&payload=" + requestPayload
-          + "&cacheBust=" + Date.now();
-
-        script.onerror = function() {
-          completed = true;
-          delete window[callbackName];
-          script.remove();
-          reject(new Error("Failed to connect to Apps Script."));
-        };
-
-        document.body.appendChild(script);
-
-        setTimeout(function() {
-          if (!completed) {
-            delete window[callbackName];
-            script.remove();
-            reject(new Error("Apps Script request timed out."));
-          }
-        }, 20000);
+  function fileToPayload(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) return resolve(null);
+      const reader = new FileReader();
+      reader.onload = ev => resolve({
+        fileName: file.name,
+        mimeType: file.type || "application/octet-stream",
+        fileData: String(ev.target.result).split(',')[1]
       });
-    }
+      reader.onerror = () => reject(new Error("Could not read file: " + file.name));
+      reader.readAsDataURL(file);
+    });
+  }
 
-    function toNumber(value) {
-      if (value === null || value === undefined || value === "") return 0;
-      return Number(String(value).replace(/[R,\s]/g, "")) || 0;
-    }
+  async function filesToPayloads(fileList, maxFiles = 5) {
+    const files = Array.from(fileList || []).slice(0, maxFiles);
+    return Promise.all(files.map(fileToPayload));
+  }
 
-    function formatCurrency(value) {
-      return "R" + Number(value || 0).toLocaleString("en-ZA", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+  function linkCell(link, label) {
+    return link ? `<div class="regbook-link"><a href="${link}" target="_blank"><i class="fas fa-file-alt"></i> ${label || 'View'}</a></div>` : `<span style="color:#aaa;">—</span>`;
+  }
+
+  function normaliseRows(response, sheetName) {
+    let rows = [];
+    if (Array.isArray(response)) rows = response;
+    else if (response && Array.isArray(response.data)) rows = response.data;
+    else if (response && Array.isArray(response.rows)) rows = response.rows;
+    else if (response && Array.isArray(response.assets)) rows = response.assets;
+    return rows.map(r => ({ ...r, _sheetName: r._sheetName || sheetName }));
+  }
+
+  function showStatus(msg, isError = false) {
+    const statusEl = document.getElementById("status");
+    statusEl.innerHTML = msg || "";
+    statusEl.style.borderLeftColor = isError ? "#ef4444" : "var(--gold)";
+    statusEl.style.background = isError ? "rgba(239,68,68,0.1)" : "rgba(212,175,55,0.16)";
+  }
+
+  function updateDashboard() {
+    const classMap = {
+      'Drilling': ['drilling', 'drilling plant'],
+      'Yellow Plant': ['yellow plant', 'yellow', 'yellowplant'],
+      'Small Plant': ['small plant', 'smallplant', 'small'],
+      'Trucks': ['truck', 'trucks'],
+      'Trailers': ['trailer', 'trailers'],
+      'Executive': ['executive', 'executive cars', 'exec'],
+      'Bowser': ['bowser', 'bowsers'],
+      'Admin': ['admin', 'administration'],
+      'Projects & Tender': ['projects', 'projects & tender', 'projects and tender', 'project & tender', 'project and tender', 'tender']
+    };
+    const counts = {};
+    Object.keys(classMap).forEach(key => counts[key] = 0);
+
+    Object.keys(classMap).forEach(key => {
+      const source = isEquipmentFilter(key) ? equipmentAssets : mainAssets;
+      source.forEach(a => {
+        const cls = String(getField(a, "assetClass")).trim().toLowerCase();
+        if (classMap[key].some(kw => cls.includes(kw) || cls === kw)) counts[key]++;
       });
+    });
+
+    document.getElementById("cntDrilling").textContent = counts['Drilling'];
+    document.getElementById("cntYellow").textContent = counts['Yellow Plant'];
+    document.getElementById("cntSmallPlant").textContent = counts['Small Plant'];
+    document.getElementById("cntTrucks").textContent = counts['Trucks'];
+    document.getElementById("cntTrailers").textContent = counts['Trailers'];
+    document.getElementById("cntExecutive").textContent = counts['Executive'];
+    document.getElementById("cntBowser").textContent = counts['Bowser'];
+    document.getElementById("cntAdmin").textContent = counts['Admin'];
+    document.getElementById("cntProjects").textContent = counts['Projects & Tender'];
+
+    const activeRows = allAssets.filter(a => String(getField(a, "assetStatus") || "Active").toLowerCase() !== "sold" && String(getField(a, "assetStatus") || "Active").toLowerCase() !== "stolen");
+    const stolenRows = allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === "stolen");
+    const soldRows = allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === "sold");
+    document.getElementById("totalAssetValue").textContent = money(activeRows.reduce((sum, a) => sum + calcAssetValue(a), 0));
+    document.getElementById("totalDepreciation").textContent = money(activeRows.reduce((sum, a) => sum + toNumber(getField(a, "accumDpn")), 0));
+    document.getElementById("cntStolen").textContent = stolenRows.length;
+    document.getElementById("valStolen").textContent = money(stolenRows.reduce((sum, a) => sum + calcAssetValue(a), 0));
+    document.getElementById("cntSold").textContent = soldRows.length;
+    document.getElementById("valSold").textContent = money(soldRows.reduce((sum, a) => sum + (toNumber(getField(a, "soldValue")) || calcAssetValue(a)), 0));
+
+    document.querySelectorAll('.stat-card[data-filter]').forEach(card => {
+      const filter = card.dataset.filter;
+      card.onclick = () => applyFilter(filter);
+    });
+    document.querySelectorAll('.stat-card[data-special-filter]').forEach(card => {
+      const status = card.dataset.specialFilter;
+      card.onclick = () => applyStatusFilter(status);
+    });
+  }
+
+  function applyFilter(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.toggle('filter-active', c.dataset.filter === filter));
+    document.getElementById('filterIndicator').textContent = `Filter: ${filter}`;
+
+    const source = isEquipmentFilter(filter) ? equipmentAssets : mainAssets;
+    renderTable(source, filter);
+  }
+
+  function applyStatusFilter(status) {
+    currentFilter = status;
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.toggle('filter-active', c.dataset.specialFilter === status));
+    document.getElementById('filterIndicator').textContent = status === 'all-active' ? 'Filter: Active Assets' : `Filter: ${status}`;
+    const rows = status === 'all-active'
+      ? allAssets.filter(a => !['sold','stolen'].includes(String(getField(a, "assetStatus") || "Active").toLowerCase()))
+      : allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === status.toLowerCase());
+    renderTable(rows);
+  }
+
+  function clearFilter() {
+    currentFilter = null;
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('filter-active'));
+    document.getElementById('filterIndicator').textContent = '';
+    renderTable(allAssets);
+  }
+
+  function renderTable(assets, filter) {
+    const tbody = document.querySelector("#assetTable tbody");
+    let rows = assets || allAssets;
+    if (filter) {
+      const filterLower = filter.toLowerCase();
+      rows = rows.filter(a => String(getField(a, "assetClass")).trim().toLowerCase().includes(filterLower));
+    }
+    tbody.innerHTML = "";
+    if (!rows.length) {
+      const colCount = document.querySelector("#assetTable thead tr").children.length;
+      tbody.innerHTML = `<tr><td colspan="${colCount}">No entries found${filter ? ' for filter: '+filter : ''}.</td></tr>`;
+      return;
     }
 
-    function normalizeDate(value) {
-      if (!value) return null;
-
-      const date = new Date(value);
-      if (!isNaN(date)) return date;
-
-      const parts = String(value).split(/[\/\-]/);
-      if (parts.length === 3) {
-        const possibleDate = new Date(parts[2], parts[1] - 1, parts[0]);
-        if (!isNaN(possibleDate)) return possibleDate;
-      }
-
-      return null;
-    }
-
-    function getVehicleLabel(row) {
-      return row["ER Number"] || row["ER No."] || row["Vehicle"] || "Unknown";
-    }
-
-    function populateFilters() {
-      populateSelect("departmentFilter", "Department");
-      populateSelect("driverFilter", "Driver");
-      populateVehicleSelect();
-    }
-
-    function clearSelectOptions(selectId, defaultLabel) {
-      const select = document.getElementById(selectId);
-      select.innerHTML = "";
-      const option = document.createElement("option");
-      option.value = "";
-      option.textContent = defaultLabel;
-      select.appendChild(option);
-    }
-
-    function populateSelect(id, field) {
-      const labelMap = {
-        departmentFilter: "All Departments",
-        driverFilter: "All Drivers"
-      };
-
-      clearSelectOptions(id, labelMap[id] || "All");
-
-      const select = document.getElementById(id);
-      const values = [...new Set(fuelData.map(row => row[field]).filter(Boolean))].sort();
-
-      values.forEach(value => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = value;
-        select.appendChild(option);
-      });
-    }
-
-    function populateVehicleSelect() {
-      clearSelectOptions("regFilter", "All Vehicles");
-
-      const select = document.getElementById("regFilter");
-      const values = [...new Set(fuelData.map(row => getVehicleLabel(row)).filter(Boolean))].sort();
-
-      values.forEach(value => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = value;
-        select.appendChild(option);
-      });
-    }
-
-    function attachFilterEvents() {
-      document.getElementById("departmentFilter").addEventListener("change", applyFilters);
-      document.getElementById("driverFilter").addEventListener("change", applyFilters);
-      document.getElementById("regFilter").addEventListener("change", applyFilters);
-      document.getElementById("fromDate").addEventListener("change", applyFilters);
-      document.getElementById("toDate").addEventListener("change", applyFilters);
-    }
-
-    function applyFilters() {
-      const department = document.getElementById("departmentFilter").value;
-      const driver = document.getElementById("driverFilter").value;
-      const reg = document.getElementById("regFilter").value;
-      const fromDate = document.getElementById("fromDate").value ? new Date(document.getElementById("fromDate").value) : null;
-      const toDate = document.getElementById("toDate").value ? new Date(document.getElementById("toDate").value) : null;
-
-      if (toDate) {
-        toDate.setHours(23, 59, 59, 999);
-      }
-
-      filteredData = fuelData.filter(row => {
-        const rowDate = normalizeDate(row["Date"]);
-        const vehicleLabel = getVehicleLabel(row);
-
-        return (!department || row["Department"] === department)
-          && (!driver || row["Driver"] === driver)
-          && (!reg || vehicleLabel === reg)
-          && (!fromDate || (rowDate && rowDate >= fromDate))
-          && (!toDate || (rowDate && rowDate <= toDate));
-      });
-
-      renderDashboard();
-    }
-
-    function resetFilters() {
-      document.getElementById("departmentFilter").value = "";
-      document.getElementById("driverFilter").value = "";
-      document.getElementById("regFilter").value = "";
-      document.getElementById("fromDate").value = "";
-      document.getElementById("toDate").value = "";
-
-      filteredData = fuelData;
-      renderDashboard();
-    }
-
-    function renderDashboard() {
-      renderCards();
-      renderCharts();
-      renderTable();
-    }
-
-    function renderCards() {
-      const totalFuel = filteredData.reduce((sum, row) => sum + toNumber(row["Fuel Total"]), 0);
-      const totalFuelCostCenter = filteredData.reduce((sum, row) => sum + toNumber(row["Fuel Total"]), 0);
-      const grandTotal = filteredData.reduce((sum, row) => sum + toNumber(row["Grand Total"]), 0);
-      const totalLiters = filteredData.reduce((sum, row) => sum + toNumber(row["Liters"]), 0);
-      const totalKm = filteredData.reduce((sum, row) => sum + toNumber(row["KM Traveled"]), 0);
-      const avgKmLiter = totalLiters > 0 ? totalKm / totalLiters : 0;
-
-      document.getElementById("totalFuel").textContent = formatCurrency(totalFuel);
-      document.getElementById("totalFuelCostCenter").textContent = formatCurrency(totalFuelCostCenter);
-      document.getElementById("grandTotal").textContent = formatCurrency(grandTotal);
-      document.getElementById("totalLiters").textContent = totalLiters.toFixed(2);
-      document.getElementById("totalKm").textContent = totalKm.toFixed(2);
-      document.getElementById("avgKmLiter").textContent = avgKmLiter.toFixed(2);
-    }
-
-    function groupSum(data, labelGetter, valueField) {
-      const grouped = {};
-
-      data.forEach(row => {
-        const label = typeof labelGetter === "function"
-          ? labelGetter(row)
-          : row[labelGetter] || "Unknown";
-
-        grouped[label] = (grouped[label] || 0) + toNumber(row[valueField]);
-      });
-
-      return grouped;
-    }
-
-    function groupByMonth(data) {
-      const grouped = {};
-
-      data.forEach(row => {
-        const date = normalizeDate(row["Date"]);
-        if (!date) return;
-
-        const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-        grouped[month] = (grouped[month] || 0) + toNumber(row["Grand Total"]);
-      });
-
-      return Object.keys(grouped)
-        .sort()
-        .reduce((obj, key) => {
-          obj[key] = grouped[key];
-          return obj;
-        }, {});
-    }
-
-    function renderCharts() {
-      departmentChart = drawChart(
-        departmentChart,
-        "departmentChart",
-        "bar",
-        groupSum(filteredData, "Department", "Fuel Total"),
-        "Fuel Total"
-      );
-
-      costCenterChart = drawChart(
-        costCenterChart,
-        "costCenterChart",
-        "bar",
-        groupSum(filteredData, "Cost Center", "Fuel Total"),
-        "Fuel Total"
-      );
-
-      driverChart = drawChart(
-        driverChart,
-        "driverChart",
-        "bar",
-        groupSum(filteredData, "Driver", "Fuel Total"),
-        "Fuel Total"
-      );
-
-      vehicleChart = drawChart(
-        vehicleChart,
-        "vehicleChart",
-        "bar",
-        groupSum(filteredData, getVehicleLabel, "Liters"),
-        "Liters"
-      );
-
-      monthlyChart = drawChart(
-        monthlyChart,
-        "monthlyChart",
-        "line",
-        groupByMonth(filteredData),
-        "Grand Total"
-      );
-    }
-
-    function drawChart(existingChart, canvasId, type, groupedData, label) {
-      if (existingChart) existingChart.destroy();
-
-      const labels = Object.keys(groupedData);
-      const values = Object.values(groupedData);
-
-      return new Chart(document.getElementById(canvasId), {
-        type,
-        data: {
-          labels,
-          datasets: [{
-            label,
-            data: values,
-            borderWidth: 2,
-            tension: 0.25
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: true
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-    }
-
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-
-    function getPhotoLinks(value) {
-      if (!value) return [];
-
-      return String(value)
-        .split(/[\n,;]/)
-        .map(link => link.trim())
-        .filter(link => link.startsWith("http"));
-    }
-
-    function getGoogleDriveFileId(url) {
-      const text = String(url || "");
-      const match = text.match(/\/file\/d\/([^/]+)/)
-        || text.match(/\/d\/([^/]+)/)
-        || text.match(/[?&]id=([^&]+)/);
-
-      return match && match[1] ? match[1] : "";
-    }
-
-    function convertGoogleDrivePhotoUrl(url) {
-      const fileId = getGoogleDriveFileId(url);
-
-      if (fileId) {
-        return "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w1200";
-      }
-
-      return url;
-    }
-
-    function openPhotoModal(encodedUrl) {
-      const url = decodeURIComponent(encodedUrl);
-      const previewUrl = convertGoogleDrivePhotoUrl(url);
-      const modal = document.getElementById("photoModal");
-      const preview = document.getElementById("photoPreview");
-      const openNewTab = document.getElementById("openPhotoNewTab");
-
-      openNewTab.href = url;
-
-      preview.innerHTML = `
-        <img class="photo-preview-image"
-             src="${escapeHtml(previewUrl)}"
-             alt="Fuel log photo"
-             onerror="this.style.display='none'; document.getElementById('photoFallback').style.display='block';">
-        <div id="photoFallback" style="display:none; padding:20px; text-align:center;">
-          <p>Photo preview could not load inside the dashboard.</p>
-          <p><a href="${escapeHtml(url)}" target="_blank" rel="noopener">Click here to open the photo</a></p>
-        </div>
-      `;
-
-      modal.style.display = "block";
-    }
-
-    function closePhotoModal() {
-      document.getElementById("photoModal").style.display = "none";
-      document.getElementById("photoPreview").innerHTML = "";
-    }
-
-    function closePhotoModalOnBackdrop(event) {
-      if (event.target.id === "photoModal") {
-        closePhotoModal();
-      }
-    }
-
-    function renderPhotoButtons(value) {
-      const links = getPhotoLinks(value);
-
-      if (!links.length) return "";
-
-      return links.map((link, index) => {
-        return `<button class="photo-button" type="button" onclick="openPhotoModal('${encodeURIComponent(link)}')">View Photo${links.length > 1 ? " " + (index + 1) : ""}</button>`;
-      }).join(" ");
-    }
-
-    function getRowKey(row, index) {
-      return String(row._rowNumber || row.__rowNumber || row["_rowNumber"] || row["Row Number"] || index);
-    }
-
-    function renderCell(row, heading, rowKey, isEditing) {
-      const value = row[heading] ?? "";
-
-      if (isEditing) {
-        return `<td><input class="row-edit-input" data-row-key="${escapeHtml(rowKey)}" data-field="${escapeHtml(heading)}" value="${escapeHtml(value)}"></td>`;
-      }
-
-      if (heading === "Submission ID" && row["Submission ID"]) {
-        return `<td>${renderPhotoButtons(row["Submission ID"])}</td>`;
-      }
-
-      if (heading === "Photo Link") {
-        if (isEditing) {
-          return `<td><input class="row-edit-input" data-row-key="${escapeHtml(rowKey)}" data-field="${escapeHtml(heading)}" value="${escapeHtml(value)}"></td>`;
-        }
-        const buttons = renderPhotoButtons(row[heading]);
-        return `<td>${buttons || escapeHtml(row[heading])}</td>`;
-      }
-
-      return `<td>${escapeHtml(value)}</td>`;
-    }
-
-    function renderRowActions(rowKey, isEditing) {
-      if (isEditing) {
-        return `
-          <button class="row-action-button save" type="button" onclick="saveFuelRow('${escapeHtml(rowKey)}')">Save</button>
-          <button class="row-action-button cancel" type="button" onclick="cancelEditFuelRow()">Cancel</button>
-        `;
-      }
-
-      return `<button class="row-action-button" type="button" onclick="editFuelRow('${escapeHtml(rowKey)}')">Edit</button>`;
-    }
-
-    function renderTable() {
-      const tableHead = document.getElementById("tableHead");
-      const tableBody = document.getElementById("tableBody");
-
-      tableHead.innerHTML = `
-        <tr>
-          ${headings.map(h => `<th>${escapeHtml(h)}</th>`).join("")}
-          <th>Action</th>
-        </tr>
-      `;
-
-      tableBody.innerHTML = filteredData.map((row, index) => {
-        const rowKey = getRowKey(row, index);
-        const isEditing = editingRowKey === rowKey;
-
-        return `
-          <tr class="${isEditing ? "editing" : ""}">
-            ${headings.map(h => renderCell(row, h, rowKey, isEditing)).join("")}
-            <td>${renderRowActions(rowKey, isEditing)}</td>
-          </tr>
-        `;
-      }).join("");
-    }
-
-    function editFuelRow(rowKey) {
-      editingRowKey = String(rowKey);
-      renderTable();
-    }
-
-    function cancelEditFuelRow() {
-      editingRowKey = null;
-      renderTable();
-    }
-
-    function findRowByKey(rowKey) {
-      return fuelData.find((row, index) => getRowKey(row, index) === String(rowKey));
-    }
-
-    function saveFuelRow(rowKey) {
-      const row = findRowByKey(rowKey);
-      if (!row) {
-        alert("Could not find this row in the loaded data. Please refresh and try again.");
-        return;
-      }
-
-      const inputs = document.querySelectorAll(`.row-edit-input[data-row-key="${CSS.escape(String(rowKey))}"]`);
-      const updated = {};
-
-      inputs.forEach(input => {
-        updated[input.getAttribute("data-field")] = input.value;
+    rows.forEach(function(data){
+      const row = document.createElement("tr");
+      const displayFields = FIELD_IDS.filter(id => !["licenced","typeOfLicence","validityOfLicence","imageLinks","assetStatus","statusDate","soldValue"].includes(id));
+      displayFields.forEach(field => {
+        const td = document.createElement("td");
+        td.textContent = CURRENCY_FIELDS.has(field) ? money(getField(data, field)) : valueOrBlank(getField(data, field));
+        row.appendChild(td);
       });
 
-      const rowNumber = row._rowNumber || row.__rowNumber || row["_rowNumber"] || row["Row Number"];
-      if (!rowNumber) {
-        alert("This row cannot be saved because the Apps Script did not return _rowNumber. Use the matching Apps Script supplied with this HTML.");
-        return;
-      }
+      const regTd = document.createElement("td");
+      regTd.innerHTML = linkCell(getField(data, "vehicleRegBookLink"), "View Reg Book");
+      row.appendChild(regTd);
 
-      apiRequest("updateFuelRow", { rowNumber, values: updated })
-        .then(response => {
-          Object.assign(row, updated);
-          editingRowKey = null;
-          applyFilters();
-          alert((response && response.message) || "Row saved to Google Sheet.");
-        })
-        .catch(error => {
-          alert("Could not save row: " + (error.message || error));
+      const trackingTd = document.createElement("td");
+      trackingTd.innerHTML = linkCell(getField(data, "trackingCertificateLink"), "View Tracking");
+      row.appendChild(trackingTd);
+
+      const imagesTd = document.createElement("td");
+      imagesTd.innerHTML = linkListCell(getField(data, "imageLinks"), "Image");
+      row.appendChild(imagesTd);
+
+      ["assetStatus", "statusDate", "soldValue"].forEach(field => {
+        const td = document.createElement("td");
+        td.textContent = field === "soldValue" ? money(getField(data, field)) : valueOrBlank(getField(data, field) || (field === "assetStatus" ? "Active" : ""));
+        row.appendChild(td);
+      });
+
+      const actionCell = document.createElement("td");
+      actionCell.className = "action-col";
+      const actionDiv = document.createElement("div");
+      actionDiv.className = "row-actions";
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "btn-sm-edit";
+      editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+      editBtn.title = "Edit row";
+      editBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        FIELD_IDS.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = valueOrBlank(getField(data, id));
         });
-    }
+        document.getElementById("rowNumber").value = data.rowNumber || "";
+        document.getElementById("vehicleRegBookLink").value = getField(data, "vehicleRegBookLink") || "";
+        document.getElementById("trackingCertificateLink").value = getField(data, "trackingCertificateLink") || "";
+        document.getElementById("regBookLink").value = data.regBookLink || "";
+        document.getElementById("imageLinks").value = getField(data, "imageLinks") || "";
+        document.getElementById("assetStatus").value = getField(data, "assetStatus") || "Active";
+        document.getElementById("statusDate").value = getField(data, "statusDate") || "";
+        document.getElementById("soldValue").value = getField(data, "soldValue") || "";
+        document.getElementById("saveBtn").textContent = "Update Asset";
+        document.getElementById("entrySection").classList.remove("hidden");
+        window.scrollTo({ top: document.getElementById("entrySection").offsetTop - 20, behavior: "smooth" });
+      });
 
-    loadData();
-  </script>
+      function makeUploadButton(docType, title, fieldName) {
+        const btn = document.createElement("button");
+        btn.className = "btn-sm-upload";
+        btn.innerHTML = '<i class="fas fa-upload"></i>';
+        btn.title = "Upload " + title;
+        btn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          const fileInput = document.createElement("input");
+          fileInput.type = "file";
+          fileInput.accept = "image/*,application/pdf,.doc,.docx";
+          fileInput.onchange = function(ev) {
+            const file = ev.target.files[0];
+            if (!file) return showStatus("No file selected", true);
+            showStatus("Uploading " + file.name + "...");
+            fileToPayload(file).then(filePayload => {
+              return apiPost({
+                action: "uploadDocument",
+                rowNumber: data.rowNumber,
+                docType,
+                sheetField: fieldName,
+                sheetId: SHEET_ID,
+                sheetName: data._sheetName || sheetForAsset(data),
+                folderId: DRIVE_FOLDER_ID,
+                ...filePayload
+              });
+            }).then(res => {
+              if (res.status === "success") {
+                showStatus("✅ " + title + " uploaded and link posted to Google Sheet");
+                data[fieldName] = res.fileLink;
+                loadAssets();
+              } else {
+                showStatus("❌ Upload failed: " + (res.message || "unknown error"), true);
+              }
+            }).catch(err => {
+              console.error(err);
+              showStatus("❌ Upload error: " + err.message, true);
+            });
+          };
+          fileInput.click();
+        });
+        return btn;
+      }
+
+      const uploadRegBtn = makeUploadButton("Vehicle Reg Book", "Vehicle Reg Book", "vehicleRegBookLink");
+      const uploadTrackingBtn = makeUploadButton("Tracking Certificate", "Tracking Certificate", "trackingCertificateLink");
+
+      function makeStatusButton(status) {
+        const btn = document.createElement("button");
+        btn.className = status === "Sold" ? "btn-sm-sold" : "btn-sm-stolen";
+        btn.innerHTML = status === "Sold" ? '<i class="fas fa-dollar-sign"></i>' : '<i class="fas fa-exclamation-triangle"></i>';
+        btn.title = "Move to " + status + " window";
+        btn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          let soldValue = "";
+          if (status === "Sold") soldValue = prompt("Enter sold value", calcAssetValue(data));
+          if (status === "Sold" && soldValue === null) return;
+          if (!confirm("Move this asset to " + status + " window?")) return;
+          apiPost({
+            action: "moveAssetStatus",
+            rowNumber: data.rowNumber,
+            assetStatus: status,
+            soldValue,
+            sheetId: SHEET_ID,
+            sheetName: data._sheetName || sheetForAsset(data)
+          }).then(res => {
+            if (res.status === "success") { showStatus("✅ " + res.message); loadAssets(); }
+            else showStatus("❌ Status update failed: " + res.message, true);
+          }).catch(err => showStatus("❌ Status update error: " + err.message, true));
+        });
+        return btn;
+      }
+
+      const stolenBtn = makeStatusButton("Stolen");
+      const soldBtn = makeStatusButton("Sold");
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "btn-sm-delete";
+      delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+      delBtn.title = "Delete row";
+      delBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        if (!confirm("Delete this asset entry?")) return;
+        apiPost({
+          action: "deleteAsset",
+          rowNumber: data.rowNumber,
+          sheetId: SHEET_ID,
+          sheetName: data._sheetName || sheetForAsset(data)
+        }).then(res => {
+          if (res.status === "success") {
+            showStatus("✅ Deleted successfully");
+            loadAssets();
+          } else {
+            showStatus("❌ Delete failed: " + res.message, true);
+          }
+        }).catch(err => showStatus("❌ Delete error: " + err.message, true));
+      });
+
+      actionDiv.appendChild(editBtn);
+      actionDiv.appendChild(uploadRegBtn);
+      actionDiv.appendChild(uploadTrackingBtn);
+      actionDiv.appendChild(stolenBtn);
+      actionDiv.appendChild(soldBtn);
+      actionDiv.appendChild(delBtn);
+      actionCell.appendChild(actionDiv);
+      row.appendChild(actionCell);
+      tbody.appendChild(row);
+    });
+  }
+
+  function loadSheetAssets(sheetName) {
+    const url = `${SCRIPT_URL}?action=list&sheetId=${encodeURIComponent(SHEET_ID)}&sheetName=${encodeURIComponent(sheetName)}`;
+    return fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error("Network response was not ok");
+        return res.json();
+      })
+      .then(response => {
+        if (response && response.status === "error") throw new Error(response.message || "Sheet load failed");
+        return normaliseRows(response, sheetName);
+      });
+  }
+
+  async function loadAssets() {
+    showStatus("Loading dashboard from Assert Reg and Drilling_Equipment...");
+    try {
+      const results = await Promise.allSettled([
+        loadSheetAssets(MAIN_SHEET_NAME),
+        loadSheetAssets(EQUIPMENT_SHEET_NAME)
+      ]);
+      mainAssets = results[0].status === "fulfilled" ? results[0].value.map(applyDepreciationToData) : [];
+      equipmentAssets = results[1].status === "fulfilled" ? results[1].value.map(applyDepreciationToData) : [];
+      allAssets = [...mainAssets, ...equipmentAssets];
+
+      updateDashboard();
+      const initialRows = allAssets.slice(0, 120);
+      if (currentFilter) applyFilter(currentFilter);
+      else {
+        renderTable(initialRows);
+        if (allAssets.length > initialRows.length) {
+          const renderFull = () => renderTable(allAssets);
+          if ("requestIdleCallback" in window) requestIdleCallback(renderFull, { timeout: 1500 });
+          else setTimeout(renderFull, 250);
+        }
+      }
+
+      const failures = results.filter(r => r.status === "rejected").map(r => r.reason.message).join("; ");
+      if (failures) showStatus("⚠️ Loaded with warning: " + failures, true);
+      else showStatus(`✅ Loaded ${mainAssets.length} Assert Reg entries and ${equipmentAssets.length} Drilling_Equipment entries`);
+      return allAssets;
+    } catch (err) {
+      console.error(err);
+      showStatus("❌ Could not load data: " + err.message, true);
+      return [];
+    }
+  }
+
+  document.getElementById("assetForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+    const data = {};
+    FIELD_IDS.forEach(id => { data[id] = document.getElementById(id).value; });
+    const rowNum = document.getElementById("rowNumber").value;
+    if (rowNum) data.rowNumber = rowNum;
+    data.vehicleRegBookLink = document.getElementById("vehicleRegBookLink").value || "";
+    data.trackingCertificateLink = document.getElementById("trackingCertificateLink").value || "";
+    data.regBookLink = document.getElementById("regBookLink").value || "";
+    data.action = "saveAsset";
+    data.sheetId = SHEET_ID;
+    data.sheetName = sheetForAsset(data);
+    data.folderId = DRIVE_FOLDER_ID;
+    applyDepreciationToData(data);
+
+    try {
+      showStatus("Saving asset and documents...");
+      data.vehicleRegBookFile = await fileToPayload(document.getElementById("vehicleRegBookFile").files[0]);
+      data.trackingCertificateFile = await fileToPayload(document.getElementById("trackingCertificateFile").files[0]);
+      data.imageFiles = await filesToPayloads(document.getElementById("imageFiles").files, 5);
+      const response = await apiPost(data);
+      if (response.status !== "success") throw new Error(response.message || "Save failed");
+      showStatus(rowNum ? "✅ Asset Updated Successfully" : "✅ Asset Saved Successfully");
+      document.getElementById("assetForm").reset();
+      document.getElementById("rowNumber").value = "";
+      document.getElementById("vehicleRegBookLink").value = "";
+      document.getElementById("trackingCertificateLink").value = "";
+      document.getElementById("regBookLink").value = "";
+      document.getElementById("saveBtn").textContent = "Save Asset";
+      await loadAssets();
+    } catch (err) {
+      console.error(err);
+      showStatus("❌ Error Saving Asset: " + err.message, true);
+    }
+  });
+
+  document.getElementById("clearBtn").addEventListener("click", function(){
+    document.getElementById("assetForm").reset();
+    document.getElementById("rowNumber").value = "";
+    document.getElementById("vehicleRegBookLink").value = "";
+    document.getElementById("trackingCertificateLink").value = "";
+    document.getElementById("regBookLink").value = "";
+    document.getElementById("saveBtn").textContent = "Save Asset";
+    showStatus("Form cleared.");
+  });
+
+  document.getElementById("newEntryBtn").addEventListener("click", function(){
+    document.getElementById("entrySection").classList.remove("hidden");
+    document.getElementById("assetForm").reset();
+    document.getElementById("rowNumber").value = "";
+    document.getElementById("vehicleRegBookLink").value = "";
+    document.getElementById("trackingCertificateLink").value = "";
+    document.getElementById("regBookLink").value = "";
+    document.getElementById("saveBtn").textContent = "Save Asset";
+    window.scrollTo({ top: document.getElementById("entrySection").offsetTop - 20, behavior: "smooth" });
+  });
+
+  document.getElementById("backToDashboardBtn").addEventListener("click", function(){
+    document.getElementById("entrySection").classList.add("hidden");
+    document.getElementById("assetForm").reset();
+    document.getElementById("rowNumber").value = "";
+    document.getElementById("vehicleRegBookLink").value = "";
+    document.getElementById("trackingCertificateLink").value = "";
+    document.getElementById("regBookLink").value = "";
+    document.getElementById("saveBtn").textContent = "Save Asset";
+    showStatus("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (currentFilter) applyFilter(currentFilter); else renderTable(allAssets);
+  });
+
+  document.getElementById("cancelEntryBtn").addEventListener("click", function(){
+    document.getElementById("entrySection").classList.add("hidden");
+    document.getElementById("assetForm").reset();
+    document.getElementById("rowNumber").value = "";
+    document.getElementById("vehicleRegBookLink").value = "";
+    document.getElementById("trackingCertificateLink").value = "";
+    document.getElementById("regBookLink").value = "";
+    document.getElementById("saveBtn").textContent = "Save Asset";
+    showStatus("");
+    if (currentFilter) applyFilter(currentFilter); else renderTable(allAssets);
+  });
+
+  document.getElementById("refreshDashBtn").addEventListener("click", loadAssets);
+  document.getElementById("clearFilterBtn").addEventListener("click", clearFilter);
+  document.getElementById("printBtn").addEventListener("click", () => window.print());
+
+  document.getElementById("excelBtn").addEventListener("click", function(){
+    let rows = allAssets;
+    if (currentFilter) {
+      rows = (isEquipmentFilter(currentFilter) ? equipmentAssets : mainAssets).filter(a => String(getField(a, "assetClass")).toLowerCase().includes(currentFilter.toLowerCase()));
+    }
+    const displayFields = FIELD_IDS.filter(id => !["licenced","typeOfLicence","validityOfLicence","imageLinks","assetStatus","statusDate","soldValue"].includes(id));
+    const headers = [...displayFields, "vehicleRegBookLink", "trackingCertificateLink", "imageLinks", "assetStatus", "statusDate", "soldValue"];
+    const csvRows = [headers, ...rows.map(row => {
+      const vals = displayFields.map(id => valueOrBlank(getField(row, id)));
+      vals.push(getField(row, "vehicleRegBookLink"));
+      vals.push(getField(row, "trackingCertificateLink"));
+      vals.push(getField(row, "imageLinks"));
+      vals.push(getField(row, "assetStatus"));
+      vals.push(getField(row, "statusDate"));
+      vals.push(getField(row, "soldValue"));
+      return vals;
+    })];
+    const csv = csvRows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "asset-register-report.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+
+
+
+  function setupOtherDropdowns() {
+    document.querySelectorAll('select').forEach(sel => {
+      if (![...sel.options].some(o => o.value === "Other" || o.textContent === "Other")) {
+        const opt = document.createElement("option");
+        opt.value = "Other";
+        opt.textContent = "Other";
+        sel.appendChild(opt);
+      }
+      sel.addEventListener("change", function() {
+        if (this.value !== "Other") return;
+        const custom = prompt("Enter other value");
+        if (!custom) { this.value = ""; return; }
+        const opt = document.createElement("option");
+        opt.value = custom; opt.textContent = custom; opt.selected = true;
+        this.appendChild(opt);
+      });
+    });
+  }
+
+  function setupDepreciationFields() {
+    ["purchaseDate", "cost", "usefulLife", "monthlyDpn", "monthsDpn"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", () => {
+        const data = {};
+        FIELD_IDS.forEach(fid => { const f = document.getElementById(fid); if (f) data[fid] = f.value; });
+        applyDepreciationToData(data);
+        ["monthlyDpn", "accumDpn", "nbv", "value"].forEach(fid => {
+          const f = document.getElementById(fid);
+          if (f && data[fid] !== undefined) f.value = Number(data[fid]).toFixed(2);
+        });
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setupOtherDropdowns();
+    setupDepreciationFields();
+    loadAssets();
+  });
+</script>
 </body>
 </html>
