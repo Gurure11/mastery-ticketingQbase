@@ -45,6 +45,10 @@
     .pill { display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700; background:#eef2f6; }
     .ok { color:var(--brand); } .bad { color:var(--bad); } .warn { color:var(--warn); }
     .toast { position:fixed; right:18px; bottom:18px; background:#172033; color:#fff; padding:12px 16px; border-radius:12px; display:none; z-index:3; max-width:380px; }
+    .currency-tools { display:inline-flex; align-items:center; gap:8px; margin-right:10px; flex-wrap:wrap; }
+    .rate-badge { font-size:12px; color:#c7f9dd; }
+    .approval-badge { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; margin-left:6px; padding:0 7px; border-radius:999px; background:var(--bad); color:#fff; font-size:12px; font-weight:800; vertical-align:middle; }
+    .approval-alert { border:1px solid #fed7aa; background:#fff7ed; color:#9a3412; border-radius:14px; padding:12px 14px; margin-bottom:14px; font-weight:700; }
     @media(max-width:900px){ .grid,.grid2,.row,.row3 { grid-template-columns:1fr; } .topbar { align-items:flex-start; gap:10px; flex-direction:column; } }
   </style>
 </head>
@@ -62,13 +66,13 @@
   <div id="appView" class="hidden">
     <div class="topbar">
       <div class="brand-lockup"><img src="lmcommodities.png" alt="LM Commodities Logo" class="top-logo"><div><b>LM Commodities Income & Expenditure</b><div class="muted" id="liveStatus" style="color:#c7f9dd">Connecting...</div></div></div>
-      <div><span id="userBadge"></span> <button class="light" onclick="logout()">Logout</button></div>
+      <div><span class="currency-tools"><button class="light" id="currencyToggle" onclick="toggleCurrencyDisplay()">Convert to Rand</button><span id="rateBadge" class="rate-badge"></span></span><span id="userBadge"></span> <button class="light" onclick="logout()">Logout</button></div>
     </div>
     <div class="tabs">
       <button class="active" onclick="showTab('dashboard',this)">Dashboard</button>
       <button onclick="showTab('revenue',this)">Daily Revenue</button>
       <button onclick="showTab('expense',this)">Expense Request</button>
-      <button onclick="showTab('approvals',this)">Approvals</button>
+      <button onclick="showTab('approvals',this)">Approvals <span id="approvalTabBadge" class="approval-badge hidden">0</span></button>
       <button onclick="showTab('samples',this)">Rock/Sand Samples</button>
       <button onclick="showTab('tanks',this)">Tanks Run</button>
       <button onclick="showTab('production',this)">Ore Production</button>
@@ -103,7 +107,7 @@
       </section>
 
       <section id="approvals" class="tabPanel hidden">
-        <div class="card"><h2>Approval Basket</h2><div id="approvalTable"></div></div>
+        <div class="card"><h2>Approval Basket <span id="approvalBasketCount" class="approval-badge hidden">0</span></h2><div id="approvalPendingAlert" class="approval-alert hidden"></div><div id="approvalTable"></div></div>
       </section>
 
       <section id="samples" class="tabPanel hidden">
@@ -130,7 +134,7 @@
           <h2>Daily Ore Production & Bullion Recovery</h2>
           <div class="row3"><div><label>Date</label><input id="prodDate" type="date"></div><div><label>Daily Ore Production</label><input id="oreTonnesProduced" inputmode="decimal" placeholder="Tonnes produced"></div><div><label>Average Grade</label><input id="oreAverageGrade" inputmode="decimal" placeholder="g/t or grade"></div></div>
           <div class="row3"><div><label>Tonnes Milled</label><input id="tonnesMilled" inputmode="decimal"></div><div><label>Bullion Recovered</label><input id="bullionRecovered" inputmode="decimal" placeholder="grams"></div><div><label>Price Per Gram</label><input id="pricePerGram" inputmode="decimal"></div></div>
-          <div class="card" style="background:#f8fafc"><div class="muted">Calculated Total Value</div><div class="metric" id="bullionValuePreview">R 0.00</div></div>
+          <div class="card" style="background:#f8fafc"><div class="muted">Calculated Total Value</div><div class="metric" id="bullionValuePreview">$ 0.00</div></div>
           <button onclick="saveProduction()">Save Production</button>
         </div>
       </section>
@@ -171,8 +175,8 @@
 
   <div id="toast" class="toast"></div>
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_5TLnjiHu70lMHlYXNPEyFLi3LND9GhcHbinATYDC-uvoPiSP6-HjDOomf5hqeNRP/exec';
-let STATE = { user:null, records:[], summary:{} };
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw5lZUeBaBshiwA6jcqDp4pVvRn5xODAWWgMMddWPGftwq6CLAgp7-wZs7m8LA1Qd08/exec';
+let STATE = { user:null, records:[], summary:{}, currencyMode:'USD', usdZarRate:null, rateUpdated:null, approvalAlertShown:false };
 
 function today(){ return new Date().toISOString().slice(0,10); }
 ['revDate','expDate','sampleDate','tankDate','prodDate','reportFrom','reportTo','creditorDate','creditorDueDate'].forEach(id => setTimeout(()=>{ const el=document.getElementById(id); if(el) el.value=today(); },0));
@@ -189,7 +193,51 @@ async function api(action, data={}){
     return json;
   } finally { setSync(false); }
 }
-function money(n){ return 'R ' + Number(n||0).toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function money(n){
+  const amount = Number(n||0);
+  if(STATE.currencyMode === 'ZAR'){
+    const converted = amount * Number(STATE.usdZarRate || 0);
+    return 'R ' + converted.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  return '$ ' + amount.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+async function fetchUsdZarRate(){
+  try{
+    const res = await fetch('https://open.er-api.com/v6/latest/USD', { cache:'no-store' });
+    const json = await res.json();
+    if(json && json.rates && json.rates.ZAR){
+      STATE.usdZarRate = Number(json.rates.ZAR);
+      STATE.rateUpdated = new Date();
+      updateRateBadge();
+      return STATE.usdZarRate;
+    }
+    throw new Error('USD/ZAR rate unavailable');
+  }catch(e){
+    updateRateBadge('Rate unavailable');
+    throw e;
+  }
+}
+function updateRateBadge(msg){
+  const el=document.getElementById('rateBadge');
+  if(!el) return;
+  if(msg){ el.textContent=msg; return; }
+  el.textContent = STATE.usdZarRate ? `USD/ZAR ${STATE.usdZarRate.toFixed(4)}` : '';
+}
+async function toggleCurrencyDisplay(){
+  try{
+    if(STATE.currencyMode === 'USD'){
+      if(!STATE.usdZarRate) await fetchUsdZarRate();
+      STATE.currencyMode = 'ZAR';
+      document.getElementById('currencyToggle').textContent = 'Show $';
+      toast('Showing converted Rand values using today\'s online USD/ZAR rate.');
+    }else{
+      STATE.currencyMode = 'USD';
+      document.getElementById('currencyToggle').textContent = 'Convert to Rand';
+      toast('Showing values in USD.');
+    }
+    renderDashboard(); renderCreditors(); renderRecords(); renderApprovals(); updateBullionPreview();
+  }catch(e){ toast('Could not fetch online USD/ZAR rate.'); }
+}
 function num(id){ return Number(String(document.getElementById(id).value||'0').replace(',','.').replace(/[^0-9.\-]/g,'')) || 0; }
 function val(id){ return document.getElementById(id).value.trim(); }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',3500); }
@@ -202,6 +250,7 @@ async function login(){
     document.getElementById('loginView').classList.add('hidden'); document.getElementById('appView').classList.remove('hidden');
     document.getElementById('userBadge').textContent = `${r.user.name} (${r.user.role})`;
     await refresh();
+    showApprovalLoginAlert();
   }catch(e){ toast(e.message); }
 }
 function logout(){ localStorage.removeItem('lmUser'); location.reload(); }
@@ -229,9 +278,32 @@ function renderDashboard(){
 }
 function renderApprovals(){
   const role=(STATE.user.role||'').toLowerCase(); const basket = role==='executive1'?'Executive1':role==='executive2'?'Executive2':'';
-  const rows = STATE.records.filter(r=>r.recordType==='Expense' && r.currentBasket===basket);
+  const rows = basket ? STATE.records.filter(r=>r.recordType==='Expense' && r.currentBasket===basket) : [];
+  updateApprovalCount(rows.length);
   if(!basket){ document.getElementById('approvalTable').innerHTML='<p class="muted">Only Executive1 and Executive2 can approve expense requests.</p>'; return; }
   document.getElementById('approvalTable').innerHTML = table(rows, true);
+}
+function updateApprovalCount(count){
+  const tabBadge=document.getElementById('approvalTabBadge');
+  const basketBadge=document.getElementById('approvalBasketCount');
+  const alertBox=document.getElementById('approvalPendingAlert');
+  [tabBadge,basketBadge].forEach(el=>{ if(!el) return; el.textContent=count; el.classList.toggle('hidden', count<=0); });
+  if(alertBox){
+    alertBox.textContent = count>0 ? `You have ${count} approval request${count===1?'':'s'} pending in your Approval Basket.` : '';
+    alertBox.classList.toggle('hidden', count<=0);
+  }
+}
+function currentApprovalRows(){
+  const role=(STATE.user&&STATE.user.role||'').toLowerCase();
+  const basket = role==='executive1'?'Executive1':role==='executive2'?'Executive2':'';
+  return basket ? STATE.records.filter(r=>r.recordType==='Expense' && r.currentBasket===basket) : [];
+}
+function showApprovalLoginAlert(){
+  const count=currentApprovalRows().length;
+  if(count>0 && !STATE.approvalAlertShown){
+    STATE.approvalAlertShown=true;
+    setTimeout(()=>alert(`LM Commodities: You have ${count} approval request${count===1?'':'s'} pending in your Approval Basket.`), 250);
+  }
 }
 function renderCreditors(){
   const rows = STATE.records.filter(r=>r.recordType==='Creditor');
@@ -277,7 +349,8 @@ function openWhatsAppLinks(links){ (links||[]).filter(Boolean).slice(0,2).forEac
 
 (async function init(){
   const u = localStorage.getItem('lmUser');
-  if(u){ STATE.user=JSON.parse(u); document.getElementById('loginView').classList.add('hidden'); document.getElementById('appView').classList.remove('hidden'); document.getElementById('userBadge').textContent = `${STATE.user.name} (${STATE.user.role})`; try{ await refresh(); }catch(e){ toast(e.message); }}
+  if(u){ STATE.user=JSON.parse(u); document.getElementById('loginView').classList.add('hidden'); document.getElementById('appView').classList.remove('hidden'); document.getElementById('userBadge').textContent = `${STATE.user.name} (${STATE.user.role})`; try{ await refresh(); showApprovalLoginAlert(); }catch(e){ toast(e.message); }}
+  fetchUsdZarRate().catch(()=>{});
 })();
 </script>
 </body>
