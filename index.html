@@ -797,7 +797,7 @@
     <script>
         // CONFIGURATION - Replace with your deployed URL
         const CONFIG = {
-            GAS_URL: 'https://script.google.com/macros/s/AKfycbwjUK9UyPCt-9Eon8ACWnDYsDnA9Y36iP1Dr6eB5hg2bvgSYPBvpvZ56Z-mPwCijFcL/exec', // Replace with your Apps Script URL
+            GAS_URL: 'https://script.google.com/macros/s/AKfycbzPOWn6fn-SOjBEjsFH4ZMYg1ZqsCwpX4txdn8NCbb-QGaA0c41F3g9VIj2EV3enBo5/exec', // Replace with your Apps Script URL
             SHEET_ID: '1vhtaNNmY-YsyDiaA2IFodoBYdQsEcL09F7BgMJo4utI',
             SHEET_NAME: 'Onpoint Incident Fleet Report'
         };
@@ -889,15 +889,19 @@
                 console.log('Test response:', data);
                 
                 if (data.success) {
-                    updateSyncStatus('online', `Connected to sheet: ${data.sheetName}`);
+                    const returnedUrl = data.deployedUrl || '';
+                    const extraNote = returnedUrl && returnedUrl !== CONFIG.GAS_URL
+                        ? ` | Backend URL differs. Apps Script says: ${returnedUrl}`
+                        : '';
+                    updateSyncStatus('online', `Connected to sheet: ${data.sheetName}${extraNote}`);
                     loadIncidents();
                 } else {
                     throw new Error(data.error || 'API returned error');
                 }
             } catch (error) {
                 console.error('Connection test failed:', error);
-                updateSyncStatus('offline', `Connection failed: ${error.message}`);
-                showNotification('Cannot connect to Google Sheets. Using demo data.', 'warning');
+                updateSyncStatus('offline', `Connection failed: ${error.message}. Check that CONFIG.GAS_URL is the latest deployed Web App URL and access is Anyone with the link.`);
+                showNotification('Cannot connect to Google Sheets. Check Apps Script deployment URL.', 'warning');
                 generateDemoData();
                 setLoading(false);
             }
@@ -1329,7 +1333,13 @@
                     body: JSON.stringify(payload)
                 });
 
-                const data = await response.json();
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (jsonError) {
+                    throw new Error('Apps Script did not return JSON. Usually this means the Web App URL is old, private, or not deployed as Execute as Me / Anyone with the link. Response started: ' + text.slice(0, 120));
+                }
                 if (!data.success) throw new Error(data.error || 'Save failed');
 
                 showNotification('Incident updated successfully', 'success');
