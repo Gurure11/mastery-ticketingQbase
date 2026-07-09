@@ -1,533 +1,609 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Onpoint-base MIS Ticket Workflow</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#F1F4F7;--card:#fff;--line:#E0E6ED;--ink:#17202B;--muted:#647184;--brand:#00A8F0;--brand2:#0B79B0;--soft:#E6F6FE;--good:#159766;--warn:#C6841A;--bad:#D14343;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:var(--sans);color:var(--ink)}button,input,select,textarea{font:inherit}.hide{display:none!important}.top{background:#fff;border-top:3px solid var(--brand);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}.wrap{max-width:1240px;margin:auto;padding:0 20px}.top .wrap{height:64px;display:flex;align-items:center;gap:14px}.logo{width:34px;height:34px;border-radius:9px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:800}.brand h1{font-size:17px;margin:0}.brand p{font-size:12px;margin:2px 0 0;color:var(--muted)}.sp{flex:1}.pill{font-family:var(--mono);font-size:11px;border:1px solid #BFE6F8;background:var(--soft);color:var(--brand2);padding:5px 9px;border-radius:99px}.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer}.btn:hover{border-color:var(--brand)}.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}.btn.good{border-color:#BFE8D3;color:var(--good)}.btn.bad{border-color:#F2C6C6;color:var(--bad)}.hero{padding:22px 0}.grid{display:grid;gap:14px}.cards{grid-template-columns:repeat(6,1fr)}.card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:15px}.stat .l{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.stat .v{font-family:var(--mono);font-size:30px;font-weight:700;margin-top:6px}.tabs{display:flex;gap:4px;overflow:auto;border-bottom:1px solid var(--line);margin-top:8px}.tab{border:0;background:transparent;color:var(--muted);padding:13px 15px;cursor:pointer;border-bottom:3px solid transparent}.tab.on{color:var(--ink);border-bottom-color:var(--brand);font-weight:700}.section{display:none;padding:18px 0 50px}.section.on{display:block}.panel{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden}.panel h2{font-size:15px;margin:0;padding:14px 16px;border-bottom:1px solid var(--line)}table{width:100%;border-collapse:collapse;font-size:13px}th{font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--muted);text-align:left;background:#F8FAFC;padding:11px;border-bottom:1px solid var(--line)}td{padding:11px;border-bottom:1px solid var(--line);color:#334155}tr:hover td{background:#FAFCFF}.status{font-family:var(--mono);font-size:10px;border-radius:5px;padding:3px 7px;text-transform:uppercase}.s-open{background:#EEF2F6;color:#475569}.s-review{background:var(--soft);color:var(--brand2)}.s-closed{background:#E7F7EE;color:var(--good)}.s-late{background:#FDECEC;color:var(--bad)}.priority-Critical{color:var(--bad);font-weight:700}.priority-High{color:var(--warn);font-weight:700}.login{min-height:100vh;display:grid;place-items:center;padding:20px}.loginbox{width:420px;max-width:100%;background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 18px 50px rgba(15,25,45,.08)}.loginbox h1{margin:0 0 6px;font-size:22px}.loginbox p{margin:0 0 20px;color:var(--muted);font-size:13px}.f{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}.f label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}.f input,.f select,.f textarea{border:1px solid #CDD6E0;border-radius:8px;padding:9px 10px;background:#fff}.f textarea{min-height:82px;resize:vertical}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.wide{grid-column:1/-1}.err{color:var(--bad);font-size:12px;min-height:16px}.ok{color:var(--good);font-size:12px}.drawer{position:fixed;right:0;top:0;height:100vh;width:560px;max-width:96vw;background:#fff;border-left:1px solid var(--line);box-shadow:-20px 0 60px rgba(15,25,45,.2);z-index:20;transform:translateX(105%);transition:.2s;display:flex;flex-direction:column}.drawer.open{transform:translateX(0)}.scrim{position:fixed;inset:0;background:rgba(15,23,42,.35);z-index:19;display:none}.scrim.open{display:block}.dh{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}.dh b{font-family:var(--mono);font-size:12px;color:var(--brand2)}.dh button{margin-left:auto}.db{padding:18px;overflow:auto;flex:1}.kv{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:12px 0}.kv div{background:#fff;padding:10px}.kv small{display:block;font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase}.kv b{display:block;margin-top:4px;font-size:13px}.comments{display:flex;flex-direction:column;gap:8px}.comment{border:1px solid var(--line);border-radius:9px;padding:10px}.comment .meta{font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:4px}.actions{border-top:1px solid var(--line);padding:14px 18px;display:flex;gap:8px;flex-wrap:wrap}.scorebox{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.scorebox input{width:90px}.fileline{font-size:12px;margin-top:7px;color:var(--muted)}.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.toolbar input,.toolbar select{border:1px solid #CDD6E0;border-radius:8px;padding:7px 9px}.muted{color:var(--muted)}.ro{background:#F8FAFC!important;color:#647184}.copybar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.dashgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.barrow{display:flex;align-items:center;gap:10px;margin:9px 0}.barrow .lbl{width:135px;font-size:12px;color:var(--muted)}.barrow .track{flex:1;height:12px;background:#EEF2F6;border-radius:99px;overflow:hidden}.barrow .fill{height:100%;background:var(--brand)}.barrow .num{font-family:var(--mono);font-size:12px;width:45px;text-align:right}@media(max-width:900px){.dashgrid{grid-template-columns:1fr}}@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}.wide{grid-column:auto}.wrap{padding:0 14px}table{min-width:900px}.scroll{overflow:auto}}
-
-/* OLD APPROVER NAVIGATION STYLE COPIED INTO NEW LIVE HTML */
-.asat{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.viewas{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);font-weight:600}
-.viewas .role{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--brand2);background:var(--soft);border:1px solid #CDEBFA;padding:3px 8px;border-radius:5px;font-weight:500}
-.tabs{position:sticky;top:64px;z-index:4;background:var(--bg);box-shadow:0 6px 9px -8px rgba(20,30,50,.22)}
-.tab.active,.tab.on{color:var(--ink);font-weight:700;border-bottom-color:var(--brand)}
-.tab.tab-cta{color:var(--brand2);font-weight:700}.tab.tab-cta.on,.tab.tab-cta.active{background:var(--soft)}
-.syncbar{position:fixed;right:18px;bottom:18px;z-index:100;background:#fff;border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:9px;padding:10px 14px;box-shadow:0 10px 30px rgba(20,30,50,.13);font-size:12.5px;color:var(--ink)}
-.syncbar.hide{display:none!important}.syncbar b{font-family:var(--mono);color:var(--brand2)}
-
-
-.card.clickable{cursor:pointer;transition:.15s}.card.clickable:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(15,25,45,.10);border-color:var(--brand)}
-.stat.critical{border-left:5px solid var(--bad)}.stat.ontime{border-left:5px solid var(--good)}.stat.late{border-left:5px solid var(--bad)}.stat.review{border-left:5px solid var(--brand)}
-.stat.critical .v,.stat.late .v{color:var(--bad)}.stat.ontime .v{color:var(--good)}
-.ticket-link{font-family:var(--mono);font-weight:700;color:var(--brand2);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
-.ticket-link:hover{color:var(--bad);background:#FFF1F1;border-radius:4px}
-.barrow.clickable{cursor:pointer;border-radius:8px;padding:3px}.barrow.clickable:hover{background:#F4FAFE}.barrow.good .fill{background:var(--good)}.barrow.bad .fill{background:var(--bad)}.barrow.warn .fill{background:var(--warn)}
-.filterTitle{font-family:var(--mono);font-size:11px;color:var(--brand2);margin:0 0 10px}.printOnly{display:none}.score-final-red{color:#D14343!important;font-weight:800}.score-final-green{color:#159766!important;font-weight:800}.score-final-blue{color:#0B79B0!important;font-weight:800}.score-final-black{color:#000!important;font-weight:800}@media print{header,.tabs,.toolbar,.btn,.actions,#syncbar,#scrim,#drawer{display:none!important}.section{display:block!important}.section:not(.printTarget){display:none!important}.panel{border:0}.printOnly{display:block}.wrap{max-width:none}.card{break-inside:avoid}}
-
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OnPoint Fuel Reconciliation System</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{--blue:#0b2b4a;--soft:#eef4fa;--line:#d7e1eb;--good:#dff5e3;--bad:#fce3e3;--warn:#fff0d8;--text:#13293d;}
+    body{font-family:Segoe UI,Arial,sans-serif;background:var(--soft);padding:20px;color:var(--text)}
+    .container{max-width:1500px;margin:auto;background:#fff;padding:22px;border-radius:18px;box-shadow:0 10px 30px rgba(11,43,74,.08)}
+    h2,h3{color:var(--blue);margin:.2rem 0 1rem}.muted{color:#617287;font-size:13px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:#f8fafc;border:1px solid var(--line);border-radius:16px;padding:14px;margin:14px 0}.kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}.kpi .label{font-size:12px;text-transform:uppercase;color:#65758a}.kpi .value{font-size:24px;font-weight:800;color:var(--blue)}
+    label{font-size:13px;font-weight:700;color:#334155}input,select{padding:10px;margin:5px 0;width:100%;border:1px solid var(--line);border-radius:10px;background:#fff}button{padding:10px 15px;border:none;background:var(--blue);color:#fff;border-radius:999px;cursor:pointer;font-weight:700}button.secondary{background:#64748b}button.light{background:#e2e8f0;color:#0f172a}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    table{width:100%;border-collapse:collapse;margin-top:12px;background:#fff}th,td{padding:8px;border-bottom:1px solid #e5edf5;font-size:12px;text-align:left;vertical-align:top}th{background:var(--blue);color:#fff;position:sticky;top:0;z-index:1}.scroll{max-height:430px;overflow:auto;border:1px solid var(--line);border-radius:14px}.match{background:var(--good)}.mismatch{background:var(--bad)}.missing{background:var(--warn)}.pill{display:inline-block;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:700}.ok{background:var(--good);color:#166534}.err{background:var(--bad);color:#991b1b}.warn{background:var(--warn);color:#92400e}canvas{max-height:300px!important}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.tab{background:#e2e8f0;color:#0f172a}.tab.active{background:var(--blue);color:#fff}.panel{display:none}.panel.active{display:block}@media(max-width:1000px){.grid,.grid4{grid-template-columns:1fr}}
+  </style>
 </head>
 <body>
-<div id="login" class="login">
-  <div class="loginbox">
-    <div class="logo">OB</div><br>
-    <h1>Onpoint-base Login</h1>
-    <p>Connected to Google Sheet: <b>Onpoint-base</b></p>
-    <div class="f"><label>Username / Email / UserID</label><input id="loginUser" placeholder="admin or your Users tab username"></div>
-    <div class="f"><label>Password</label><input id="loginPass" type="password" placeholder="Password value or admin123"></div>
-    <button class="btn primary" onclick="login()">Login</button><button class="btn" style="margin-left:8px" onclick="setupNow()">Repair / Setup Sheets</button>
-    <div id="loginErr" class="err"></div>
-  </div>
-</div>
+<div class="container">
+  <h2>OnPoint Fuel Reconciliation System</h2>
+  <div class="muted">Upload Bank file, upload Zoho document, pull Driver Fuel Log from Google Sheets, reconcile by Report_number / ER number, and export the variance report.</div>
 
-<div id="app" class="hide">
-<header class="top">
-  <div class="wrap">
-    <div class="brand"><div class="logo">OB</div><div><div class="t"><b>OnpointBase</b> <span>· MIS Tickets</span></div><p id="navSub" class="asat">Live workflow dashboard</p></div></div>
-    <div class="sp"></div>
-    <div class="asat" id="asAt">Synchronised: —</div>
-    <div class="viewas">Logged in as <span id="userPill" class="role"></span></div>
-    <button class="btn" onclick="logout()">Logout</button>
-  </div>
-</header>
-<main class="wrap">
-  <div class="hero">
-    <div class="grid cards">
-      <div class="card stat clickable critical" onclick="openTicketWindow('critical')"><div class="l">Critical Tickets</div><div id="stCritical" class="v">0</div></div>
-      <div class="card stat clickable ontime" onclick="openTicketWindow('openOnTime')"><div class="l">Open &amp; Ontime</div><div id="stOpenOnTime" class="v">0</div></div>
-      <div class="card stat clickable review reviewOnly" onclick="openTicketWindow('review1')"><div class="l">Review Basket Executive1</div><div id="stE1" class="v">0</div></div>
-      <div class="card stat clickable review reviewOnly" onclick="openTicketWindow('review2')"><div class="l">Review Basket Executive2</div><div id="stE2" class="v">0</div></div>
-      <div class="card stat clickable late" onclick="openTicketWindow('openLate')"><div class="l">Open and Late Tickets</div><div id="stLate" class="v">0</div></div>
-      <div class="card stat clickable" onclick="openTicketWindow('closed')"><div class="l">Closed Tickets</div><div id="stClosed" class="v">0</div></div>
-    </div>
-    <div class="tabs" id="tabs">
-      <button class="tab tab-cta" data-tab="new" onclick="showTab('new')">+ Create ticket</button>
-      <button class="tab active on" data-tab="dashboard" onclick="showTab('dashboard')">Executive</button>
-      <button class="tab reviewOnly" data-tab="review1" onclick="showTab('review1')">Review</button>
-      <button class="tab reviewOnly" data-tab="review2" onclick="showTab('review2')">Approvals</button>
-      <button class="tab" data-tab="task" onclick="showTab('task')">My tickets</button>
-      <button class="tab" data-tab="task" onclick="showTab('task')">Critical</button>
-      <button class="tab" data-tab="task" onclick="showTab('task')">Assigned</button>
-      <button class="tab" data-tab="task" onclick="showTab('task')">Open &amp; late</button>
-      <button class="tab" data-tab="closed" onclick="showTab('closed')">Closed on time</button>
-      <button class="tab" data-tab="dashboard" onclick="showTab('dashboard')">Scorecards</button>
-      <button class="tab" data-tab="performance" onclick="showTab('performance')">Performance</button>
-      <button class="tab" data-tab="dashboard" onclick="showTab('dashboard')">Explore</button>
-      <button class="tab" data-tab="dashboard" onclick="showTab('dashboard')">Activity</button>
-    </div>
-  </div>
-
-  <section id="dashboard" class="section on"><div class="panel"><h2>Workflow Dashboard</h2><div style="padding:16px"><p class="muted">Live overview from tickets visible to the logged-in user. Click any card, graph or bar to open the represented ticket data.</p><div id="dashBody" class="dashgrid"></div><div id="dashList" style="margin-top:14px"></div></div></div></section>
-
-  <section id="performance" class="section"><div class="panel"><h2>Performance</h2><div style="padding:16px"><div class="toolbar"><select id="perfMode" onchange="renderPerformance()"><option value="individual">Individual Performance</option><option value="department">Department Performance</option><option value="costcenter">Cost Center Performance</option></select><select id="perfValue" onchange="renderPerformance()"></select><button class="btn" onclick="printPerformance()">Print Report</button></div><p class="muted">Select an individual, department or cost center, then print the selected report.</p><div id="perfBody" class="dashgrid"></div><div id="perfList" style="margin-top:14px"></div></div></div></section>
-
-  <section id="task" class="section"><div class="toolbar"><input id="searchTask" oninput="render()" placeholder="Search tickets"><button class="btn" onclick="refresh()">Refresh</button></div><div class="panel"><h2>Task Drawer</h2><div class="scroll"><table><thead><tr><th>Ref</th><th>Title</th><th>Assignee</th><th>Due</th><th>Timelapse</th><th>Status</th><th>Priority</th><th>Action</th></tr></thead><tbody id="taskRows"></tbody></table></div></div></section>
-  <section id="review1" class="section"><div class="panel"><h2>Executive1 Review Basket</h2><div class="scroll"><table><thead><tr><th>Ref</th><th>Title</th><th>Submitted</th><th>System Score</th><th>Assignee</th><th>Action</th></tr></thead><tbody id="review1Rows"></tbody></table></div></div></section>
-  <section id="review2" class="section"><div class="panel"><h2>Executive2 Review Basket</h2><div class="scroll"><table><thead><tr><th>Ref</th><th>Title</th><th>System Score</th><th>Executive1 Score</th><th>Submission Timing</th><th>Action</th></tr></thead><tbody id="review2Rows"></tbody></table></div></div></section>
-  <section id="closed" class="section"><div class="panel"><h2>Closed Tickets</h2><div class="scroll"><table><thead><tr><th>Ref</th><th>Title</th><th>Closed</th><th>Timing</th><th>System</th><th>Exec1</th><th>Exec2</th><th>Final %</th></tr></thead><tbody id="closedRows"></tbody></table></div></div></section>
-
-  <section id="new" class="section">
-    <div class="panel"><h2>Create New Ticket / Recurring Ticket</h2><div style="padding:16px">
-      <div class="toolbar"><label><input type="radio" name="mode" value="single" checked onchange="modeChange()"> Single Ticket</label><label><input type="radio" name="mode" value="recurring" onchange="modeChange()"> Recurring Ticket</label></div>
-      <div class="formgrid">
-        <div class="f wide"><label>Title *</label><input id="ntTitle"></div>
-        <div class="f wide"><label>Description</label><textarea id="ntDesc"></textarea></div>
-        <div class="f"><label>Assign To *</label><select id="ntAssignee" onchange="assigneeChanged()"></select></div>
-        <div class="f"><label>Assignee Email</label><input id="ntAssigneeEmail" class="ro" readonly></div>
-        <div class="f"><label>Assignee Phone</label><input id="ntAssigneePhone" class="ro" readonly></div>
-        <div class="f"><label>Assignee WhatsApp</label><input id="ntAssigneeWhatsApp" class="ro" readonly></div>
-        <div class="f"><label>Department</label><input id="ntDept" class="ro" readonly></div>
-        <div class="f"><label>Cost Center</label><input id="ntCostCenter" class="ro" readonly></div>
-        <div class="f"><label>Priority</label><select id="ntPriority"><option>Low</option><option selected>Normal</option><option>High</option><option>Critical</option></select></div>
-        <div class="f wide"><label>WhatsApp task copy</label><textarea id="ntWhatsAppCopy" class="ro" readonly></textarea><div class="copybar"><button type="button" class="btn" onclick="copyNewTaskWhatsApp()">Copy WhatsApp Message</button><button type="button" class="btn good" onclick="openNewTaskWhatsApp()">Open WhatsApp</button></div></div>
-        <div class="f singleOnly"><label>Issue Date</label><input id="ntIssue" type="date"></div>
-        <div class="f singleOnly"><label>Due Date *</label><input id="ntDue" type="date"></div>
-        <div class="f recOnly hide"><label>Start Date *</label><input id="rtStart" type="date"></div>
-        <div class="f recOnly hide"><label>Frequency</label><select id="rtFreq"><option>Daily</option><option selected>Weekly</option><option>Monthly</option></select></div>
-        <div class="f recOnly hide"><label>Due after days</label><input id="rtDueDays" type="number" value="1"></div>
-        <div class="f recOnly hide"><label>Occurrences</label><input id="rtOcc" type="number" value="4"></div>
+  <div class="card">
+    <div class="grid">
+      <div>
+        <label>Upload Bank Statement (.xlsx, .xls, .csv)</label>
+        <input type="file" id="bankFile" accept=".xlsx,.xls,.csv" />
+        <div id="bankStatus" class="muted">No bank file loaded.</div>
       </div>
-      <button class="btn primary" onclick="createTicket()">Create Ticket</button><span id="newMsg" class="ok"></span><div id="newErr" class="err"></div>
-    </div></div>
+      <div>
+        <label>Upload Zoho Document (.xlsx, .xls, .csv)</label>
+        <input type="file" id="zohoFile" accept=".xlsx,.xls,.csv" />
+        <div id="zohoStatus" class="muted">No Zoho file loaded.</div>
+        <div class="muted">Zoho mapping: Vehicle Reg No. · report_number / Reference · Amount</div>
+      </div>
+      <div>
+        <label>Summary View</label>
+        <select id="groupBy">
+          <option value="costCenter">Cost Center</option>
+          <option value="vehicle" selected>Vehicle Registration</option>
+          <option value="driver">Driver Name</option>
+          <option value="department">Department</option>
+        </select>
+        <label>Period</label>
+        <select id="periodMode">
+          <option value="all">All</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+        </select>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="loadFuelLogBtn">Reload Driver Fuel Log</button>
+      <button id="reconcileBtn">Run Reconciliation</button>
+      <button class="secondary" id="exportExcelBtn">Export Excel</button>
+      <button class="secondary" id="exportCsvBtn">Export CSV</button>
+      <button class="light" id="downloadPdfBtn">Download PDF Report</button>
+    </div>
+    <div style="margin-top:10px"><span id="sheetStatus" class="pill warn">Fuel Log not loaded yet</span></div>
+    <div class="muted" style="margin-top:8px">Google Sheet ID: <strong>1SnhLTWgzJfkKNmIvtj8uwa-8x7TsnRtqkfX3deEuHIQ</strong> · Driver tab: <strong>Fuel Log</strong> · Recon output tab expected: <strong>Fuel Recon</strong></div>
+  </div>
+
+  <div class="grid4">
+    <div class="kpi"><div class="label">Bank Total</div><div class="value" id="kpiBank">R0.00</div></div>
+    <div class="kpi"><div class="label">Zoho Total</div><div class="value" id="kpiZoho">R0.00</div></div>
+    <div class="kpi"><div class="label">Driver Log Total</div><div class="value" id="kpiDriver">R0.00</div></div>
+    <div class="kpi"><div class="label">Exceptions</div><div class="value" id="kpiExceptions">0</div></div>
+    <div class="kpi"><div class="label">Missing in Zoho</div><div class="value" id="kpiMissingZoho">0</div></div>
+    <div class="kpi"><div class="label">Missing in Driver Log</div><div class="value" id="kpiMissingDriver">0</div></div>
+    <div class="kpi"><div class="label">Duplicate ER Numbers</div><div class="value" id="kpiDuplicateEr">0</div></div>
+  </div>
+
+  <div class="grid" id="varianceKpiGrid">
+    <div class="kpi"><div class="label">Total Bank-Zoho Variance %</div><div class="value" id="kpiVarianceBZ">0.00%</div></div>
+    <div class="kpi"><div class="label">Total Zoho-Driver Variance %</div><div class="value" id="kpiVarianceZD">0.00%</div></div>
+    <div class="kpi"><div class="label">Total Bank-Driver Variance %</div><div class="value" id="kpiVarianceBD">0.00%</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-panel="reconPanel">Reconciliation</button>
+    <button class="tab" data-panel="zohoPanel">Zoho Uploaded</button>
+    <button class="tab" data-panel="fuelLogPanel">Driver Fuel Log</button>
+    <button class="tab" data-panel="summaryPanel">Summary & Charts</button>
+    <button class="tab" data-panel="rawPanel">Uploaded Raw Data</button>
+  </div>
+
+  <section id="reconPanel" class="panel active">
+    <h3>Reconciliation Detail</h3>
+    <div class="scroll"><table id="reconTable"><thead><tr><th>Date</th><th>Report_number / ER No</th><th>Vehicle</th><th>Driver</th><th>Cost Center</th><th>Department</th><th>Bank Amount</th><th>Zoho Amount</th><th>Driver Log Amount</th><th>Bank-Zoho</th><th>Zoho-Driver</th><th>Bank-Driver</th><th>Bank-Zoho %</th><th>Zoho-Driver %</th><th>Bank-Driver %</th><th>Status</th><th>Issue</th></tr></thead><tbody><tr><td colspan="17">Upload Bank and Zoho files, load Fuel Log, then click Run Reconciliation.</td></tr></tbody></table></div>
   </section>
-</main>
+
+  <section id="zohoPanel" class="panel">
+    <h3>Zoho Uploaded Document</h3>
+    <div class="muted">This section maps Zoho columns: <strong>Vehicle Reg No.</strong>, <strong>report_number / Reference</strong>, and <strong>amount</strong>.</div>
+    <div class="scroll"><table id="zohoTable"><thead><tr><th>Date</th><th>Report_number / Reference</th><th>Vehicle Reg No.</th><th>Amount</th><th>Status</th></tr></thead><tbody><tr><td colspan="5">Zoho file not loaded yet.</td></tr></tbody></table></div>
+  </section>
+
+  <section id="fuelLogPanel" class="panel">
+    <h3>Driver Fuel Log from Google Sheets</h3>
+    <div class="muted">This section should show transactions pulled from tab <strong>Fuel Log</strong>.</div>
+    <div class="scroll"><table id="fuelLogTable"><thead><tr><th>Date</th><th>ER Number</th><th>Driver</th><th>Vehicle</th><th>Merchant</th><th>Fuel Total</th><th>Grand Total</th><th>Litres</th><th>Cost Center</th><th>Department</th><th>KM</th><th>Status</th></tr></thead><tbody><tr><td colspan="12">Fuel Log not loaded yet.</td></tr></tbody></table></div>
+  </section>
+
+  <section id="summaryPanel" class="panel">
+    <div class="grid">
+      <div class="card" style="grid-column:span 2"><h3 id="pieChartTitle">Pie Chart by Vehicle Registration</h3><canvas id="pieChart"></canvas></div>
+      <div class="card"><h3>Summary Table</h3><div class="scroll"><table id="summaryTable"><thead><tr><th>Group</th><th>Bank</th><th>Zoho</th><th>Driver Log</th><th>Bank-Zoho</th><th>Zoho-Driver</th><th>Bank-Driver</th><th>% Bank-Zoho</th><th>% Zoho-Driver</th><th>% Bank-Driver</th><th>Records</th></tr></thead><tbody></tbody></table></div></div>
+    </div>
+  </section>
+
+  <section id="rawPanel" class="panel">
+    <div class="grid">
+      <div><h3>Bank Uploaded Rows</h3><div class="scroll"><table id="bankPreview"></table></div></div>
+      <div><h3>Zoho Uploaded Rows</h3><div class="scroll"><table id="zohoPreview"></table></div></div>
+      <div><h3>Mapped Fields</h3><div id="mappingInfo" class="muted">No data mapped yet.</div></div>
+    </div>
+  </section>
 </div>
-
-<div id="scrim" class="scrim" onclick="closeDrawer()"></div>
-<aside id="drawer" class="drawer"><div class="dh"><b id="dRef"></b><span id="dStatus" class="status"></span><button class="btn" onclick="closeDrawer()">Close</button></div><div id="dBody" class="db"></div><div id="dActions" class="actions"></div></aside>
-
-<div id="syncbar" class="syncbar hide"><b>Synchronising...</b> please wait</div>
 
 <script>
-// Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBjWRNyUc2y09uFiuUB-8FkjOfJUO1lxVierLU9ofiYhZVxr-ewa6Xf8DdrDcDWftk/exec';
-let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
-let STATE = {tickets:[], globalTickets:[], dashboardTickets:[], users:[], referenceData:[], summary:{}};
-let LAST_GOOD_STATE = {tickets:[], globalTickets:[], dashboardTickets:[], users:[], referenceData:[], summary:{}};
-let CURRENT_FILTER = 'all';
-let REQUEST_SEQ = 0;
-let ACTIVE_DATA_VIEW = 'all';
-let AUTO_REFRESH_TIMER = null;
-let LAST_REFRESH_AT = 0;
-const REFRESH_INTERVAL_MS = 45000;
+const SHEET_ID = '1SnhLTWgzJfkKNmIvtj8uwa-8x7TsnRtqkfX3deEuHIQ';
+const FUEL_LOG_TAB = 'Fuel Log';
+const FUEL_RECON_TAB = 'Fuel Recon';
 
-function hasUsableTicketList(data){return data && Array.isArray(data.tickets);}
-function keepLastGoodState(data, opts={}){
-  if(!data) return STATE;
-  const allowEmpty = !!opts.allowEmpty;
-  const next = {...STATE};
-  if(Array.isArray(data.users) && (data.users.length || !LAST_GOOD_STATE.users.length)) next.users = data.users;
-  if(Array.isArray(data.referenceData)) next.referenceData = data.referenceData;
-  if(data.summary && typeof data.summary === 'object') next.summary = data.summary;
-  const incomingGlobal = Array.isArray(data.globalTickets) ? data.globalTickets : (Array.isArray(data.dashboardTickets) ? data.dashboardTickets : null);
-  if(incomingGlobal){
-    if(incomingGlobal.length || allowEmpty || !(LAST_GOOD_STATE.globalTickets||[]).length){
-      next.globalTickets = incomingGlobal;
-      next.dashboardTickets = incomingGlobal;
-    }else{
-      next.globalTickets = LAST_GOOD_STATE.globalTickets || [];
-      next.dashboardTickets = LAST_GOOD_STATE.dashboardTickets || LAST_GOOD_STATE.globalTickets || [];
-    }
-  }
-  if(Array.isArray(data.tickets)){
-    if(data.tickets.length || allowEmpty || !LAST_GOOD_STATE.tickets.length){
-      next.tickets = data.tickets;
-    }else{
-      next.tickets = LAST_GOOD_STATE.tickets;
-    }
-  }
-  STATE = next;
-  if((STATE.tickets||[]).length || allowEmpty) LAST_GOOD_STATE = JSON.parse(JSON.stringify(STATE));
-  return STATE;
+// Optional: paste a deployed Apps Script web app URL here to write results back to Fuel Recon.
+// Without Apps Script, browser-only HTML can read public sheets but cannot securely write to Google Sheets.
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxK8qBaeBRjRNc33OaxveXj0ieSJEcWNCm3uu-phy6mz301RIG_3_p3CzPsG_njtRf-iw/exec';
+
+let rawBank = [], rawZoho = [], rawDriver = [];
+let bankRows = [], zohoRows = [], driverRows = [], reconRows = [];
+let pieChart = null;
+
+const aliases = {
+  er: ['er no','erno','er number','ernumber','auth no','authno','authorisation no','authorization no','authorisation number','authorization number','approval code','reference','tracking number','trackingnumber','report number','report no','reportnumber','report_number','reportnumberreference'],
+  date: ['date','transaction date','swipe date','fuel date','doc date','timestamp','created time','created date'],
+  amount: ['amount','transaction amount','swiped amount','rand value','value','fuel total','grand total','total','debit','paid amount'],
+  fuelTotal: ['fuel total','fuel amount','fuel cost','grand total','amount','total'],
+  litres: ['litres','liters','fuel litres','fuel liters','qty','quantity'],
+  vehicle: ['vehicle','vehicle reg','vehicle registration','vehicle reg no','vehicle reg no.','vehicle registration no','vehicle number','reg no','registration','regnumber','fleet number'],
+  driver: ['driver','driver name','employee name','staff name','name'],
+  costCenter: ['cost center','cost centre','costcenter','costcentre','business unit','project','site'],
+  department: ['department','dept','division','branch'],
+  merchant: ['merchant','service station','supplier','vendor','garage'],
+  km: ['km traveled','km travelled','distance','distance covered','km','kilometers','kilometres'],
+  status: ['status','approval status']
+};
+
+function norm(s){ return String(s ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g,''); }
+function cleanText(v){ return String(v ?? '').trim(); }
+function money(n){ return 'R' + Number(n || 0).toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function percent(value, base){ return base ? (Number(value || 0) / Number(base || 0) * 100) : 0; }
+function percentText(value, base){ return percent(value, base).toFixed(2) + '%'; }
+function varianceClass(value, base){ return Math.abs(percent(value, base)) > 5 ? 'mismatch' : ''; }
+function num(v){
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  return Number(String(v ?? '').replace(/,/g,'.').replace(/[^0-9.-]/g,'')) || 0;
 }
-function updateTicketInCache(ticketId, patch){
-  if(!ticketId) return;
-  const apply = arr => (arr||[]).map(t => String(t.TicketID)===String(ticketId) ? {...t, ...patch} : t);
-  STATE.tickets = apply(STATE.tickets);
-  STATE.globalTickets = apply(STATE.globalTickets);
-  STATE.dashboardTickets = apply(STATE.dashboardTickets);
-  LAST_GOOD_STATE.tickets = apply(LAST_GOOD_STATE.tickets);
-  LAST_GOOD_STATE.globalTickets = apply(LAST_GOOD_STATE.globalTickets);
-  LAST_GOOD_STATE.dashboardTickets = apply(LAST_GOOD_STATE.dashboardTickets);
-  render();
+function excelDate(v){
+  if (v === null || v === undefined || v === '') return '';
+  if (typeof v === 'number') {
+    const d = XLSX.SSF.parse_date_code(v);
+    if (d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  const s = cleanText(v);
+  const iso = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (iso) return `${iso[1]}-${String(iso[2]).padStart(2,'0')}-${String(iso[3]).padStart(2,'0')}`;
+  const dmy = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/);
+  if (dmy) return `${dmy[3].length===2?'20'+dmy[3]:dmy[3]}-${String(dmy[2]).padStart(2,'0')}-${String(dmy[1]).padStart(2,'0')}`;
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return s;
 }
-function startAutoRefresh(){
-  if(AUTO_REFRESH_TIMER) clearInterval(AUTO_REFRESH_TIMER);
-  AUTO_REFRESH_TIMER = setInterval(()=>{
-    if(!USER) return;
-    loadTicketsView(ACTIVE_DATA_VIEW || 'all', 500, {silent:true, background:true});
-  }, REFRESH_INTERVAL_MS);
+function getField(row, group){
+  const keys = Object.keys(row || {});
+  const wanted = aliases[group].map(norm);
+  for (const key of keys) if (wanted.includes(norm(key))) return row[key];
+  for (const key of keys) if (wanted.some(w => norm(key).includes(w) || w.includes(norm(key)))) return row[key];
+  return '';
+}
+function erKey(row){ return norm(getField(row,'er')); }
+function regKeyValue(v){ return norm(String(v || '').toUpperCase().replace(/\s+/g,'')); }
+function regKey(row){ return regKeyValue(getField(row,'vehicle')); }
+function makeMatchKey(row, source){
+  const er = erKey(row);
+  const reg = regKey(row);
+  if (er && reg) return `${er}|${reg}`;
+  if (er) return `er:${er}`;
+  if (reg) return `reg:${reg}`;
+  return '';
 }
 
-function showSync(msg){const el=document.getElementById('syncbar'); if(el){el.classList.remove('hide'); el.innerHTML='<b>'+esc(msg||'Synchronising...')+'</b> please wait';}}
-function hideSync(){const el=document.getElementById('syncbar'); if(el) el.classList.add('hide');}
-function markSynced(){const el=document.getElementById('asAt'); if(el) el.textContent='Synchronised: '+new Date().toLocaleString();}
-function api(action, data={}){
-  if(!SCRIPT_URL || SCRIPT_URL.includes('PASTE_')) return Promise.reject(new Error('Replace SCRIPT_URL with your Apps Script Web App URL.'));
-  showSync('Synchronising '+action+'...');
-  const payload = encodeURIComponent(JSON.stringify({...data, action}));
-  const cb = 'cb_' + Math.random().toString(36).slice(2);
-  return new Promise((resolve,reject)=>{
-    const s=document.createElement('script');
-    let finished=false;
-    const cleanup=()=>{try{delete window[cb];}catch(e){} try{s.remove();}catch(e){} hideSync(); markSynced();};
-    const timer=setTimeout(()=>{if(finished)return; finished=true; cleanup(); reject(new Error('Apps Script JSONP connection timed out. For uploads, use smaller files or redeploy the latest Apps Script as Web App: Execute as Me, Anyone with the link.'));}, 60000);
-    window[cb]=(res)=>{if(finished)return; finished=true; clearTimeout(timer); cleanup(); res && res.ok ? resolve(res.data) : reject(new Error((res && res.error) || 'Request failed'));};
-    s.onerror=()=>{if(finished)return; finished=true; clearTimeout(timer); cleanup(); reject(new Error('Apps Script JSONP connection failed. Check deployment permissions, SCRIPT_URL, and file chunk size.'));};
-    s.src = SCRIPT_URL + '?callback=' + cb + '&payload=' + payload;
-    document.body.appendChild(s);
+function mapRow(row, source){
+  const amountGroup = source === 'driver' ? 'fuelTotal' : 'amount';
+  return {
+    source,
+    er: cleanText(getField(row,'er')),
+    key: makeMatchKey(row, source),
+    vehicleKey: regKey(row),
+    date: excelDate(getField(row,'date')),
+    amount: num(getField(row, amountGroup)),
+    litres: num(getField(row,'litres')),
+    vehicle: cleanText(getField(row,'vehicle')).toUpperCase(),
+    driver: cleanText(getField(row,'driver')),
+    costCenter: cleanText(getField(row,'costCenter')),
+    department: cleanText(getField(row,'department')),
+    merchant: cleanText(getField(row,'merchant')),
+    km: num(getField(row,'km')),
+    status: cleanText(getField(row,'status')),
+    raw: row
+  };
+}
+
+async function readUploadedFile(file){
+  const data = await file.arrayBuffer();
+  const wb = XLSX.read(data,{type:'array'});
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(sheet,{defval:''});
+}
+
+function previewTable(id, rows){
+  const el = document.getElementById(id);
+  if (!rows.length) { el.innerHTML = '<tbody><tr><td>No rows loaded.</td></tr></tbody>'; return; }
+  const headers = Object.keys(rows[0]).slice(0,10);
+  let html = '<thead><tr>' + headers.map(h=>`<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+  rows.slice(0,50).forEach(r=>{ html += '<tr>' + headers.map(h=>`<td>${cleanText(r[h])}</td>`).join('') + '</tr>'; });
+  html += '</tbody>';
+  el.innerHTML = html;
+}
+
+function updateMappingInfo(){
+  document.getElementById('mappingInfo').innerHTML = `
+    <strong>Bank mapped rows:</strong> ${bankRows.length}<br>
+    <strong>Zoho mapped rows:</strong> ${zohoRows.length}<br>
+    <strong>Driver Fuel Log mapped rows:</strong> ${driverRows.length}<br><br>
+    Matching key used: <strong>Report_number / ER number</strong> first, then Vehicle Registration where available.<br>
+    Zoho expected columns include <strong>Vehicle Reg No.</strong>, <strong>report_number</strong> or <strong>Reference</strong>, and <strong>amount</strong>.<br>
+    The variance report compares Bank vs Zoho, Zoho vs Driver Fuel Log, and Bank vs Driver Fuel Log.`;
+}
+
+async function handleBankUpload(e){
+  rawBank = await readUploadedFile(e.target.files[0]);
+  bankRows = rawBank.map(r=>mapRow(r,'bank')).filter(r=>r.key || r.amount || r.vehicle || r.driver);
+  document.getElementById('bankStatus').textContent = `Loaded ${rawBank.length} bank rows. Mapped ${bankRows.length}.`;
+  previewTable('bankPreview', rawBank);
+  updateKpis(); updateMappingInfo();
+}
+
+async function handleZohoUpload(e){
+  rawZoho = await readUploadedFile(e.target.files[0]);
+  zohoRows = rawZoho.map(r=>mapRow(r,'zoho')).filter(r=>r.key || r.amount || r.vehicle);
+  document.getElementById('zohoStatus').textContent = `Loaded ${rawZoho.length} Zoho rows. Mapped ${zohoRows.length}.`;
+  previewTable('zohoPreview', rawZoho);
+  renderZoho();
+  updateKpis(); updateMappingInfo();
+}
+
+async function loadDriverLog(){
+  const status = document.getElementById('sheetStatus');
+  status.className = 'pill warn'; status.textContent = 'Loading Driver Fuel Log...';
+  const encodedTab = encodeURIComponent(FUEL_LOG_TAB);
+  const urls = [
+    `https://opensheet.elk.sh/${SHEET_ID}/${encodedTab}`,
+    `https://opensheet.vercel.app/${SHEET_ID}/${encodedTab}`
+  ];
+  let lastErr = null;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url,{cache:'no-store'});
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error('Fuel Log response was not a row array');
+      rawDriver = data;
+      driverRows = rawDriver.map(r=>mapRow(r,'driver')).filter(r=>r.key || r.amount || r.vehicle || r.driver);
+      status.className = 'pill ok'; status.textContent = `Fuel Log loaded: ${driverRows.length} rows`;
+      renderFuelLog(); updateKpis(); updateMappingInfo();
+      return;
+    } catch (err) { lastErr = err; }
+  }
+  rawDriver = []; driverRows = [];
+  status.className = 'pill err';
+  status.textContent = 'Fuel Log failed to load. Make the Google Sheet public or use Apps Script.';
+  document.querySelector('#fuelLogTable tbody').innerHTML = `<tr><td colspan="12">Could not load Fuel Log. Error: ${lastErr ? lastErr.message : 'Unknown error'}. The sheet must be public for browser-only access.</td></tr>`;
+  updateMappingInfo();
+}
+
+function aggregate(rows){
+  const map = new Map();
+  rows.forEach((r,i)=>{
+    const k = r.key || `missing_${r.source}_${i}`;
+    if (!map.has(k)) map.set(k,{key:k,er:r.er,date:r.date,amount:0,litres:0,vehicle:'',vehicleKey:'',driver:'',costCenter:'',department:'',merchant:'',km:0,count:0});
+    const x = map.get(k);
+    x.amount += r.amount; x.litres += r.litres; x.km += r.km; x.count++;
+    x.er = x.er || r.er; x.date = x.date || r.date; x.vehicle = x.vehicle || r.vehicle; x.vehicleKey = x.vehicleKey || r.vehicleKey; x.driver = x.driver || r.driver; x.costCenter = x.costCenter || r.costCenter; x.department = x.department || r.department; x.merchant = x.merchant || r.merchant;
   });
+  return map;
 }
 
-async function postApi(action, data={}){
-  if(!SCRIPT_URL || SCRIPT_URL.includes('PASTE_')) throw new Error('Replace SCRIPT_URL with your Apps Script Web App URL.');
-  showSync('Synchronising '+action+'...');
-  const controller = new AbortController();
-  const timer = setTimeout(()=>controller.abort(), 65000);
-  try{
-    const payload = JSON.stringify({...data, action});
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'text/plain;charset=utf-8'},
-      body: payload,
-      redirect: 'follow',
-      signal: controller.signal
+function dayDiff(a,b){
+  if (!a || !b) return 0;
+  const da = new Date(a), db = new Date(b);
+  if (isNaN(da.getTime()) || isNaN(db.getTime())) return 0;
+  return Math.abs((da - db) / 86400000);
+}
+function erValue(r){ return norm(r?.er || ''); }
+function sameVehicle(a,b){ return !a?.vehicleKey || !b?.vehicleKey || a.vehicleKey === b.vehicleKey; }
+function sameErWhenPresent(a,b){ return !erValue(a) || !erValue(b) || erValue(a) === erValue(b); }
+function isGoodMatch(a,b){
+  if (!a || !b) return false;
+  if (!sameVehicle(a,b)) return false;
+  if (!sameErWhenPresent(a,b)) return false;
+  return dayDiff(a.date,b.date) <= 2;
+}
+function findBestMatch(base, candidates, usedSet){
+  let bestIndex = -1, bestScore = -1;
+  candidates.forEach((c,i)=>{
+    if (usedSet.has(i) || !isGoodMatch(base,c)) return;
+    let score = 0;
+    if (erValue(base) && erValue(c) && erValue(base) === erValue(c)) score += 100;
+    if (base.vehicleKey && c.vehicleKey && base.vehicleKey === c.vehicleKey) score += 50;
+    score += Math.max(0, 10 - dayDiff(base.date,c.date));
+    if (Math.abs((base.amount||0) - (c.amount||0)) <= 1) score += 25;
+    if (score > bestScore) { bestScore = score; bestIndex = i; }
+  });
+  return bestIndex;
+}
+function findDuplicateErFlags(){
+  const counts = new Map();
+  bankRows.concat(zohoRows, driverRows).forEach(r=>{
+    const er = erValue(r);
+    if (!er) return;
+    counts.set(er, (counts.get(er) || 0) + 1);
+  });
+  return counts;
+}
+
+function findByErOrBest(base, candidates, usedSet){
+  if (!base) return -1;
+  const baseEr = erValue(base);
+  let exact = -1;
+  if (baseEr) {
+    candidates.forEach((c,i)=>{
+      if (exact >= 0 || usedSet.has(i)) return;
+      if (erValue(c) === baseEr && sameVehicle(base,c)) exact = i;
     });
-    const txt = await res.text();
-    let json;
-    try{ json = JSON.parse(txt); }
-    catch(parseErr){ throw new Error('Upload response was not valid JSON. Make sure the Apps Script is deployed as Web App: Execute as Me, Anyone with the link, and deploy a New version. Response: '+txt.slice(0,180)); }
-    if(!json.ok) throw new Error(json.error || 'Upload failed.');
-    markSynced();
-    return json.data;
-  }catch(err){
-    if(err && err.name === 'AbortError') throw new Error(action+' timed out. Redeploy the fixed Apps Script as a New version and run Repair / Setup Sheets once.');
-    throw new Error(err.message || 'Request failed. Check Apps Script deployment permissions and Drive folder access.');
-  }finally{
-    clearTimeout(timer);
-    hideSync();
   }
+  if (exact >= 0) return exact;
+  return findBestMatch(base, candidates, usedSet);
 }
 
-function initDates(){const d=new Date(); const iso=d.toISOString().slice(0,10); ['ntIssue','ntDue','rtStart'].forEach(id=>{const el=document.getElementById(id); if(el) el.value=iso;});}
-function login(){document.getElementById('loginErr').textContent='Synchronising login...';postApi('login',{username:loginUser.value.trim(),password:loginPass.value.trim()}).then(u=>{USER=u;localStorage.setItem('ob_user',JSON.stringify(u));start();alert('Login successful.');}).catch(e=>loginErr.textContent=e.message);}
-function setupNow(){document.getElementById('loginErr').textContent='Repairing sheets...';postApi('setup',{}).then(()=>{loginErr.textContent='Sheets repaired. Try login again. This setup only fixes tabs/headings; heavy score repair is no longer run during setup/login.';}).catch(e=>loginErr.textContent=e.message);}
-function logout(){showSync('Synchronising logout...');if(AUTO_REFRESH_TIMER) clearInterval(AUTO_REFRESH_TIMER);localStorage.removeItem('ob_user');alert('Logout successful.');location.reload();}
-function start(){document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide');userPill.textContent=USER.Name+' · '+USER.Role;initDates();applyRoleVisibility();refresh();}
-function refresh(){
-  const seq=++REQUEST_SEQ;
-  ACTIVE_DATA_VIEW='all';
-  postApi('bootstrap',{userId:USER.UserID,max:500}).then(data=>{
-    if(seq!==REQUEST_SEQ) return; // Prevent older responses from overwriting newer data.
-    keepLastGoodState(data,{allowEmpty:false});
-    fillLists();applyRoleVisibility();render();startAutoRefresh();LAST_REFRESH_AT=Date.now();
-  }).catch(e=>{
-    hideSync();
-    if((LAST_GOOD_STATE.tickets||[]).length){STATE=JSON.parse(JSON.stringify(LAST_GOOD_STATE));render();return alert('Temporary loading issue. The last stable dashboard data has been kept on screen. '+(e.message||e));}
-    alert('Bootstrap loading failed: '+(e.message||e)+'\n\nDeploy the matching FAST LAZY BULLETPROOF Apps Script as a NEW VERSION, then refresh. If it still fails, check the Apps Script error shown above.');
+function makeReconRow(b,z,d,duplicateCounts){
+  const bankAmount = b?.amount || 0, zohoAmount = z?.amount || 0, driverAmount = d?.amount || 0;
+  const varianceBZ = bankAmount - zohoAmount;
+  const varianceZD = zohoAmount - driverAmount;
+  const varianceBD = bankAmount - driverAmount;
+  const er = b?.er || z?.er || d?.er || '';
+  const isDuplicateEr = er && (duplicateCounts?.get(norm(er)) || 0) > 3;
+  let status = 'Matched', issue = 'Matched';
+  const missing = [];
+  if (!b) missing.push('Bank');
+  if (!z) missing.push('Zoho');
+  if (!d) missing.push('Driver Log');
+  const variances = [];
+  if (b && z && Math.abs(varianceBZ) > 1) variances.push('Bank-Zoho variance');
+  if (z && d && Math.abs(varianceZD) > 1) variances.push('Zoho-Driver variance');
+  if (b && d && Math.abs(varianceBD) > 1) variances.push('Bank-Driver variance');
+  if (missing.length) { status = 'Missing'; issue = 'Missing in ' + missing.join(', '); }
+  if (variances.length) { status = status === 'Matched' ? 'Mismatch' : status; issue = issue === 'Matched' ? variances.join(', ') : issue + ', ' + variances.join(', '); }
+  if (isDuplicateEr) {
+    status = status === 'Matched' ? 'Duplicate ER' : status;
+    issue = issue === 'Matched' ? 'Duplicate ER number' : issue + ', Duplicate ER number';
+  }
+  return {
+    date: b?.date || z?.date || d?.date || '', er,
+    vehicle: b?.vehicle || z?.vehicle || d?.vehicle || '', driver: b?.driver || d?.driver || '',
+    costCenter: b?.costCenter || d?.costCenter || '', department: b?.department || d?.department || '',
+    driverCostCenter: d?.costCenter || '', driverDepartment: d?.department || '', driverVehicle: d?.vehicle || '',
+    bankAmount, zohoAmount, driverAmount,
+    varianceBZ, varianceZD, varianceBD,
+    varianceBZPct: percent(varianceBZ, bankAmount),
+    varianceZDPct: percent(varianceZD, zohoAmount),
+    varianceBDPct: percent(varianceBD, bankAmount),
+    isDuplicateEr, status, issue
+  };
+}
+function runReconciliation(){
+  const usedZoho = new Set();
+  const usedDriver = new Set();
+  const duplicateCounts = findDuplicateErFlags();
+  const rows = [];
+
+  bankRows.forEach(b=>{
+    const zi = findByErOrBest(b, zohoRows, usedZoho);
+    const z = zi >= 0 ? zohoRows[zi] : null;
+    if (zi >= 0) usedZoho.add(zi);
+    const baseForDriver = z || b;
+    const di = findByErOrBest(baseForDriver, driverRows, usedDriver);
+    const d = di >= 0 ? driverRows[di] : null;
+    if (di >= 0) usedDriver.add(di);
+    rows.push(makeReconRow(b,z,d,duplicateCounts));
   });
-}
-function loadTicketsView(view, max, opts={}){
-  if(!USER) return;
-  ACTIVE_DATA_VIEW=view||'all';
-  const seq=++REQUEST_SEQ;
-  const useBootstrap = !(STATE.users||[]).length && ACTIVE_DATA_VIEW==='all';
-  const action = useBootstrap ? 'bootstrap' : 'getTicketsByView';
-  const payload = useBootstrap ? {userId:USER.UserID,max:max||500} : {userId:USER.UserID,view:ACTIVE_DATA_VIEW,max:max||500};
-  return postApi(action,payload).then(data=>{
-    if(seq!==REQUEST_SEQ) return; // Ignore stale late responses.
-    keepLastGoodState(data,{allowEmpty:!!opts.allowEmpty});
-    if(useBootstrap || (data&&data.users)) fillLists();
-    applyRoleVisibility();render();LAST_REFRESH_AT=Date.now();startAutoRefresh();
-  }).catch(e=>{
-    hideSync();
-    if((LAST_GOOD_STATE.tickets||[]).length){STATE=JSON.parse(JSON.stringify(LAST_GOOD_STATE));render(); if(!opts.silent) alert('Temporary loading issue. The last stable dashboard data has been kept on screen. '+(e.message||e)); return;}
-    if(!opts.silent) alertErr(e);
+
+  zohoRows.forEach((z,zi)=>{
+    if (usedZoho.has(zi)) return;
+    const di = findByErOrBest(z, driverRows, usedDriver);
+    const d = di >= 0 ? driverRows[di] : null;
+    if (di >= 0) usedDriver.add(di);
+    rows.push(makeReconRow(null,z,d,duplicateCounts));
   });
-}
-function alertErr(e){alert(e.message||e);}
-function showTab(id){if((id==='review1'||id==='review2')&&!isReviewAllowed(id)){id='task';}showSync('Synchronising navigation...');document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.tab===id;b.classList.toggle('on',on);b.classList.toggle('active',on);});document.querySelectorAll('.section').forEach(s=>s.classList.toggle('on',s.id===id));setTimeout(hideSync,250);
-  // Use local cache for navigation so counters do not disappear during tab changes.
-  render();
-  const view = id==='review1'?'review1':id==='review2'?'review2':id==='closed'?'closed':id==='task'?'task':id==='performance'?'all':null;
-  if(view && (Date.now()-LAST_REFRESH_AT>REFRESH_INTERVAL_MS)) loadTicketsView(view, id==='performance'?500:300, {silent:true, background:true});
-}
-function modeChange(){const rec=document.querySelector('[name=mode]:checked').value==='recurring';document.querySelectorAll('.recOnly').forEach(e=>e.classList.toggle('hide',!rec));document.querySelectorAll('.singleOnly').forEach(e=>e.classList.toggle('hide',rec));}
-function activeUsers(){return (STATE.users||[]).filter(u=>String(u.IsActive).toUpperCase()!=='FALSE');}
-function selectedAssignee(){return activeUsers().find(u=>String(u.UserID)===String(ntAssignee.value))||{};}
-function fillLists(){
-  ntAssignee.innerHTML=activeUsers().map(u=>`<option value="${u.UserID}">${esc(u.Name)} — ${esc(u.Role||'User')}</option>`).join('');
-  assigneeChanged();
-}
-function assigneeChanged(){
-  const u=selectedAssignee();
-  if(!u.UserID) return;
-  ntAssigneeEmail.value=u.Email||'';
-  ntAssigneePhone.value=u.Phone||'';
-  ntAssigneeWhatsApp.value=u.WhatsApp||'';
-  ntDept.value=u.Department||'';
-  ntCostCenter.value=u.CostCenter||'';
-  buildNewTaskWhatsAppCopy();
-}
-['ntTitle','ntDesc','ntPriority','ntIssue','ntDue','rtStart','rtFreq','rtDueDays','rtOcc'].forEach(id=>setTimeout(()=>{const el=document.getElementById(id); if(el){el.addEventListener('input',buildNewTaskWhatsAppCopy);el.addEventListener('change',buildNewTaskWhatsAppCopy);}},0));
-function buildNewTaskWhatsAppCopy(ref){
-  const u=selectedAssignee();
-  const mode=document.querySelector('[name=mode]:checked')?.value||'single';
-  const due=mode==='recurring'?`${rtFreq?.value||'Recurring'} from ${rtStart?.value||''}, due after ${rtDueDays?.value||''} day(s), ${rtOcc?.value||''} occurrence(s)`:ntDue?.value;
-  const msg=`ONPOINT-BASE NEW TASK${ref?' - '+ref:''}\n\nAssigned to: ${u.Name||''}\nDepartment: ${u.Department||''}\nCost Center: ${u.CostCenter||''}\nTitle: ${ntTitle?.value||''}\nPriority: ${ntPriority?.value||''}\nIssue Date: ${ntIssue?.value||''}\nDue: ${due||''}\n\nDescription:\n${ntDesc?.value||''}`;
-  if(document.getElementById('ntWhatsAppCopy')) ntWhatsAppCopy.value=msg;
-  return msg;
-}
-function cleanPhone(p){return String(p||'').replace(/[^0-9]/g,'').replace(/^0/,'27');}
-async function copyText(txt){try{await navigator.clipboard.writeText(txt);alert('Task copied to clipboard.');}catch(e){prompt('Copy this message:',txt);}}
-function copyNewTaskWhatsApp(){copyText(buildNewTaskWhatsAppCopy());}
-function openNewTaskWhatsApp(){const u=selectedAssignee();const phone=cleanPhone(u.WhatsApp||u.Phone);if(!phone)return alert('No WhatsApp number found for selected assignee in Users tab.');window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(buildNewTaskWhatsAppCopy()),'_blank');}
-function openTicketWhatsApp(){const t=DETAIL.ticket;const phone=cleanPhone(t.AssignedToWhatsApp||t.AssignedToPhone);if(!phone)return alert('No WhatsApp number found for this assignee.');const msg=t.WhatsAppMessage||ticketWhatsAppText(t);window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank');}
-function copyTicketWhatsApp(){copyText(DETAIL.ticket.WhatsAppMessage||ticketWhatsAppText(DETAIL.ticket));}
-function ticketWhatsAppText(t){return `ONPOINT-BASE TASK ${t.TicketID}\n\nAssigned to: ${t.AssignedToName}\nDepartment: ${t.Department||''}\nCost Center: ${t.CostCenter||''}\nTitle: ${t.Title}\nPriority: ${t.Priority}\nIssue Date: ${fmt(t.IssueDate)}\nDue: ${fmt(t.DueDate)}\nStatus: ${t.Status}\nTime lapse: ${t.TimeRemainingText||''}\n\nDescription:\n${t.Description||''}`;}
-function userRoleKey(){return String(USER?.Role||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
-function identityKey(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ').replace(/[^a-z0-9@.]+/g,'');}
-function nameKey(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,' ').replace(/[^a-z0-9]+/g,'');}
-function emailKey(v){return String(v||'').trim().toLowerCase();}
-function userMatch(a,b){const aa=identityKey(a),bb=identityKey(b);return aa!==''&&bb!==''&&aa===bb;}
-function emailMatch(a,b){const aa=emailKey(a),bb=emailKey(b);return aa!==''&&bb!==''&&aa===bb;}
-function nameMatch(a,b){const aa=nameKey(a),bb=nameKey(b);return aa!==''&&bb!==''&&aa===bb;}
-function isMineAsCreator(t){return userMatch(t.CreatedByUserID,USER.UserID)||emailMatch(t.CreatedByEmail,USER.Email)||nameMatch(t.CreatedByName,USER.Name);}
-function isMineAsAssignee(t){return userMatch(t.AssignedToUserID,USER.UserID)||emailMatch(t.AssignedToEmail,USER.Email)||nameMatch(t.AssignedToName,USER.Name);}
-function isExecutiveUser(){const r=userRoleKey();return r==='admin'||r==='adminmanager'||r==='executive1'||r==='exec1'||r==='executive2'||r==='exec2';}
-function isReviewAllowed(kind){
-  const r=userRoleKey();
-  if(r==='admin'||r==='adminmanager') return true;
-  if(kind==='review1') return r==='executive1'||r==='exec1';
-  if(kind==='review2') return r==='executive2'||r==='exec2';
-  return true;
-}
-function applyRoleVisibility(){
-  const showReview=isExecutiveUser();
-  document.querySelectorAll('.reviewOnly').forEach(el=>el.classList.toggle('hide',!showReview));
-  if(!showReview && (document.getElementById('review1')?.classList.contains('on') || document.getElementById('review2')?.classList.contains('on'))){showTab('task');}
-}
 
-function executiveDashboardTickets(){
-  // Dashboard and Performance must use the server-supplied global list for Executive1/Executive2/Admin.
-  // My Tickets and drawer actions still use STATE.tickets so the approval workflow stays unchanged.
-  if(!isExecutiveUser()) return STATE.tickets || [];
-  const global = STATE.globalTickets || STATE.dashboardTickets || [];
-  return global.length ? global : (STATE.tickets || []);
-}
-function workflowTickets(){return STATE.tickets || [];}
-function myTickets(){
-  const tickets=workflowTickets();
-  if(isExecutiveUser()){
-    return tickets.filter(t=>(isMineAsCreator(t)||isMineAsAssignee(t)||t.CurrentBasket==='Executive1'||t.CurrentBasket==='Executive2') && t.Status!=='Closed');
-  }
-  return tickets.filter(t=>(isMineAsAssignee(t)||isMineAsCreator(t)) && t.Status!=='Closed');
-}
-function isLate(t){return String(t.TimeRemainingText||'').toLowerCase().includes('late') || String(t.ClosedTiming||'').toLowerCase().includes('late');}
-function isOpenOnTime(t){return t.Status!=='Closed' && !isLate(t) && (t.CurrentBasket==='Assignee'||t.Status==='Open');}
-function filterTickets(kind){
-  const tickets=(kind==='all')?workflowTickets():(isExecutiveUser()?executiveDashboardTickets():workflowTickets());
-  if(kind==='critical') return tickets.filter(t=>String(t.Priority)==='Critical' && t.Status!=='Closed' && (isExecutiveUser() || isMineAsAssignee(t)));
-  if(kind==='openOnTime') return tickets.filter(t=>isOpenOnTime(t) && (isExecutiveUser() || isMineAsAssignee(t)));
-  if(kind==='openLate') return tickets.filter(t=>t.Status!=='Closed' && isLate(t) && (isExecutiveUser() || isMineAsAssignee(t)));
-  if(kind==='review1') return isReviewAllowed('review1') ? tickets.filter(t=>t.CurrentBasket==='Executive1') : [];
-  if(kind==='review2') return isReviewAllowed('review2') ? tickets.filter(t=>t.CurrentBasket==='Executive2') : [];
-  if(kind==='closed') return tickets.filter(t=>t.Status==='Closed' || t.CurrentBasket==='Closed');
-  if(kind==='assigned') return tickets.filter(t=>t.CurrentBasket==='Assignee' && t.Status!=='Closed' && (isExecutiveUser() || isMineAsAssignee(t)));
-  return myTickets();
-}
-function openTicketWindow(kind){
-  if((kind==='review1'||kind==='review2')&&!isReviewAllowed(kind)){kind='all';}
-  CURRENT_FILTER=kind;
-  if(kind==='review1') showTab('review1');
-  else if(kind==='review2') showTab('review2');
-  else if(kind==='closed') showTab('closed');
-  else showTab('task');
-  render();
-  if(Date.now()-LAST_REFRESH_AT>REFRESH_INTERVAL_MS) loadTicketsView(kind==='all'?'task':kind,300,{silent:true,background:true});
-  const el=document.getElementById('taskRows'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
-}
-function render(){const s=(searchTask?.value||'').toLowerCase();const tickets=workflowTickets();const dashboardTickets=executiveDashboardTickets();const sum={critical:0,openOnTime:0,e1:0,e2:0,closed:0,late:0};dashboardTickets.forEach(t=>{if(String(t.Priority)==='Critical'&&t.Status!=='Closed')sum.critical++; if(isOpenOnTime(t))sum.openOnTime++; if(t.CurrentBasket==='Executive1')sum.e1++; if(t.CurrentBasket==='Executive2')sum.e2++; if(t.Status==='Closed'||t.CurrentBasket==='Closed')sum.closed++; if(t.Status!=='Closed'&&isLate(t))sum.late++;});// Dashboard counters are calculated from the global executive dashboard cache when available.
-  // This prevents flickering caused by a delayed or partial server summary.
-  if(document.getElementById('stCritical'))stCritical.textContent=sum.critical; if(document.getElementById('stOpenOnTime'))stOpenOnTime.textContent=sum.openOnTime; stE1.textContent=sum.e1;stE2.textContent=sum.e2;stClosed.textContent=sum.closed;stLate.textContent=sum.late; renderDashboard(dashboardTickets,sum); buildPerfOptions(); renderPerformance();
-  const filtered=filterTickets(CURRENT_FILTER).filter(t=>(t.Title+t.TicketID+t.AssignedToName+t.Department+t.CostCenter).toLowerCase().includes(s));
-  taskRows.innerHTML=(`<tr><td colspan="8" class="filterTitle">Showing: ${esc(filterLabel(CURRENT_FILTER))}</td></tr>`)+ (filtered.map(rowTask).join('')||empty(8));
-  review1Rows.innerHTML=isReviewAllowed('review1')?(dashboardTickets.filter(t=>t.CurrentBasket==='Executive1' && t.Status!=='Closed').map(rowReview1).join('')||empty(6)):empty(6);
-  review2Rows.innerHTML=isReviewAllowed('review2')?(dashboardTickets.filter(t=>t.CurrentBasket==='Executive2' && t.Status!=='Closed').map(rowReview2).join('')||empty(6)):empty(6);
-  closedRows.innerHTML=dashboardTickets.filter(t=>t.Status==='Closed'||t.CurrentBasket==='Closed').map(rowClosed).join('')||empty(8);
-}
-function filterLabel(k){return ({critical:'Critical Tickets',openOnTime:'Open & Ontime Tickets',openLate:'Open and Late Tickets',review1:'Executive1 Review Basket',review2:'Executive2 Review Basket',closed:'Closed Tickets',assigned:'Assigned Tickets',all:isExecutiveUser()?'Tickets I Assigned':'My Assigned Tickets'})[k]||k;}
-function computedFinalNumber(t){const stored=Number(t.FinalScore);return (t.FinalScore===''||t.FinalScore==null||isNaN(stored))?null:stored;}
-function avgComputedFinal(rows){const closed=rows.filter(t=>t.Status==='Closed'||t.CurrentBasket==='Closed').map(computedFinalNumber).filter(n=>n!==null&&!isNaN(n));return closed.length?Math.round(closed.reduce((a,b)=>a+b,0)/closed.length):0;}
-function renderDashboard(tickets,sum){
-  const byDept={}; const byCC={}; let totalScore=0, scoreCount=0;
-  tickets.forEach(t=>{byDept[t.Department||'Unassigned']=(byDept[t.Department||'Unassigned']||0)+1;byCC[t.CostCenter||'Unassigned']=(byCC[t.CostCenter||'Unassigned']||0)+1;const cf=computedFinalNumber(t);if((t.Status==='Closed'||t.CurrentBasket==='Closed')&&cf!==null){totalScore+=cf;scoreCount++;}});
-  const avg=scoreCount?Math.round(totalScore/scoreCount):0;
-  const split={'Critical Tickets':sum.critical,'Open & Ontime':sum.openOnTime,'Executive1 Review':sum.e1,'Executive2 Review':sum.e2,'Open & Late':sum.late,'Closed':sum.closed};
-  dashBody.innerHTML=`<div class="card"><h3>Workflow Split</h3>${dashBars(split,'workflow')}</div><div class="card clickable" onclick="showDashboardList('score','Average Final Score')"><h3>Performance</h3><div class="stat"><div class="l">Average final score</div><div class="v">${avg}%</div></div><p class="muted">Click to show closed ticket score data.</p></div><div class="card"><h3>By Department</h3>${dashBars(byDept,'Department')}</div><div class="card"><h3>By Cost Center</h3>${dashBars(byCC,'CostCenter')}</div>`;
-}
-function dashBars(obj,type){const max=Math.max(1,...Object.values(obj).map(Number));return Object.keys(obj).map(k=>{let kind= type==='workflow'?({'Critical Tickets':'critical','Open & Ontime':'openOnTime','Executive1 Review':'review1','Executive2 Review':'review2','Open & Late':'openLate','Closed':'closed'}[k]||'all') : type+':'+k; let click=type.startsWith('perfGroup:')?`showPerformanceGroup('${esc(type.split(':')[1])}','${esc(k)}')`:`showDashboardList('${esc(kind)}','${esc(k)}')`; let cls=(k.includes('Critical')||k.includes('Late'))?'bad':(k.includes('Ontime')?'good':'');return `<div class="barrow clickable ${cls}" onclick="${click}"><div class="lbl">${esc(k)}</div><div class="track"><div class="fill" style="width:${Math.round(Number(obj[k])/max*100)}%"></div></div><div class="num">${obj[k]}${type.startsWith('perfGroup:')?'%':''}</div></div>`}).join('')||'<p class="muted">No data.</p>';}
-function showDashboardList(kind,title){const source=executiveDashboardTickets();let rows=[]; if(kind==='score') rows=source.filter(t=>t.Status==='Closed'||t.CurrentBasket==='Closed'); else if(kind.includes(':')){const [field,val]=kind.split(':'); rows=source.filter(t=>String(t[field]||'Unassigned')===val);} else rows=filterTickets(kind); dashList.innerHTML=miniTicketTable(title,rows);}
-function miniTicketTable(title,rows){return `<div class="panel"><h2>${esc(title)} Data</h2><div class="scroll"><table><thead><tr><th>Ref</th><th>Title</th><th>Assignee</th><th>Department</th><th>Cost Center</th><th>Status</th><th>Priority</th><th>System %</th><th>Exec1 %</th><th>Exec2 %</th><th>Final %</th></tr></thead><tbody>${rows.map(t=>`<tr><td><a class="ticket-link" onclick="openTicket('${t.TicketID}')">${esc(t.TicketID)}</a></td><td>${esc(t.Title)}</td><td>${esc(t.AssignedToName)}</td><td>${esc(t.Department)}</td><td>${esc(t.CostCenter)}</td><td>${status(t)}</td><td class="priority-${t.Priority}">${esc(t.Priority)}</td><td>${score(t.SystemScore)}</td><td>${score(t.Executive1Score)}</td><td>${score(t.Executive2Score)}</td><td>${finalScore(computedFinalNumber(t))}</td></tr>`).join('')||empty(11)}</tbody></table></div></div>`}
-function buildPerfOptions(){
-  const mode=document.getElementById('perfMode')?.value||'individual';
-  const sel=document.getElementById('perfValue'); if(!sel)return;
-  const users=activeUsers();
-  let vals=[];
-  if(mode==='individual') vals=users.map(u=>u.Name).filter(Boolean);
-  if(mode==='department') vals=users.map(u=>u.Department||'Unassigned').filter(Boolean);
-  if(mode==='costcenter') vals=users.map(u=>u.CostCenter||'Unassigned').filter(Boolean);
-  vals=[...new Set(vals)].sort();
-  const old=sel.value;
-  if(mode==='individual') sel.innerHTML='<option value="__ALL__">All Users</option>'+vals.map(v=>`<option>${esc(v)}</option>`).join('');
-  else if(mode==='department' || mode==='costcenter') sel.innerHTML='<option value="__ALL__">All '+(mode==='department'?'Departments':'Cost Centers')+'</option>'+vals.map(v=>`<option>${esc(v)}</option>`).join('');
-  else sel.innerHTML=vals.map(v=>`<option>${esc(v)}</option>`).join('');
-  if(vals.includes(old) || old==='__ALL__') sel.value=old; else sel.value='__ALL__';
-}
-function avgScore(rows){return avgComputedFinal(rows);}
-function groupPerformanceRows(field, sourceValues){const tickets=executiveDashboardTickets(); const names=[...new Set([...(sourceValues||[]),...tickets.map(t=>t[field]||'Unassigned')].filter(Boolean))].sort();return names.map(name=>{const rows=tickets.filter(t=>String(t[field]||'Unassigned')===String(name));const closed=rows.filter(t=>t.Status==='Closed'||t.CurrentBasket==='Closed');const late=rows.filter(t=>t.Status!=='Closed'&&isLate(t));return {name,rows,total:rows.length,closed:closed.length,late:late.length,avg:avgScore(rows)};});}
-function avgField(rows, field){const vals=rows.map(t=>Number(t[field])).filter(n=>!isNaN(n));return vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):'';}
-function performanceSummaryTable(title, groups, field){return `<div class="panel"><h2>${esc(title)}</h2><div class="scroll"><table><thead><tr><th>Name</th><th>Total Tickets</th><th>Closed</th><th>Open Late</th><th>System %</th><th>Exec1 %</th><th>Exec2 %</th><th>Final %</th><th>Action</th></tr></thead><tbody>${groups.map(g=>`<tr><td>${esc(g.name)}</td><td>${g.total}</td><td>${g.closed}</td><td>${g.late}</td><td>${score(avgField(g.rows,'SystemScore'))}</td><td>${score(avgField(g.rows,'Executive1Score'))}</td><td>${score(avgField(g.rows,'Executive2Score'))}</td><td>${finalScore(avgComputedFinal(g.rows))}</td><td><button class="btn" onclick="showPerformanceGroup('${esc(field)}','${esc(g.name)}')">Open Data</button></td></tr>`).join('')||empty(9)}</tbody></table></div></div>`;}
-function showPerformanceGroup(field,name){const rows=executiveDashboardTickets().filter(t=>String(t[field]||'Unassigned')===String(name));perfList.innerHTML=miniTicketTable('Performance Report - '+name, rows);}
-function renderPerformance(){const mode=document.getElementById('perfMode')?.value||'individual'; const val=document.getElementById('perfValue')?.value||''; const users=activeUsers(); const tickets=executiveDashboardTickets(); const field=mode==='individual'?'AssignedToName':mode==='department'?'Department':'CostCenter'; if(!document.getElementById('perfBody'))return;
-  if(mode==='department' || mode==='costcenter'){
-    const sourceValues=users.map(u=>mode==='department'?(u.Department||'Unassigned'):(u.CostCenter||'Unassigned'));
-    const groups=groupPerformanceRows(field, sourceValues);
-    const selected=val && val!=='__ALL__'?groups.find(g=>String(g.name)===String(val)):null;
-    const overall=selected?selected.avg:avgComputedFinal(tickets);
-    const chartObj={}; groups.forEach(g=>chartObj[g.name]=g.avg);
-    perfBody.innerHTML=`<div class="card"><h3>${esc(selected?selected.name:(mode==='department'?'All Departments':'All Cost Centers'))}</h3><div class="stat"><div class="l">Average performance</div><div class="v">${overall}%</div></div><p class="muted">Scores are averaged from closed ticket final scores stored in the Scores tab.</p></div><div class="card"><h3>${esc(mode==='department'?'Department Scores':'Cost Center Scores')}</h3>${dashBars(chartObj,'perfGroup:'+field)}</div>`;
-    perfList.innerHTML=performanceSummaryTable(mode==='department'?'All Department Scores':'All Cost Center Scores',groups,field)+(selected?miniTicketTable('Selected Data - '+selected.name, selected.rows):'');
-    return;
-  }
-  const rows=val==='__ALL__'?tickets:tickets.filter(t=>String(t[field]||'Unassigned')===String(val)); const title=val==='__ALL__'?'All Users':(val||'No Selection'); const closed=rows.filter(t=>t.Status==='Closed'||t.CurrentBasket==='Closed'); const late=rows.filter(t=>t.Status!=='Closed'&&isLate(t)); const critical=rows.filter(t=>String(t.Priority)==='Critical'&&t.Status!=='Closed'); const avg=avgScore(rows); const sysAvg=avgField(rows,'SystemScore'); const e1Avg=avgField(rows,'Executive1Score'); const e2Avg=avgField(rows,'Executive2Score'); perfBody.innerHTML=`<div class="card"><h3>${esc(title)}</h3><div class="stat"><div class="l">${esc(mode)} report</div><div class="v">${rows.length}</div></div><p class="muted">Total tickets included in the executive performance view.</p></div><div class="card"><h3>Scores</h3><p><b>System:</b> ${score(sysAvg)} &nbsp; <b>Exec1:</b> ${score(e1Avg)} &nbsp; <b>Exec2:</b> ${score(e2Avg)} &nbsp; <b>Final:</b> ${finalScore(avg)}</p></div><div class="card"><h3>Open Exceptions</h3>${dashBars({'Critical':critical.length,'Open Late':late.length,'Closed':closed.length},'perf')}</div>`; perfList.innerHTML=miniTicketTable('Performance Report - '+title, rows);}
-function printPerformance(){document.querySelectorAll('.section').forEach(s=>s.classList.remove('printTarget'));document.getElementById('performance').classList.add('printTarget');window.print();}
-function empty(n){return `<tr><td colspan="${n}" class="muted" style="text-align:center;padding:28px">No tickets found.</td></tr>`}
-function lateText(t){if(Number(t.LateDays||0)>0)return Number(t.LateDays)+' day(s) late';return t.TimeRemainingText||'0 days late';}
-function rowTask(t){return `<tr><td><a class="ticket-link" onclick="openTicket('${t.TicketID}')">${t.TicketID}</a></td><td>${esc(t.Title)}</td><td>${esc(t.AssignedToName)}</td><td>${fmt(t.DueDate)}</td><td>${esc(lateText(t))}</td><td>${status(t)}</td><td class="priority-${t.Priority}">${esc(t.Priority)}</td><td><button class="btn good" onclick="openTicket('${t.TicketID}')">Open</button></td></tr>`}
-function rowReview1(t){return `<tr><td><a class="ticket-link" onclick="openTicket('${t.TicketID}')">${t.TicketID}</a></td><td>${esc(t.Title)}</td><td>${fmt(t.SubmittedAt)}</td><td>${score(t.SystemScore)}</td><td>${esc(t.AssignedToName)}</td><td><button class="btn primary" onclick="openTicket('${t.TicketID}')">Review</button></td></tr>`}
-function rowReview2(t){return `<tr><td><a class="ticket-link" onclick="openTicket('${t.TicketID}')">${t.TicketID}</a></td><td>${esc(t.Title)}</td><td>${score(t.SystemScore)}</td><td>${score(t.Executive1Score)}</td><td>${esc(t.TimeRemainingText)}</td><td><button class="btn primary" onclick="openTicket('${t.TicketID}')">Review</button></td></tr>`}
-function rowClosed(t){return `<tr><td><a class="ticket-link" onclick="openTicket('${t.TicketID}')">${t.TicketID}</a></td><td>${esc(t.Title)}</td><td>${fmt(t.ClosedAt)}</td><td>${esc(t.ClosedTiming)}</td><td>${score(t.SystemScore)}</td><td>${score(t.Executive1Score)}</td><td>${score(t.Executive2Score)}</td><td>${finalScore(computedFinalNumber(t))}</td></tr>`}
-function status(t){const cls=t.Status==='Closed'?'s-closed':t.CurrentBasket==='Executive1'||t.CurrentBasket==='Executive2'?'s-review':String(t.TimeRemainingText).includes('late')?'s-late':'s-open';return `<span class="status ${cls}">${esc(t.Status)}</span>`}
-function score(v){const n=Number(v);return (v===''||v==null||isNaN(n))?'—':`${Math.round(n)}%`}
-function finalScoreClass(v){const n=Number(v); if(isNaN(n))return ''; if(n<50)return 'score-final-red'; if(n>=90)return 'score-final-black'; if(n>=75)return 'score-final-blue'; return 'score-final-green';}
-function finalScore(v){const n=Number(v);return (v===''||v==null||isNaN(n))?'—':`<span class="${finalScoreClass(n)}">${Math.round(n)}%</span>`}
-function linkListFromUploadAttachment(v){return String(v||'').split(/\s+/).filter(x=>/^https?:\/\//i.test(x)).map((url,i)=>`<div class="fileline"><a target="_blank" href="${esc(url)}">Ticket upload link ${i+1}</a></div>`).join('');}
-function fmt(v){return v?String(v).replace('T',' ').slice(0,16):'—'}
-function esc(v){return String(v??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
-
-function createTicket(){newErr.textContent='';newMsg.textContent='';const mode=document.querySelector('[name=mode]:checked').value;const base={userId:USER.UserID,assignedToUserId:ntAssignee.value,title:ntTitle.value,description:ntDesc.value,priority:ntPriority.value,department:ntDept.value,costCenter:ntCostCenter.value};const action=mode==='recurring'?'createRecurringTicket':'createTicket';const data=mode==='recurring'?{...base,startDate:rtStart.value,frequency:rtFreq.value,dueDays:rtDueDays.value,occurrences:rtOcc.value}:{...base,issueDate:ntIssue.value,dueDate:ntDue.value};postApi(action,data).then((res)=>{const first=(res.ticket||((res.tickets||[])[0])||{}); const msg=buildNewTaskWhatsAppCopy(first.TicketID); newMsg.textContent=' Ticket created. WhatsApp message copied/opened for assignee.'; copyText(msg); const u=selectedAssignee(); const phone=cleanPhone(u.WhatsApp||u.Phone); if(phone) window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(msg),'_blank'); ntTitle.value='';ntDesc.value='';refresh();}).catch(e=>newErr.textContent=e.message);}
-
-let DETAIL=null;
-function openTicket(id){postApi('getTicketDetail',{userId:USER.UserID,ticketId:id}).then(d=>{DETAIL=d;drawDrawer();drawer.classList.add('open');scrim.classList.add('open');}).catch(e=>{
-  const cached=(STATE.tickets||[]).find(t=>String(t.TicketID)===String(id));
-  if(cached && (cached.CurrentBasket==='Executive2'||cached.CurrentBasket==='Executive1'||isMineAsCreator(cached)||isMineAsAssignee(cached)||isExecutiveUser())){
-    DETAIL={ticket:cached,attachments:[],comments:[{UserName:'System',Role:'Notice',CreatedAt:new Date().toISOString(),Comment:'Ticket detail could not be loaded from Apps Script, but the cached ticket is available. You can still attempt the authorised workflow action.'}],timeRequests:[]};
-    drawDrawer();drawer.classList.add('open');scrim.classList.add('open');
-    return;
-  }
-  alertErr(e);
-});}
-function closeDrawer(){drawer.classList.remove('open');scrim.classList.remove('open');}
-function drawDrawer(){const t=DETAIL.ticket;dRef.textContent=t.TicketID;dStatus.outerHTML=`<span id="dStatus" class="status ${t.Status==='Closed'?'s-closed':t.CurrentBasket==='Executive1'||t.CurrentBasket==='Executive2'?'s-review':'s-open'}">${esc(t.Status)}</span>`;dBody.innerHTML=`<h2>${esc(t.Title)}</h2><p class="muted">${esc(t.Description||'No description')}</p><div class="kv"><div><small>Created by</small><b>${esc(t.CreatedByName)}</b></div><div><small>Assigned to</small><b>${esc(t.AssignedToName)}</b></div><div><small>Assignee Email</small><b>${esc(t.AssignedToEmail||'')}</b></div><div><small>Assignee WhatsApp</small><b>${esc(t.AssignedToWhatsApp||'')}</b></div><div><small>Department</small><b>${esc(t.Department||'')}</b></div><div><small>Cost Center</small><b>${esc(t.CostCenter||'')}</b></div><div><small>Due Date</small><b>${fmt(t.DueDate)}</b></div><div><small>Submission Date</small><b>${fmt(t.SubmittedAt)}</b></div><div><small>Time lapse</small><b>${esc(t.TimeRemainingText)}</b></div><div><small>System Score</small><b>${score(t.SystemScore)}</b></div><div><small>Final Score</small><b>${finalScore(computedFinalNumber(t))}</b></div><div><small>Executive1</small><b>${score(t.Executive1Score)} ${esc(t.Executive1Name||'')}</b></div><div><small>Executive2</small><b>${score(t.Executive2Score)} ${esc(t.Executive2Name||'')}</b></div></div><div class="copybar"><button class="btn" onclick="copyTicketWhatsApp()">Copy Task to WhatsApp</button><button class="btn good" onclick="openTicketWhatsApp()">Open WhatsApp to Assignee</button></div><h3>Attachments</h3>${(DETAIL.attachments.map(a=>`<div class="fileline"><a target="_blank" href="${a.DriveUrl}">${esc(a.FileName)}</a></div>`).join('') + linkListFromUploadAttachment(t.UploadAttachment)) || '<p class="muted">No attachments.</p>'}<div class="f"><label>Upload Attachment / File</label><input type="file" id="fileUp"><button class="btn" onclick="uploadFile()">Upload File</button></div><h3>Comments</h3><div class="comments">${DETAIL.comments.map(c=>`<div class="comment"><div class="meta">${esc(c.UserName)} · ${esc(c.Role)} · ${fmt(c.CreatedAt)}</div>${esc(c.Comment)}${c.DriveUrl?`<div class="fileline"><a target="_blank" href="${c.DriveUrl}">${esc(c.FileName||'View upload')}</a></div>`:''}</div>`).join('')||'<p class="muted">No comments.</p>'}</div><div class="f"><label>Add Comment</label><textarea id="commentTxt"></textarea><button class="btn" onclick="addComment()">Post Comment</button></div><h3>More Time Requests</h3><div class="comments">${(DETAIL.timeRequests||[]).map(r=>`<div class="comment"><div class="meta">${esc(r.RequestedByName)} · ${fmt(r.CreatedAt)} · ${esc(r.Status)}</div>Requested date: <b>${esc(r.RequestedDueDate)}</b><br>${esc(r.Reason||'')}</div>`).join('')||'<p class="muted">No time extension requests.</p>'}</div>`;drawActions(t);}
-function hasPendingTimeRequest(){return (DETAIL.timeRequests||[]).some(r=>String(r.Status||'').indexOf('Approved')<0 && String(r.Status||'').indexOf('Rejected')<0);}
-function drawActions(t){
-  let html='';
-  const role=userRoleKey();
-  const isAdmin=(role==='admin'||role==='adminmanager');
-
-  // USER SUBMISSION FIX ONLY:
-  // Assignees such as Brighton / Leah must always be able to upload, approve their work,
-  // and send the ticket to Executive1 while the ticket is still in the user/assignee stage.
-  // Ticket creators do NOT get this button unless they are also the assigned user.
-  const basketKey=String(t.CurrentBasket||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-  const statusKey=String(t.Status||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-  const isUserStage=!['executive1','executive2','closed','creatorreview'].includes(basketKey) && statusKey!=='closed';
-  const canSubmit=isUserStage && (isMineAsAssignee(t)||isAdmin);
-  if(canSubmit) html+=`<button class="btn primary" onclick="submitTicket()">Approve & Send to Executive1</button><div class="scorebox"><label>Request more time</label><input id="moreTimeDate" type="date"><input id="moreTimeReason" placeholder="Reason for more time"><button class="btn" onclick="requestMoreTime()">Send Request</button></div>`;
-  if(hasPendingTimeRequest()&&(isMineAsCreator(t)||role==='executive1'||role==='exec1'||isAdmin)) html+=`<button class="btn good" onclick="approveMoreTime()">Approve More Time Request</button>`;
-  if(t.CurrentBasket==='Executive1'&&(role==='executive1'||role==='exec1'||isAdmin)) html+=`<div class="scorebox"><label>Executive1 Score %</label><input id="scoreIn" type="number" min="0" max="100" value="100"><input id="scoreComment" placeholder="Approval / return comment"><button class="btn primary" onclick="approve1()">Approve</button><input id="returnDue" type="date" title="New due date"><button class="btn bad" onclick="returnTicket()">Return / Re-open</button></div>`;
-  if((t.CurrentBasket==='Executive2')&&(role==='executive2'||role==='exec2'||isAdmin)) html+=`<div class="scorebox"><span class="pill">System Score: ${score(t.SystemScore)}</span><label>Executive2 Score %</label><input id="scoreIn" type="number" min="0" max="100" value="100"><input id="scoreComment" placeholder="Closing / return comment"><button class="btn primary" onclick="approve2()">Approve & Close</button><input id="returnDue" type="date" title="New due date"><button class="btn bad" onclick="returnTicket()">Return / Re-open</button></div>`;
-  dActions.innerHTML=html||'<span class="muted">No action available for your role on this ticket.</span>';
-  const rd=document.getElementById('returnDue');if(rd){const d=new Date();d.setDate(d.getDate()+1);rd.value=d.toISOString().slice(0,10);}const md=document.getElementById('moreTimeDate');if(md){const d=new Date();d.setDate(d.getDate()+2);md.value=d.toISOString().slice(0,10);}
-}
-function requestMoreTime(){const d=document.getElementById('moreTimeDate')?.value; if(!d)return alert('Select the new requested submission date.');postApi('requestMoreTime',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,requestedDueDate:d,reason:document.getElementById('moreTimeReason')?.value||''}).then(()=>{alert('More time request sent to Executive1 and ticket creator for approval.');refresh();openTicket(DETAIL.ticket.TicketID);}).catch(alertErr)}
-function approveMoreTime(){postApi('approveMoreTime',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,comment:scoreComment?.value||commentTxt?.value||''}).then(()=>{alert('More time approval captured. If both required approvals are complete, the new submission date has been applied.');refresh();openTicket(DETAIL.ticket.TicketID);}).catch(alertErr)}
-function returnTicket(){const due=document.getElementById('returnDue')?.value; if(!due)return alert('Select a new due date before returning this ticket.');postApi('returnTicket',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,newDueDate:due,comment:scoreComment?.value||commentTxt?.value||''}).then(()=>{alert('Ticket returned and re-opened with a new due date.');refresh();openTicket(DETAIL.ticket.TicketID)}).catch(alertErr)}
-function addComment(){postApi('addComment',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,comment:commentTxt.value}).then(()=>openTicket(DETAIL.ticket.TicketID)).catch(alertErr)}
-
-function readFileAsBase64(file){
-  return new Promise((resolve,reject)=>{
-    const r=new FileReader();
-    r.onload=()=>resolve(String(r.result).split(',')[1]||'');
-    r.onerror=()=>reject(new Error('Could not read the selected attachment.'));
-    r.readAsDataURL(file);
+  driverRows.forEach((d,di)=>{
+    if (usedDriver.has(di)) return;
+    rows.push(makeReconRow(null,null,d,duplicateCounts));
   });
+  reconRows = rows.sort((a,b)=>(a.date||'').localeCompare(b.date||'') || String(a.vehicle).localeCompare(String(b.vehicle)) || String(a.er).localeCompare(String(b.er)));
+  renderRecon(); renderSummary(); updateKpis();
+  if (APPS_SCRIPT_URL) uploadReconToSheet();
 }
-async function uploadFileChunked(file, ticketId, comment){
-  // Attachments now use POST instead of JSONP. This avoids URL-length failures
-  // and is the recommended method for images, PDFs, Word/Excel files and other documents.
-  const maxBytes = 18 * 1024 * 1024;
-  if(file.size > maxBytes){
-    throw new Error('File is too large. Please upload a file smaller than 18MB, or compress/split it.');
-  }
-  const base64 = await readFileAsBase64(file);
-  return postApi('uploadAttachmentPost', {
-    userId: USER.UserID,
-    ticketId: ticketId,
-    fileName: file.name,
-    mimeType: file.type || 'application/octet-stream',
-    base64: base64,
-    comment: comment || ''
-  });
+function renderRecon(){
+  const tbody = document.querySelector('#reconTable tbody');
+  if (!reconRows.length) { tbody.innerHTML = '<tr><td colspan="17">No reconciliation records yet.</td></tr>'; return; }
+  tbody.innerHTML = reconRows.map(r=>{
+    const cls = r.status === 'Matched' ? 'match' : r.status === 'Mismatch' || r.status === 'Duplicate ER' ? 'mismatch' : 'missing';
+    return `<tr class="${cls}"><td>${r.date}</td><td>${r.er}</td><td>${r.vehicle}</td><td>${r.driver}</td><td>${r.costCenter}</td><td>${r.department}</td><td>${money(r.bankAmount)}</td><td>${money(r.zohoAmount)}</td><td>${money(r.driverAmount)}</td><td>${money(r.varianceBZ)}</td><td>${money(r.varianceZD)}</td><td>${money(r.varianceBD)}</td><td class="${varianceClass(r.varianceBZ, r.bankAmount)}">${percentText(r.varianceBZ, r.bankAmount)}</td><td class="${varianceClass(r.varianceZD, r.zohoAmount)}">${percentText(r.varianceZD, r.zohoAmount)}</td><td class="${varianceClass(r.varianceBD, r.bankAmount)}">${percentText(r.varianceBD, r.bankAmount)}</td><td>${r.status}</td><td>${r.issue}</td></tr>`;
+  }).join('');
 }
 
-async function submitTicket(){
-  const f=document.getElementById('fileUp')?.files?.[0];
+
+function renderZoho(){
+  const tbody = document.querySelector('#zohoTable tbody');
+  if (!zohoRows.length) { tbody.innerHTML = '<tr><td colspan="5">No Zoho rows loaded.</td></tr>'; return; }
+  tbody.innerHTML = zohoRows.map(r=>`<tr><td>${r.date}</td><td>${r.er}</td><td>${r.vehicle}</td><td>${money(r.amount)}</td><td>${r.status}</td></tr>`).join('');
+}
+
+function renderFuelLog(){
+  const tbody = document.querySelector('#fuelLogTable tbody');
+  if (!driverRows.length) { tbody.innerHTML = '<tr><td colspan="12">No Driver Fuel Log rows loaded.</td></tr>'; return; }
+  tbody.innerHTML = driverRows.map(r=>`<tr><td>${r.date}</td><td>${r.er}</td><td>${r.driver}</td><td>${r.vehicle}</td><td>${r.merchant}</td><td>${money(r.amount)}</td><td>${money(num(r.raw['Grand Total']))}</td><td>${r.litres.toFixed(2)}</td><td>${r.costCenter}</td><td>${r.department}</td><td>${r.km.toFixed(2)}</td><td>${r.status}</td></tr>`).join('');
+}
+
+function periodKey(dateStr){
+  if (document.getElementById('periodMode').value === 'all') return '';
+  const d = new Date(dateStr); if (isNaN(d.getTime())) return 'Unknown date';
+  const mode = document.getElementById('periodMode').value;
+  const y = d.getFullYear(); const m = d.getMonth()+1;
+  if (mode === 'daily') return dateStr;
+  if (mode === 'monthly') return `${y}-${String(m).padStart(2,'0')}`;
+  if (mode === 'quarterly') return `${y} Q${Math.floor((m-1)/3)+1}`;
+  const onejan = new Date(y,0,1); const week = Math.ceil((((d - onejan) / 86400000) + onejan.getDay()+1)/7);
+  return `${y} W${String(week).padStart(2,'0')}`;
+}
+
+function summaryGroupLabel(r){
+  const groupBy = document.getElementById('groupBy').value;
+
+  // Cost Center view uses Driver Fuel Log fields as the source of truth, then splits further by Department and Vehicle Registration.
+  if (groupBy === 'costCenter') {
+    const costCenter = r.driverCostCenter || r.costCenter || 'Unknown Cost Center';
+    const department = r.driverDepartment || r.department || 'Unknown Department';
+    const vehicle = r.driverVehicle || r.vehicle || 'Unknown Vehicle';
+    return `${costCenter} · ${department} · ${vehicle}`;
+  }
+  if (groupBy === 'department') return r.department || 'Unknown Department';
+  if (groupBy === 'driver') return r.driver || 'Unknown Driver';
+  return r.vehicle || 'Unknown Vehicle';
+}
+
+function renderSummary(){
+  const periodMode = document.getElementById('periodMode').value;
+  const groupBy = document.getElementById('groupBy').value;
+  const summary = new Map();
+
+  // When Cost Center is selected, keep only rows carrying Driver Fuel Log context and group them by Cost Center -> Department -> Vehicle.
+  const sourceRows = groupBy === 'costCenter' ? reconRows.filter(r => r.driverAmount || r.driverCostCenter || r.driverDepartment || r.driverVehicle) : reconRows;
+
+  sourceRows.forEach(r=>{
+    let key = summaryGroupLabel(r);
+    const pk = periodKey(r.date);
+    if (periodMode !== 'all') key = `${pk} · ${key}`;
+    if (!summary.has(key)) summary.set(key,{group:key,bank:0,zoho:0,driver:0,varianceBZ:0,varianceZD:0,varianceBD:0,count:0,costCenter:r.driverCostCenter || r.costCenter || 'Unknown Cost Center',department:r.driverDepartment || r.department || 'Unknown Department',vehicle:r.driverVehicle || r.vehicle || 'Unknown Vehicle'});
+    const x = summary.get(key);
+    x.bank += r.bankAmount;
+    x.zoho += r.zohoAmount;
+    x.driver += r.driverAmount;
+    x.varianceBZ += r.varianceBZ;
+    x.varianceZD += r.varianceZD;
+    x.varianceBD += r.varianceBD;
+    x.count++;
+  });
+
+  const arr = Array.from(summary.values()).sort((a,b)=>{
+    if (groupBy === 'costCenter') {
+      return String(a.costCenter).localeCompare(String(b.costCenter)) || String(a.department).localeCompare(String(b.department)) || String(a.vehicle).localeCompare(String(b.vehicle));
+    }
+    return Math.abs(b.varianceBD)-Math.abs(a.varianceBD) || b.bank-a.bank;
+  });
+
+  const totals = arr.reduce((t,x)=>{
+    t.bank += x.bank;
+    t.zoho += x.zoho;
+    t.driver += x.driver;
+    t.varianceBZ += x.varianceBZ;
+    t.varianceZD += x.varianceZD;
+    t.varianceBD += x.varianceBD;
+    t.count += x.count;
+    return t;
+  }, {bank:0, zoho:0, driver:0, varianceBZ:0, varianceZD:0, varianceBD:0, count:0});
+
+  const rowsHtml = arr.map(x=>`<tr><td>${x.group}</td><td>${money(x.bank)}</td><td>${money(x.zoho)}</td><td>${money(x.driver)}</td><td>${money(x.varianceBZ)}</td><td>${money(x.varianceZD)}</td><td>${money(x.varianceBD)}</td><td class="${varianceClass(x.varianceBZ, x.bank)}">${percentText(x.varianceBZ, x.bank)}</td><td class="${varianceClass(x.varianceZD, x.zoho)}">${percentText(x.varianceZD, x.zoho)}</td><td class="${varianceClass(x.varianceBD, x.bank)}">${percentText(x.varianceBD, x.bank)}</td><td>${x.count}</td></tr>`).join('');
+
+  const totalRow = `<tr style="font-weight:bold; background:#eef4fa;"><td>TOTAL</td><td>${money(totals.bank)}</td><td>${money(totals.zoho)}</td><td>${money(totals.driver)}</td><td>${money(totals.varianceBZ)}</td><td>${money(totals.varianceZD)}</td><td>${money(totals.varianceBD)}</td><td class="${varianceClass(totals.varianceBZ, totals.bank)}">${percentText(totals.varianceBZ, totals.bank)}</td><td class="${varianceClass(totals.varianceZD, totals.zoho)}">${percentText(totals.varianceZD, totals.zoho)}</td><td class="${varianceClass(totals.varianceBD, totals.bank)}">${percentText(totals.varianceBD, totals.bank)}</td><td>${totals.count}</td></tr>`;
+
+  document.querySelector('#summaryTable tbody').innerHTML = arr.length ? rowsHtml + totalRow : '<tr><td colspan="11">No summary yet.</td></tr>';
+  updateVarianceKpis(totals);
+  renderChart(arr);
+}
+
+function renderChart(arr){
+  const ctx = document.getElementById('pieChart');
+  const groupBy = document.getElementById('groupBy').value;
+  const chartTitle = document.getElementById('pieChartTitle');
+  if (chartTitle) chartTitle.textContent = groupBy === 'costCenter' ? 'Pie Chart by Cost Center' : groupBy === 'department' ? 'Pie Chart by Department' : groupBy === 'driver' ? 'Pie Chart by Driver Name' : 'Pie Chart by Vehicle Registration';
+  if (pieChart) pieChart.destroy();
+
+  let chartRows = arr;
+  if (groupBy === 'costCenter') {
+    const costCenterTotals = new Map();
+    arr.forEach(x=>{
+      const key = x.costCenter || 'Unknown Cost Center';
+      costCenterTotals.set(key, (costCenterTotals.get(key) || 0) + x.driver);
+    });
+    chartRows = Array.from(costCenterTotals.entries()).map(([group, driver])=>({group, bank:driver, driver}));
+  }
+
+  pieChart = new Chart(ctx,{type:'pie',data:{labels:chartRows.map(x=>`${x.group} - ${money(groupBy === 'costCenter' ? x.driver : x.bank)}`),datasets:[{data:chartRows.map(x=>groupBy === 'costCenter' ? x.driver : x.bank)}]},options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(context){return `${context.label}`;}}}}}});
+}
+
+function updateVarianceKpis(totals){
+  const safeTotals = totals || reconRows.reduce((t,r)=>{
+    t.bank += r.bankAmount;
+    t.zoho += r.zohoAmount;
+    t.driver += r.driverAmount;
+    t.varianceBZ += r.varianceBZ;
+    t.varianceZD += r.varianceZD;
+    t.varianceBD += r.varianceBD;
+    return t;
+  }, {bank:0, zoho:0, driver:0, varianceBZ:0, varianceZD:0, varianceBD:0});
+  document.getElementById('kpiVarianceBZ').textContent = percentText(safeTotals.varianceBZ, safeTotals.bank);
+  document.getElementById('kpiVarianceZD').textContent = percentText(safeTotals.varianceZD, safeTotals.zoho);
+  document.getElementById('kpiVarianceBD').textContent = percentText(safeTotals.varianceBD, safeTotals.bank);
+  document.getElementById('kpiVarianceBZ').className = Math.abs(percent(safeTotals.varianceBZ, safeTotals.bank)) > 5 ? 'value err' : 'value';
+  document.getElementById('kpiVarianceZD').className = Math.abs(percent(safeTotals.varianceZD, safeTotals.zoho)) > 5 ? 'value err' : 'value';
+  document.getElementById('kpiVarianceBD').className = Math.abs(percent(safeTotals.varianceBD, safeTotals.bank)) > 5 ? 'value err' : 'value';
+}
+
+
+function updateKpis(){
+  const bankTotal = bankRows.reduce((s,r)=>s+r.amount,0);
+  const zohoTotal = zohoRows.reduce((s,r)=>s+r.amount,0);
+  const driverTotal = driverRows.reduce((s,r)=>s+r.amount,0);
+  document.getElementById('kpiBank').textContent = money(bankTotal);
+  document.getElementById('kpiZoho').textContent = money(zohoTotal);
+  document.getElementById('kpiDriver').textContent = money(driverTotal);
+  document.getElementById('kpiExceptions').textContent = reconRows.filter(r=>r.status!=='Matched').length;
+  document.getElementById('kpiMissingZoho').textContent = reconRows.filter(r=>r.bankAmount && !r.zohoAmount).length;
+  document.getElementById('kpiMissingDriver').textContent = reconRows.filter(r=>(r.bankAmount || r.zohoAmount) && !r.driverAmount).length;
+  document.getElementById('kpiDuplicateEr').textContent = reconRows.filter(r=>r.isDuplicateEr).length;
+  updateVarianceKpis();
+}
+
+
+function exportWorkbook(type){
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(reconRows), 'Fuel Recon');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(zohoRows), 'Zoho Mapped');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(driverRows), 'Driver Fuel Log');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(bankRows), 'Bank Mapped');
+  if (type === 'csv') XLSX.writeFile(wb, 'fuel_recon.csv');
+  else XLSX.writeFile(wb, 'fuel_recon.xlsx');
+}
+
+async function uploadReconToSheet(){
   try{
-    if(f) await uploadFileChunked(f, DETAIL.ticket.TicketID, commentTxt?.value||'');
-    await postApi('submitTicket',{userId:USER.UserID,ticketId:DETAIL.ticket.TicketID,comment:commentTxt?.value||''});
-    updateTicketInCache(DETAIL.ticket.TicketID,{CurrentBasket:'Executive1',Status:'Submitted',SubmittedAt:new Date().toISOString()});
-    alert('Ticket submitted successfully. It has moved to Executive1 Review and disappeared from the assignee open basket.');
-    closeDrawer();
-    loadTicketsView('all',500,{silent:true,background:true});
-  }catch(e){alertErr(e);}
-}
-function approve1(){const ticketId=DETAIL.ticket.TicketID;postApi('executive1Approve',{userId:USER.UserID,ticketId:ticketId,score:scoreIn.value,comment:scoreComment.value}).then(()=>{updateTicketInCache(ticketId,{CurrentBasket:'Executive2',Executive1Score:scoreIn.value,Executive1Name:USER.Name,Status:'Submitted'});alert('Executive1 approval successful. Ticket moved to Executive2 and disappeared from Executive1 Review.');closeDrawer();loadTicketsView('all',500,{silent:true,background:true});}).catch(alertErr)}
-function approve2(){const ticketId=DETAIL.ticket.TicketID;postApi('executive2Approve',{userId:USER.UserID,ticketId:ticketId,score:scoreIn.value,comment:scoreComment.value}).then(()=>{updateTicketInCache(ticketId,{CurrentBasket:'Closed',Status:'Closed',Executive2Score:scoreIn.value,Executive2Name:USER.Name,ClosedAt:new Date().toISOString(),ClosedTiming:DETAIL.ticket.ClosedTiming||DETAIL.ticket.TimeRemainingText||''});alert('Executive2 approval successful. Ticket is permanently closed and removed from Executive2 Review.');closeDrawer();CURRENT_FILTER='closed';showTab('closed');loadTicketsView('all',500,{silent:true,background:true});}).catch(alertErr)}
-function uploadFile(){
-  const f=fileUp.files[0];
-  if(!f) return alert('Choose a file first.');
-  uploadFileChunked(f, DETAIL.ticket.TicketID, commentTxt?.value||'')
-    .then(()=>{alert('Attachment uploaded successfully. The Drive link has been posted to Tickets.UploadAttachment and Updates.');refresh();openTicket(DETAIL.ticket.TicketID);})
-    .catch(alertErr);
+    await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'uploadFuelRecon',sheetId:SHEET_ID,sheetTab:FUEL_RECON_TAB,rows:reconRows})});
+  }catch(e){ console.warn('Could not upload to Fuel Recon tab', e); }
 }
 
-if(USER) start();
+function downloadPdfReport(){
+  window.print();
+}
+
+document.getElementById('bankFile').addEventListener('change',handleBankUpload);
+document.getElementById('zohoFile').addEventListener('change',handleZohoUpload);
+document.getElementById('loadFuelLogBtn').addEventListener('click',loadDriverLog);
+document.getElementById('reconcileBtn').addEventListener('click',runReconciliation);
+document.getElementById('exportExcelBtn').addEventListener('click',()=>exportWorkbook('xlsx'));
+document.getElementById('exportCsvBtn').addEventListener('click',()=>exportWorkbook('csv'));
+document.getElementById('downloadPdfBtn').addEventListener('click',downloadPdfReport);
+document.getElementById('groupBy').addEventListener('change',renderSummary);
+document.getElementById('periodMode').addEventListener('change',renderSummary);
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById(btn.dataset.panel).classList.add('active');}));
+
+loadDriverLog();
+updateKpis();
+updateMappingInfo();
 </script>
 </body>
 </html>
