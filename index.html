@@ -2,378 +2,991 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LM Commodities Income & Expenditure</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Distinct Infrastructure · Insurance Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    :root { --bg:#f5f7fb; --card:#fff; --text:#172033; --muted:#667085; --brand:#1f7a4d; --bad:#b42318; --warn:#b54708; --line:#d9dee8; }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family:Arial, sans-serif; background:var(--bg); color:var(--text); }
-    .brand-lockup { display:flex; align-items:center; gap:12px; }
-    .brand-logo { width:72px; height:72px; object-fit:contain; border-radius:14px; background:#fff; box-shadow:0 8px 24px rgba(0,0,0,.12); }
-    .top-logo { width:48px; height:48px; object-fit:contain; border-radius:10px; background:#fff; margin-right:10px; vertical-align:middle; }
-    .wa-link { display:inline-block; margin-top:6px; padding:8px 10px; border-radius:9px; background:#25D366; color:#fff; text-decoration:none; font-weight:700; font-size:12px; }
+    :root {
+      --primary-blue: #0b2f6b;
+      --deep-blue: #071f47;
+      --bright-blue: #1464d2;
+      --soft-blue: #eaf3ff;
+      --gold: #d4af37;
+      --gold-light: #ffe7a3;
+      --gold-deep: #9a7416;
+      --white: #ffffff;
+      --text: #12304f;
+      --muted: #6b7a90;
+      --line: rgba(20,68,126,0.16);
+      --shadow: 0 20px 60px rgba(7,31,71,0.18);
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Roboto, Arial, sans-serif; }
+    body {
+      min-height:100vh;
+      background: radial-gradient(circle at top left, rgba(212,175,55,0.32), transparent 30%),
+                  linear-gradient(135deg, var(--deep-blue) 0%, var(--primary-blue) 45%, var(--bright-blue) 100%);
+      padding:24px;
+      color:var(--text);
+      overflow-x:hidden;
+    }
+    body::before {
+      content:"";
+      position:fixed;
+      inset:-30%;
+      background:linear-gradient(120deg, transparent, rgba(255,255,255,0.12), transparent);
+      animation:shine 8s linear infinite;
+      pointer-events:none;
+    }
+    @keyframes shine {
+      0%{transform:translateX(-40%) rotate(10deg)}
+      100%{transform:translateX(40%) rotate(10deg)}
+    }
+    .container {
+      max-width:1600px;
+      margin:auto;
+      background:rgba(255,255,255,0.96);
+      padding:28px;
+      border-radius:26px;
+      box-shadow:var(--shadow);
+      border:1px solid rgba(255,255,255,0.5);
+      animation:pageIn 0.75s ease both;
+    }
+    @keyframes pageIn {
+      from{opacity:0; transform:translateY(18px)}
+      to{opacity:1; transform:translateY(0)}
+    }
+    .header {
+      text-align:center;
+      margin-bottom:28px;
+      padding:28px 20px;
+      border-radius:22px;
+      background:linear-gradient(135deg, var(--primary-blue), var(--bright-blue));
+      color:white;
+      box-shadow:0 14px 35px rgba(11,47,107,0.28);
+      position:relative;
+      overflow:hidden;
+    }
+    .header::after {
+      content:"";
+      position:absolute;
+      width:180px;
+      height:180px;
+      border-radius:50%;
+      background:rgba(212,175,55,0.25);
+      right:-50px;
+      top:-70px;
+      animation:floatOrb 5s ease-in-out infinite alternate;
+    }
+    @keyframes floatOrb {
+      from{transform:translateY(0) scale(1)}
+      to{transform:translateY(22px) scale(1.08)}
+    }
+    .header h1 { color:white; margin-bottom:8px; font-size:clamp(26px, 4vw, 42px); letter-spacing:0.5px; }
+    .header p { color:#eef6ff; font-size:14px; line-height:1.5; position:relative; z-index:1; }
+    .header strong { color:var(--gold-light); }
+
+    /* Dashboard Cards */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 18px;
+      margin: 28px 0 24px 0;
+    }
+    .stat-card {
+      background: white;
+      padding: 18px 12px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 18px rgba(11,47,107,0.06);
+      text-align: center;
+      transition: transform var(--transition), box-shadow var(--transition);
+      background: rgba(255,255,255,0.85);
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 30px rgba(11,47,107,0.12);
+      border-color: var(--gold);
+    }
+    .stat-card i {
+      font-size: 28px;
+      color: var(--bright-blue);
+      background: var(--soft-blue);
+      padding: 10px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+    .stat-card .count {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--primary-blue);
+      line-height: 1.2;
+    }
+    .stat-card .label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .stat-card .sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+      font-weight: 600;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin: 12px 0 22px 0;
+      gap: 12px;
+    }
+    .action-row .btn-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+      color: #071f47;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 15px;
+      box-shadow: 0 10px 24px rgba(154,116,22,0.28);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-gold:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 32px rgba(154,116,22,0.36);
+      filter: saturate(1.1);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--primary-blue);
+      color: var(--primary-blue);
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-outline:hover {
+      background: var(--primary-blue);
+      color: white;
+    }
+    .btn-success {
+      background: var(--success);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-success:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+
+    .status {
+      margin-top:16px;
+      font-weight:bold;
+      color:var(--primary-blue);
+      background:rgba(212,175,55,0.16);
+      border-left:5px solid var(--gold);
+      padding:12px 14px;
+      border-radius:12px;
+      min-height:20px;
+    }
+    .status.error {
+      border-left-color: var(--danger);
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+    }
+    .status.success {
+      border-left-color: var(--success);
+      background: rgba(34, 197, 94, 0.1);
+      color: var(--success);
+    }
+
+    .table-wrap {
+      width:100%;
+      overflow-x:auto;
+      border-radius:18px;
+      border:1px solid var(--line);
+      margin-top:28px;
+      box-shadow:0 10px 24px rgba(11,47,107,0.08);
+    }
+    table {
+      width:100%;
+      min-width:1200px;
+      border-collapse:collapse;
+      background:white;
+      font-size:13px;
+    }
+    th {
+      background:linear-gradient(135deg, var(--primary-blue), var(--bright-blue));
+      color:white;
+      padding:12px 10px;
+      text-align:left;
+      font-size:12px;
+      white-space:nowrap;
+      border-bottom:3px solid var(--gold);
+      position:sticky;
+      top:0;
+      z-index:10;
+    }
+    td {
+      padding:10px 10px;
+      border-bottom:1px solid var(--line);
+      color:var(--text);
+      white-space:nowrap;
+      max-width:200px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    tr:hover { background:#f4f8ff; }
     .hidden { display:none !important; }
-    .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
-    .login-card, .card { background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:0 10px 30px rgba(20,30,50,.07); }
-    .login-card { width:420px; padding:28px; }
-    h1,h2,h3 { margin:0 0 14px; }
-    label { display:block; font-weight:700; margin:10px 0 6px; font-size:13px; }
-    input, select, textarea { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; font-size:14px; background:#fff; }
-    textarea { min-height:80px; resize:vertical; }
-    button { border:0; border-radius:10px; padding:11px 14px; background:var(--brand); color:white; font-weight:700; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease; }
-    button:hover { transform:translateY(-1px); box-shadow:0 8px 18px rgba(31,122,77,.22); opacity:.95; }
-    button:disabled { opacity:.65; cursor:wait; transform:none; box-shadow:none; }
-    .syncing { position:relative; pointer-events:none; opacity:.78; }
-    .syncing::after { content:'Synchronising...'; position:fixed; right:18px; top:78px; background:#0b2b1c; color:#fff; padding:10px 14px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.18); z-index:5; }
-    .filters { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; align-items:end; }
-    .report-box { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; margin-top:14px; }
-    @media print { .topbar,.tabs,button,.no-print { display:none !important; } body { background:#fff; } .card { box-shadow:none; border:0; } }
-    button.secondary { background:#344054; } button.danger { background:var(--bad); } button.light { background:#eef2f6; color:#172033; }
-    .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:#0b2b1c; color:#fff; position:sticky; top:0; z-index:2; }
-    .tabs { display:flex; gap:8px; flex-wrap:wrap; padding:14px 20px; background:#fff; border-bottom:1px solid var(--line); }
-    .tabs button { background:#eef2f6; color:#172033; } .tabs button.active { background:var(--brand); color:#fff; }
-    .main { padding:20px; max-width:1400px; margin:0 auto; }
-    .grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px; }
-    .grid2 { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; }
-    .card { padding:16px; margin-bottom:16px; }
-    .metric { font-size:24px; font-weight:800; margin-top:8px; } .muted { color:var(--muted); font-size:13px; }
-    .row { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; }
-    .row3 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; }
-    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; }
-    th,td { padding:10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; vertical-align:top; }
-    th { background:#f0f3f8; }
-    .pill { display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700; background:#eef2f6; }
-    .ok { color:var(--brand); } .bad { color:var(--bad); } .warn { color:var(--warn); }
-    .toast { position:fixed; right:18px; bottom:18px; background:#172033; color:#fff; padding:12px 16px; border-radius:12px; display:none; z-index:3; max-width:380px; }
-    .currency-tools { display:inline-flex; align-items:center; gap:8px; margin-right:10px; flex-wrap:wrap; }
-    .rate-badge { font-size:12px; color:#c7f9dd; }
-    .approval-badge { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; margin-left:6px; padding:0 7px; border-radius:999px; background:var(--bad); color:#fff; font-size:12px; font-weight:800; vertical-align:middle; }
-    .approval-alert { border:1px solid #fed7aa; background:#fff7ed; color:#9a3412; border-radius:14px; padding:12px 14px; margin-bottom:14px; font-weight:700; }
-    @media(max-width:900px){ .grid,.grid2,.row,.row3 { grid-template-columns:1fr; } .topbar { align-items:flex-start; gap:10px; flex-direction:column; } }
+
+    .search-bar {
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:14px;
+      background:white;
+      padding:12px 18px;
+      border-radius:60px;
+      border:1px solid var(--line);
+      box-shadow:0 4px 12px rgba(0,0,0,0.03);
+      margin:16px 0 22px 0;
+    }
+    .search-bar input, .search-bar select {
+      border-radius:40px;
+      padding:10px 18px;
+      border:1px solid var(--line);
+      background:#fafcff;
+      font-size:13px;
+      min-width:160px;
+      flex:1 1 160px;
+    }
+    .search-bar input:focus, .search-bar select:focus {
+      border-color:var(--gold);
+      box-shadow:0 0 0 3px rgba(212,175,55,0.15);
+      outline:none;
+    }
+    .search-bar .filter-label {
+      font-weight:600;
+      color:var(--primary-blue);
+      font-size:13px;
+      margin-right:4px;
+    }
+
+    .status-badge {
+      display:inline-block;
+      padding:4px 12px;
+      border-radius:20px;
+      font-size:11px;
+      font-weight:700;
+      text-transform:uppercase;
+    }
+    .status-active { background:#dcfce7; color:#166534; }
+    .status-expired { background:#fee2e2; color:#991b1b; }
+    .status-warning { background:#fef3c7; color:#92400e; }
+    .status-none { background:#f3f4f6; color:#6b7280; }
+
+
+
+    /* Data Input + Row Editing */
+    .input-panel {
+      background:white;
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:20px;
+      margin:16px 0 22px 0;
+      box-shadow:0 8px 20px rgba(11,47,107,0.06);
+    }
+    .input-panel h2 {
+      color:var(--primary-blue);
+      font-size:20px;
+      margin-bottom:14px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .form-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));
+      gap:12px;
+    }
+    .form-field label {
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      margin-bottom:5px;
+    }
+    .form-field input, .form-field select {
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+      background:#fafcff;
+      font-size:13px;
+    }
+    .form-field input:focus, .form-field select:focus, .row-input:focus {
+      border-color:var(--gold);
+      box-shadow:0 0 0 3px rgba(212,175,55,0.15);
+      outline:none;
+    }
+    .form-actions {
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:16px;
+    }
+    .btn-small {
+      border:none;
+      border-radius:999px;
+      padding:8px 12px;
+      font-weight:800;
+      font-size:12px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      white-space:nowrap;
+    }
+    .btn-edit { background:var(--soft-blue); color:var(--primary-blue); }
+    .btn-save { background:var(--success); color:white; }
+    .btn-cancel { background:#f3f4f6; color:#374151; }
+    .row-input {
+      width:100%;
+      min-width:110px;
+      border:1px solid var(--line);
+      border-radius:8px;
+      padding:7px 8px;
+      font-size:12px;
+      background:#fff;
+    }
+    .cert-link {
+      font-weight:800;
+      color:var(--bright-blue);
+      text-decoration:none;
+    }
+    .cert-link:hover { text-decoration:underline; }
+
+    @media (max-width: 768px) {
+      body { padding:12px; }
+      .container { padding:16px; border-radius:20px; }
+      .dashboard-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .action-row { flex-direction: column; align-items: stretch; }
+      .btn-gold, .btn-outline { justify-content: center; }
+      .search-bar { border-radius:30px; flex-direction:column; align-items:stretch; }
+      .form-grid { grid-template-columns:1fr; }
+      .search-bar input, .search-bar select { min-width:auto; }
+    }
+    @media print {
+      body { background:white; }
+      .header, .action-row, .search-bar, .input-panel, .status { display:none !important; }
+      .container { box-shadow:none; border:none; max-width:none; padding:0; }
+    }
   </style>
 </head>
 <body>
-  <div id="loginView" class="login-wrap">
-    <div class="login-card">
-      <div class="brand-lockup"><img src="lmcommodities.png" alt="LM Commodities Logo" class="brand-logo"><div><h1>LM Commodities</h1><p class="muted">Income, expenditure, approvals, samples and tanks dashboard.</p></div></div>
-      <label>Username</label><input id="loginUsername" autocomplete="username" />
-      <label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" />
-      <button style="width:100%;margin-top:16px" onclick="login()">Login</button>
-      <p class="muted">Users are fetched from the <b>Users</b> tab.</p>
+<div class="container" id="appContainer">
+  <div class="header">
+    <h1>Distinct Infrastructure</h1>
+    <p>Insurance Asset Register · Dashboard</p>
+    <p><strong>Distinct:</strong> Insurance Report · Fleet Insurance</p>
+  </div>
+
+  <!-- DASHBOARD CARDS -->
+  <div class="dashboard-grid" id="dashboardCards">
+    <div class="stat-card"><i class="fas fa-car"></i><div class="count" id="cntTotal">0</div><div class="label">Total Assets</div></div>
+    <div class="stat-card"><i class="fas fa-check-circle" style="color:var(--success);"></i><div class="count" id="cntInsured">0</div><div class="label">Insured</div></div>
+    <div class="stat-card"><i class="fas fa-exclamation-triangle" style="color:var(--warning);"></i><div class="count" id="cntExpiring">0</div><div class="label">Expiring Soon (30 days)</div></div>
+    <div class="stat-card"><i class="fas fa-times-circle" style="color:var(--danger);"></i><div class="count" id="cntExpired">0</div><div class="label">Expired</div></div>
+    <div class="stat-card"><i class="fas fa-building"></i><div class="count" id="cntInsurers">0</div><div class="label">Insurers</div></div>
+    <div class="stat-card"><i class="fas fa-rand"></i><div class="count" id="totalPremium">R0</div><div class="label">Total Annual Premium</div></div>
+    <div class="stat-card"><i class="fas fa-shield-alt" style="color:var(--danger);"></i><div class="count" id="totalStolenClaims">R0</div><div class="label">Insurance Paid Out</div><div class="sub">Stolen Cars</div></div>
+    <div class="stat-card"><i class="fas fa-car-crash" style="color:var(--warning);"></i><div class="count" id="totalDamagedClaims">R0</div><div class="label">Insurance Paid Out</div><div class="sub">Damaged Cars</div></div>
+  </div>
+
+  <!-- SEARCH BAR -->
+  <div class="search-bar" id="searchBar">
+    <span class="filter-label"><i class="fas fa-search"></i> Search</span>
+    <input type="text" id="searchInput" placeholder="Registration, description, insurer..." />
+    <select id="searchInsurer"><option value="">All Insurers</option></select>
+    <select id="searchStatus"><option value="">All Status</option>
+      <option value="Active">Active</option>
+      <option value="Expiring Soon">Expiring Soon</option>
+      <option value="Expired">Expired</option>
+      <option value="Not Insured">Not Insured</option>
+    </select>
+    <button class="btn-outline" id="clearSearchBtn" style="padding:6px 18px;"><i class="fas fa-times"></i> Clear</button>
+  </div>
+
+
+
+  <!-- DATA INPUT SECTION -->
+  <div class="input-panel" id="inputPanel">
+    <h2><i class="fas fa-file-shield"></i> Add Insurance Record</h2>
+    <div class="form-grid">
+      <div class="form-field"><label>Registration</label><input id="f_registrationNumber" placeholder="Vehicle registration"></div>
+      <div class="form-field"><label>Financed</label><select id="f_financedAsset"><option value="">Select</option><option value="Y">Yes</option><option value="N">No</option></select></div>
+      <div class="form-field"><label>Finance Agreement</label><input id="f_financeAgreementNumber" placeholder="Agreement number"></div>
+      <div class="form-field"><label>Asset Description</label><input id="f_assetDescription" placeholder="Asset description"></div>
+      <div class="form-field"><label>VIN Number</label><input id="f_vinNumber" placeholder="VIN number"></div>
+      <div class="form-field"><label>Insurer</label><input id="f_insurer" placeholder="Insurer"></div>
+      <div class="form-field"><label>Policy Number</label><input id="f_policyNumber" placeholder="Policy number"></div>
+      <div class="form-field"><label>Cover Type</label><input id="f_coverType" placeholder="Comprehensive / Third party"></div>
+      <div class="form-field"><label>Annual Premium</label><input id="f_annualPremium" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-field"><label>Monthly Premium</label><input id="f_monthlyPremium" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-field"><label>Policy Expiry</label><input id="f_policyExpiry" type="date"></div>
+      <div class="form-field"><label>Status</label><select id="f_status"><option value="">Auto calculate</option><option value="Active">Active</option><option value="Expiring Soon">Expiring Soon</option><option value="Expired">Expired</option><option value="Not Insured">Not Insured</option></select></div>
+      <div class="form-field"><label>Insurance Certificate</label><input id="f_certificate" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-success" id="addRecordBtn"><i class="fas fa-save"></i> Save Record</button>
+      <button class="btn-outline" id="clearFormBtn"><i class="fas fa-eraser"></i> Clear Form</button>
     </div>
   </div>
 
-  <div id="appView" class="hidden">
-    <div class="topbar">
-      <div class="brand-lockup"><img src="lmcommodities.png" alt="LM Commodities Logo" class="top-logo"><div><b>LM Commodities Income & Expenditure</b><div class="muted" id="liveStatus" style="color:#c7f9dd">Connecting...</div></div></div>
-      <div><span class="currency-tools"><button class="light" id="currencyToggle" onclick="toggleCurrencyDisplay()">Convert to Rand</button><span id="rateBadge" class="rate-badge"></span></span><span id="userBadge"></span> <button class="light" onclick="logout()">Logout</button></div>
+  <!-- INSURANCE CLAIM INPUT SECTION -->
+  <div class="input-panel" id="claimInputPanel">
+    <h2><i class="fas fa-hand-holding-usd"></i> Cars Claimed From Insurance</h2>
+    <div class="form-grid">
+      <div class="form-field"><label>Date of Claim</label><input id="claimDate" type="date"></div>
+      <div class="form-field"><label>Vehicle Reg</label><input id="claimVehicleReg" placeholder="Vehicle registration"></div>
+      <div class="form-field"><label>Amount Paid Out</label><input id="claimAmountPaidOut" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="form-field"><label>Insurance Claimed From</label><input id="claimInsuranceFrom" placeholder="Insurance company"></div>
+      <div class="form-field"><label>Claim Type</label><select id="claimType"><option value="Stolen">Stolen car</option><option value="Damaged">Damaged car</option></select></div>
     </div>
-    <div class="tabs">
-      <button class="active" onclick="showTab('dashboard',this)">Dashboard</button>
-      <button onclick="showTab('revenue',this)">Daily Revenue</button>
-      <button onclick="showTab('expense',this)">Expense Request</button>
-      <button onclick="showTab('dailyexpense',this)">Daily Expenditure</button>
-      <button onclick="showTab('approvals',this)">Approvals <span id="approvalTabBadge" class="approval-badge hidden">0</span></button>
-      <button onclick="showTab('samples',this)">Rock/Sand Samples</button>
-      <button onclick="showTab('tanks',this)">Tanks Run</button>
-      <button onclick="showTab('production',this)">Ore Production</button>
-      <button onclick="showTab('reports',this)">Reports</button>
-      <button onclick="showTab('creditors',this)">Creditors</button>
-      <button onclick="showTab('records',this)">Records</button>
+    <div class="form-actions">
+      <button class="btn-success" id="addClaimBtn"><i class="fas fa-save"></i> Save Claim</button>
+      <button class="btn-outline" id="clearClaimFormBtn"><i class="fas fa-eraser"></i> Clear Claim</button>
     </div>
-
-    <main class="main">
-      <section id="dashboard" class="tabPanel">
-        <div class="grid" id="summaryCards"></div>
-      </section>
-
-      <section id="revenue" class="tabPanel hidden">
-        <div class="card">
-          <h2>Record Daily Revenue</h2>
-          <div class="row3"><div><label>Date</label><input id="revDate" type="date"></div><div><label>Amount</label><input id="revAmount" inputmode="decimal"></div><div><label>Category</label><input id="revCategory" value="Revenue"></div></div>
-          <label>Description</label><textarea id="revDescription"></textarea>
-          <button onclick="saveRevenue()">Save Revenue</button>
-        </div>
-      </section>
-
-      <section id="expense" class="tabPanel hidden">
-        <div class="card">
-          <h2>Request Funds for Expense</h2>
-          <div class="row3"><div><label>Date</label><input id="expDate" type="date"></div><div><label>Amount</label><input id="expAmount" inputmode="decimal"></div><div><label>Request Approval Number</label><input id="expApprovalNo" placeholder="Approval / request no."></div></div>
-          <div class="row3"><div><label>Category</label><select id="expCategory" onchange="toggleExpenseOther()"><option>Diesel</option><option>Mercury</option><option>Electricity</option><option>Salaries</option><option>Wages</option><option>Transport</option><option>Drill bits</option><option>R/D oil</option><option>Cyanide</option><option>Caustic Soda</option><option>Burnt Lime</option><option>Hydrogen peroxide</option><option>Hydrochloric acid</option><option>Nitric acid</option><option>Borax</option><option>Hand gas</option><option>Acetilyn</option><option>Explosives</option><option>Drill steel</option><option>Grease</option><option>Engine Oil</option><option>Other</option></select></div></div>
-          <div id="expOtherWrap" class="hidden"><label>Other Category</label><input id="expOtherCategory" placeholder="Enter expense category"></div>
-          <label>Purpose for request of funds</label><textarea id="expPurpose"></textarea>
-          <label>Payment request info</label><textarea id="expPaymentInfo" placeholder="Supplier, bank details, invoice reference, notes"></textarea>
-          <button onclick="requestExpense()">Submit Expense Request</button>
-        </div>
-      </section>
-
-
-      <section id="dailyexpense" class="tabPanel hidden">
-        <div class="card">
-          <h2>Enter Daily Expenditure</h2>
-          <p class="muted">This posts directly to Daily Expenses on the dashboard and accrues into weekly and monthly expenses.</p>
-          <div class="row3">
-            <div><label>Date</label><input id="dailyExpDate" type="date"></div>
-            <div><label>Amount</label><input id="dailyExpAmount" inputmode="decimal"></div>
-            <div><label>Request Approval Number</label><input id="dailyExpApprovalNo" placeholder="Required approval / request no."></div>
-          </div>
-          <div class="row3">
-            <div><label>Category</label><input id="dailyExpCategory" value="Daily Expenditure"></div>
-            <div><label>Supplier / Payment Info</label><input id="dailyExpPaymentInfo" placeholder="Supplier, invoice, paid by"></div>
-            <div><label>Notes / Purpose</label><input id="dailyExpPurpose" placeholder="What was paid for"></div>
-          </div>
-          <button onclick="saveDailyExpense()">Save Daily Expenditure</button>
-        </div>
-      </section>
-
-      <section id="approvals" class="tabPanel hidden">
-        <div class="card"><h2>Approval Basket <span id="approvalBasketCount" class="approval-badge hidden">0</span></h2><div id="approvalPendingAlert" class="approval-alert hidden"></div><div id="approvalTable"></div></div>
-      </section>
-
-      <section id="samples" class="tabPanel hidden">
-        <div class="card">
-          <h2>Rock / Sand Sample Results</h2>
-          <div class="row3"><div><label>Date</label><input id="sampleDate" type="date"></div><div><label>Sample Type</label><select id="sampleType"><option>Rock</option><option>Sand</option></select></div><div><label>Batch / Reference</label><input id="sampleBatch"></div></div>
-          <div class="grid2" id="sampleInputs"></div>
-          <label>Tonnage Leached (mainly for sands)</label><input id="tonnageLeached" inputmode="decimal" value="0">
-          <button onclick="saveSamples()">Save Sample Results</button>
-        </div>
-      </section>
-
-      <section id="tanks" class="tabPanel hidden">
-        <div class="card">
-          <h2>Number of Tanks Run Per Week</h2>
-          <div class="row3"><div><label>Week Date</label><input id="tankDate" type="date"></div><div><label>Tank 1</label><input id="tank1" inputmode="numeric" value="0"></div><div><label>Tank 2</label><input id="tank2" inputmode="numeric" value="0"></div></div>
-          <div class="row"><div><label>Tank 3</label><input id="tank3" inputmode="numeric" value="0"></div><div><label>Tank 4</label><input id="tank4" inputmode="numeric" value="0"></div></div>
-          <button onclick="saveTanks()">Save Tank Runs</button>
-        </div>
-      </section>
-
-      <section id="production" class="tabPanel hidden">
-        <div class="card">
-          <h2>Daily Ore Production & Bullion Recovery</h2>
-          <div class="row3"><div><label>Date</label><input id="prodDate" type="date"></div><div><label>Daily Ore Production</label><input id="oreTonnesProduced" inputmode="decimal" placeholder="Tonnes produced"></div><div><label>Average Grade</label><input id="oreAverageGrade" inputmode="decimal" placeholder="g/t or grade"></div></div>
-          <div class="row3"><div><label>Tonnes Milled</label><input id="tonnesMilled" inputmode="decimal"></div><div><label>Bullion Recovered</label><input id="bullionRecovered" inputmode="decimal" placeholder="grams"></div><div><label>Price Per Gram</label><input id="pricePerGram" inputmode="decimal"></div></div>
-          <div class="card" style="background:#f8fafc"><div class="muted">Calculated Total Value</div><div class="metric" id="bullionValuePreview">$ 0.00</div></div>
-          <button onclick="saveProduction()">Save Production</button>
-        </div>
-      </section>
-
-
-      <section id="reports" class="tabPanel hidden">
-        <div class="card">
-          <h2>Income & Expenditure Reports</h2>
-          <div class="filters no-print">
-            <div><label>Period</label><select id="reportPeriod"><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option></select></div>
-            <div><label>From</label><input id="reportFrom" type="date"></div>
-            <div><label>To</label><input id="reportTo" type="date"></div>
-            <div><label>Type</label><select id="reportType"><option value="all">Income & Expenditure</option><option value="Revenue">Revenue Only</option><option value="Expense">Expenditure Only</option></select></div>
-            <div><button onclick="generateReport()">Generate Report</button></div>
-          </div>
-          <div style="margin-top:10px" class="no-print"><button class="secondary" onclick="downloadReportPdf()">Download PDF</button></div>
-          <div id="reportOutput" class="report-box">Choose a period and click Generate Report.</div>
-        </div>
-      </section>
-
-      <section id="creditors" class="tabPanel hidden">
-        <div class="card">
-          <h2>Creditors</h2>
-          <div class="row3"><div><label>Creditor / Supplier</label><input id="creditorName"></div><div><label>Invoice / Reference</label><input id="creditorInvoice"></div><div><label>Amount</label><input id="creditorAmount" inputmode="decimal"></div></div>
-          <div class="row3"><div><label>Invoice Date</label><input id="creditorDate" type="date"></div><div><label>Due Date</label><input id="creditorDueDate" type="date"></div><div><label>Category</label><input id="creditorCategory" value="Creditor"></div></div>
-          <label>Notes / Purpose</label><textarea id="creditorNotes"></textarea>
-          <button onclick="saveCreditor()">Save Creditor</button>
-        </div>
-        <div class="grid"><div class="card"><div class="muted">Creditors Due in 30 Days</div><div class="metric" id="due30Metric">0</div></div><div class="card"><div class="muted">Creditors Due in 60 Days</div><div class="metric" id="due60Metric">0</div></div></div>
-        <div class="card"><h2>Creditors List</h2><div id="creditorsTable"></div></div>
-      </section>
-
-      <section id="records" class="tabPanel hidden">
-        <div class="card"><h2>All Records</h2><div id="recordsTable"></div></div>
-      </section>
-    </main>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <!-- ACTION ROW -->
+  <div class="action-row">
+    <div class="btn-group">
+      <button class="btn-gold" id="refreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+      <button class="btn-outline" id="testConnectionBtn"><i class="fas fa-plug"></i> Test Connection</button>
+    </div>
+    <div class="btn-group">
+      <button class="btn-outline" id="printBtn"><i class="fas fa-print"></i> Print</button>
+      <button class="btn-outline" id="excelBtn"><i class="fas fa-file-excel"></i> CSV</button>
+    </div>
+  </div>
+
+  <div class="status" id="status">Loading insurance data...</div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <table id="insuranceTable">
+      <thead>
+        <tr>
+          <th>Registration</th>
+          <th>Financed</th>
+          <th>Finance Agreement</th>
+          <th>Asset Description</th>
+          <th>VIN Number</th>
+          <th>Insurer</th>
+          <th>Policy Number</th>
+          <th>Cover Type</th>
+          <th>Annual Premium</th>
+          <th>Monthly Premium</th>
+          <th>Policy Expiry</th>
+          <th>Days to Expiry</th>
+          <th>Status</th>
+          <th>Certificate</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="15" style="text-align:center;padding:40px;">Loading data from Google Sheet...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxqrvwjBCISwKk2AnNkqsojgj_aF_Al0q4GBNbHNc9RoG8NLyLeKJDdKepri9vd3Kc/exec';
-let STATE = { user:null, records:[], summary:{}, currencyMode:'USD', usdZarRate:null, rateUpdated:null, approvalAlertShown:false };
+  // ============================================================
+  // CONFIGURATION
+  // ============================================================
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz8Yxm8PpNN8r_5hiZZL0-YtP3KFMXVJ6bonRq7Aq25ssLIE487V-T3XJ4A14ogqlug/exec";
+  const SHEET_ID = "1eM_UPV9MRaEU9lDoNk-D2FHac9PXTpHzOUBBXvzEAfw";
+  const SHEET_TAB = "Insurance";
 
-function today(){ return new Date().toISOString().slice(0,10); }
-['revDate','expDate','dailyExpDate','sampleDate','tankDate','prodDate','reportFrom','reportTo','creditorDate','creditorDueDate'].forEach(id => setTimeout(()=>{ const el=document.getElementById(id); if(el) el.value=today(); },0));
-for(let i=1;i<=10;i++){ const d=document.createElement('div'); d.innerHTML=`<label>Sample ${i}</label><input id="sample${i}" inputmode="decimal" placeholder="Grade result ${i}">`; document.addEventListener('DOMContentLoaded',()=>document.getElementById('sampleInputs').appendChild(d)); }
-
-async function api(action, data={}){
-  setSync(true);
-  try{
-    if(!SCRIPT_URL || SCRIPT_URL.includes('PASTE_DEPLOYED')) throw new Error('Paste your deployed Apps Script Web App URL into SCRIPT_URL in the HTML.');
-    const res = await fetch(SCRIPT_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action, ...data}) });
-    const text = await res.text();
-    let json; try { json = JSON.parse(text); } catch(e){ throw new Error('Apps Script returned non-JSON. Deploy as Web App, Execute as Me, Anyone with link. Response: '+text.slice(0,160)); }
-    if(!json.ok) throw new Error(json.error || 'Request failed');
-    return json;
-  } finally { setSync(false); }
-}
-function money(n){
-  const amount = Number(n||0);
-  if(STATE.currencyMode === 'ZAR'){
-    const converted = amount * Number(STATE.usdZarRate || 0);
-    return 'R ' + converted.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2});
-  }
-  return '$ ' + amount.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-}
-async function fetchUsdZarRate(){
-  try{
-    const res = await fetch('https://open.er-api.com/v6/latest/USD', { cache:'no-store' });
-    const json = await res.json();
-    if(json && json.rates && json.rates.ZAR){
-      STATE.usdZarRate = Number(json.rates.ZAR);
-      STATE.rateUpdated = new Date();
-      updateRateBadge();
-      return STATE.usdZarRate;
-    }
-    throw new Error('USD/ZAR rate unavailable');
-  }catch(e){
-    updateRateBadge('Rate unavailable');
-    throw e;
-  }
-}
-function updateRateBadge(msg){
-  const el=document.getElementById('rateBadge');
-  if(!el) return;
-  if(msg){ el.textContent=msg; return; }
-  el.textContent = STATE.usdZarRate ? `USD/ZAR ${STATE.usdZarRate.toFixed(4)}` : '';
-}
-async function toggleCurrencyDisplay(){
-  try{
-    if(STATE.currencyMode === 'USD'){
-      if(!STATE.usdZarRate) await fetchUsdZarRate();
-      STATE.currencyMode = 'ZAR';
-      document.getElementById('currencyToggle').textContent = 'Show $';
-      toast('Showing converted Rand values using today\'s online USD/ZAR rate.');
-    }else{
-      STATE.currencyMode = 'USD';
-      document.getElementById('currencyToggle').textContent = 'Convert to Rand';
-      toast('Showing values in USD.');
-    }
-    renderDashboard(); renderCreditors(); renderRecords(); renderApprovals(); updateBullionPreview();
-  }catch(e){ toast('Could not fetch online USD/ZAR rate.'); }
-}
-function num(id){ return Number(String(document.getElementById(id).value||'0').replace(',','.').replace(/[^0-9.\-]/g,'')) || 0; }
-function val(id){ return document.getElementById(id).value.trim(); }
-function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',3500); }
-function setSync(on){ document.body.classList.toggle('syncing', !!on); document.querySelectorAll('button').forEach(b=>{ if(on){ b.dataset.oldText=b.dataset.oldText||b.textContent; b.disabled=true; } else { b.disabled=false; if(b.dataset.oldText){ b.textContent=b.dataset.oldText; delete b.dataset.oldText; } } }); }
-
-async function login(){
-  try{
-    const r = await api('login',{username:val('loginUsername'), password:val('loginPassword')});
-    STATE.user = r.user; localStorage.setItem('lmUser', JSON.stringify(r.user));
-    document.getElementById('loginView').classList.add('hidden'); document.getElementById('appView').classList.remove('hidden');
-    document.getElementById('userBadge').textContent = `${r.user.name} (${r.user.role})`;
-    await refresh();
-    showApprovalLoginAlert();
-  }catch(e){ toast(e.message); }
-}
-function logout(){ localStorage.removeItem('lmUser'); location.reload(); }
-async function refresh(){
-  const r = await api('bootstrap',{userId:STATE.user.userId, email:STATE.user.email});
-  STATE.records = r.records || []; STATE.summary = r.summary || {};
-  document.getElementById('liveStatus').textContent = 'Live connection active • Last sync ' + new Date().toLocaleTimeString();
-  renderDashboard(); renderApprovals(); renderCreditors(); renderRecords();
-}
-function renderDashboard(){
-  const s=STATE.summary, cards=[
-    ['Daily Revenue',money(s.dailyRevenue)],['Weekly Revenue',money(s.weeklyRevenue)],['Monthly Revenue',money(s.monthlyRevenue)],
-    ['Daily Expenditure',money(s.dailyExpenditure)],['Weekly Expenditure',money(s.weeklyExpenditure)],['Monthly Expenditure',money(s.monthlyExpenditure)],
-    ['Pending Executive1',s.pendingExecutive1||0],['Pending Executive2',s.pendingExecutive2||0],['Total Approval Requests',s.totalApprovalRequests||0],
-    ['Total Tanks So Far',s.totalTanks||0],['Total Rock Samples',s.totalRockSamples||0],['Total Sand Samples',s.totalSandSamples||0],
-    ['Average Rock Grade',Number(s.averageRockGrade||0).toFixed(3)],['Average Sand Grade',Number(s.averageSandGrade||0).toFixed(3)],
-    ['Total Sands Tonnage Leached',Number(s.totalSandsTonnageLeached||0).toFixed(3)],['Average Sample Grade',Number(s.averageSampleGrade||0).toFixed(3)],
-    ['Expected Bullion',Number(s.expectedBullion||0).toFixed(3)],
-    ['Daily Ore Production',Number(s.dailyOreProduction||0).toFixed(3)],['Weekly Ore Production',Number(s.weeklyOreProduction||0).toFixed(3)],['Monthly Ore Production',Number(s.monthlyOreProduction||0).toFixed(3)],
-    ['Total Ore Production',Number(s.totalOreProduction||0).toFixed(3)],['Daily Tonnes Milled',Number(s.dailyTonnesMilled||0).toFixed(3)],['Weekly Tonnes Milled',Number(s.weeklyTonnesMilled||0).toFixed(3)],['Monthly Tonnes Milled',Number(s.monthlyTonnesMilled||0).toFixed(3)],['Total Tonnes Milled',Number(s.totalTonnesMilled||0).toFixed(3)],['Average Ore Grade',Number(s.averageOreGrade||0).toFixed(3)],
-    ['Bullion Recovered',Number(s.totalBullionRecovered||0).toFixed(3)],['Bullion Total Value',money(s.bullionTotalValue||0)],
-    ['Creditors Due 30 Days',money(s.creditorsDue30Amount||0)],['Creditors Due 60 Days',money(s.creditorsDue60Amount||0)]
+  // Field mapping based on your data
+  const FIELD_IDS = [
+    "registrationNumber", "financedAsset", "financeAgreementNumber", "assetDescription",
+    "vinNumber", "insurer", "policyNumber", "coverType", "annualPremium",
+    "monthlyPremium", "policyExpiry", "daysToExpiry", "status", "insuranceCertificateLink"
   ];
-  document.getElementById('summaryCards').innerHTML = cards.map(c=>`<div class="card"><div class="muted">${c[0]}</div><div class="metric">${c[1]}</div></div>`).join('');
-}
-function renderApprovals(){
-  const role=(STATE.user.role||'').toLowerCase(); const basket = role==='executive1'?'Executive1':role==='executive2'?'Executive2':'';
-  const rows = basket ? STATE.records.filter(r=>r.recordType==='Expense' && r.currentBasket===basket) : [];
-  updateApprovalCount(rows.length);
-  if(!basket){ document.getElementById('approvalTable').innerHTML='<p class="muted">Only Executive1 and Executive2 can approve expense requests.</p>'; return; }
-  document.getElementById('approvalTable').innerHTML = table(rows, true);
-}
-function updateApprovalCount(count){
-  const tabBadge=document.getElementById('approvalTabBadge');
-  const basketBadge=document.getElementById('approvalBasketCount');
-  const alertBox=document.getElementById('approvalPendingAlert');
-  [tabBadge,basketBadge].forEach(el=>{ if(!el) return; el.textContent=count; el.classList.toggle('hidden', count<=0); });
-  if(alertBox){
-    alertBox.textContent = count>0 ? `You have ${count} approval request${count===1?'':'s'} pending in your Approval Basket.` : '';
-    alertBox.classList.toggle('hidden', count<=0);
+
+  let allAssets = [];
+  let insuranceClaims = [];
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+  function valueOrBlank(v) { return (v === undefined || v === null) ? "" : v; }
+  function escapeHtml(value) {
+    return String(valueOrBlank(value)).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
-}
-function currentApprovalRows(){
-  const role=(STATE.user&&STATE.user.role||'').toLowerCase();
-  const basket = role==='executive1'?'Executive1':role==='executive2'?'Executive2':'';
-  return basket ? STATE.records.filter(r=>r.recordType==='Expense' && r.currentBasket===basket) : [];
-}
-function showApprovalLoginAlert(){
-  const count=currentApprovalRows().length;
-  if(count>0 && !STATE.approvalAlertShown){
-    STATE.approvalAlertShown=true;
-    setTimeout(()=>alert(`LM Commodities: You have ${count} approval request${count===1?'':'s'} pending in your Approval Basket.`), 250);
+  function normaliseDateForInput(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return String(value);
+    return d.toISOString().split('T')[0];
   }
-}
-function renderCreditors(){
-  const rows = STATE.records.filter(r=>r.recordType==='Creditor');
-  const now = new Date(); now.setHours(0,0,0,0);
-  const due30 = rows.filter(r=>daysUntil(r.dueDate,now)>=0 && daysUntil(r.dueDate,now)<=30);
-  const due60 = rows.filter(r=>daysUntil(r.dueDate,now)>30 && daysUntil(r.dueDate,now)<=60);
-  document.getElementById('due30Metric').textContent = `${due30.length} / ${money(due30.reduce((a,b)=>a+Number(b.amount||0),0))}`;
-  document.getElementById('due60Metric').textContent = `${due60.length} / ${money(due60.reduce((a,b)=>a+Number(b.amount||0),0))}`;
-  document.getElementById('creditorsTable').innerHTML = creditorsTable(rows);
-}
-function daysUntil(dateStr, now=new Date()){ const d=new Date(dateStr); if(isNaN(d)) return 99999; d.setHours(0,0,0,0); return Math.ceil((d-now)/86400000); }
-function creditorsTable(rows){
-  if(!rows.length) return '<p class="muted">No creditors found.</p>';
-  return `<table><thead><tr><th>Creditor</th><th>Invoice</th><th>Amount</th><th>Invoice Date</th><th>Due Date</th><th>Days</th><th>Status</th><th>Notes</th></tr></thead><tbody>`+
-    rows.map(r=>`<tr><td>${escapeHtml(r.creditorName||'')}</td><td>${escapeHtml(r.creditorInvoice||'')}</td><td>${money(r.amount)}</td><td>${r.date||''}</td><td>${r.dueDate||''}</td><td>${daysUntil(r.dueDate)}</td><td><span class="pill">${r.status||'Open'}</span></td><td>${escapeHtml(r.purpose||'')}</td></tr>`).join('')+'</tbody></table>';
-}
-function renderRecords(){ document.getElementById('recordsTable').innerHTML = table(STATE.records, false); }
-function table(rows, actions){
-  if(!rows.length) return '<p class="muted">No records found.</p>';
-  return `<table><thead><tr><th>Date</th><th>Type</th><th>Unique No.</th><th>Approval No.</th><th>Requester</th><th>Amount</th><th>Info</th><th>Status</th>${actions?'<th>Action</th>':''}</tr></thead><tbody>`+
-  rows.map(r=>`<tr><td>${r.date||''}</td><td>${r.recordType||''}</td><td>${r.uniqueNumber||r.recordId||''}</td><td>${r.requestApprovalNumber||''}</td><td>${r.requestedByName||''}</td><td>${r.amount?money(r.amount):''}</td><td>${escapeHtml(r.purpose||r.revenueDescription||r.sampleType||'')}</td><td><span class="pill">${r.status||''}</span></td>${actions?`<td><textarea id="c_${r.uniqueNumber}" placeholder="Comment"></textarea><button onclick="approve('${r.uniqueNumber}','approve')">Approve</button> <button class="danger" onclick="approve('${r.uniqueNumber}','reject')">Reject</button>${r.approvalLink?`<br><a class="wa-link" href="${r.approvalLink}" target="_blank">Open System Link</a>`:''}</td>`:''}</tr>`).join('')+
-  '</tbody></table>';
-}
-function escapeHtml(s){ return String(s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
-function showTab(id,btn){ document.querySelectorAll('.tabPanel').forEach(x=>x.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); }
 
-async function saveRevenue(){ try{ await api('saveRevenue',{userId:STATE.user.userId,email:STATE.user.email,date:val('revDate'),amount:num('revAmount'),category:val('revCategory'),description:val('revDescription')}); toast('Revenue saved.'); await refresh(); }catch(e){toast(e.message);} }
-async function requestExpense(){ try{ const r=await api('requestExpense',{userId:STATE.user.userId,email:STATE.user.email,date:val('expDate'),amount:num('expAmount'),requestApprovalNumber:val('expApprovalNo'),category:getExpenseCategory(),purpose:val('expPurpose'),paymentInfo:val('expPaymentInfo')}); toast('Expense request submitted: '+r.uniqueNumber); openWhatsAppLinks(r.whatsappLinks); await refresh(); }catch(e){toast(e.message);} }
-async function saveDailyExpense(){ try{ await api('saveDailyExpense',{userId:STATE.user.userId,email:STATE.user.email,date:val('dailyExpDate'),amount:num('dailyExpAmount'),requestApprovalNumber:val('dailyExpApprovalNo'),category:val('dailyExpCategory'),purpose:val('dailyExpPurpose'),paymentInfo:val('dailyExpPaymentInfo')}); toast('Daily expenditure saved.'); await refresh(); }catch(e){toast(e.message);} }
-async function approve(unique, decision){ try{ const r=await api('approveExpense',{userId:STATE.user.userId,email:STATE.user.email,uniqueNumber:unique,decision,comment:val('c_'+unique)}); toast('Expense request updated.'); openWhatsAppLinks(r.whatsappLinks); await refresh(); }catch(e){toast(e.message);} }
-async function saveSamples(){ try{ const data={userId:STATE.user.userId,email:STATE.user.email,date:val('sampleDate'),sampleType:val('sampleType'),sampleBatch:val('sampleBatch'),tonnageLeached:num('tonnageLeached')}; for(let i=1;i<=10;i++) data['sample'+i]=num('sample'+i); await api('saveSamples',data); toast('Sample results saved.'); await refresh(); }catch(e){toast(e.message);} }
-function toggleExpenseOther(){ document.getElementById('expOtherWrap').classList.toggle('hidden', val('expCategory')!=='Other'); }
-function getExpenseCategory(){ return val('expCategory')==='Other' ? val('expOtherCategory') : val('expCategory'); }
-async function saveCreditor(){ try{ await api('saveCreditor',{userId:STATE.user.userId,email:STATE.user.email,creditorName:val('creditorName'),invoice:val('creditorInvoice'),amount:num('creditorAmount'),date:val('creditorDate'),dueDate:val('creditorDueDate'),category:val('creditorCategory'),notes:val('creditorNotes')}); toast('Creditor saved.'); await refresh(); }catch(e){toast(e.message);} }
-function rangeForPeriod(period){ const now=new Date(); let from=new Date(now), to=new Date(now); if(period==='weekly'){ const day=from.getDay(); from.setDate(from.getDate()-day+(day===0?-6:1)); } if(period==='monthly'){ from=new Date(now.getFullYear(),now.getMonth(),1); } if(period==='quarterly'){ from=new Date(now.getFullYear(),Math.floor(now.getMonth()/3)*3,1); } if(period==='yearly'){ from=new Date(now.getFullYear(),0,1); } return [from.toISOString().slice(0,10), to.toISOString().slice(0,10)]; }
-function generateReport(){ const period=val('reportPeriod'); let from=val('reportFrom'), to=val('reportTo'); if(!from||!to){ [from,to]=rangeForPeriod(period); document.getElementById('reportFrom').value=from; document.getElementById('reportTo').value=to; } const type=val('reportType'); const rows=STATE.records.filter(r=>['Revenue','Expense','DailyExpense'].includes(r.recordType)).filter(r=>((type==='all')||(type==='Revenue'&&r.recordType==='Revenue')||(type==='Expense'&&['Expense','DailyExpense'].includes(r.recordType))) && r.date>=from && r.date<=to); const prodRows=STATE.records.filter(r=>r.recordType==='Production' && r.date>=from && r.date<=to); const rev=rows.filter(r=>r.recordType==='Revenue').reduce((a,b)=>a+Number(b.amount||0),0); const exp=rows.filter(r=>(r.recordType==='DailyExpense') || (r.recordType==='Expense' && ['Approved','Paid','Posted'].includes(r.status))).reduce((a,b)=>a+Number(b.amount||0),0); const tonnesMilled=prodRows.reduce((a,b)=>a+Number(b.tonnesMilled||0),0); const oreProduced=prodRows.reduce((a,b)=>a+Number(b.oreTonnesProduced||0),0); const net=rev-exp; document.getElementById('reportOutput').innerHTML=`<h2>LM Commodities Income & Expenditure Report</h2><p><b>Period:</b> ${period.toUpperCase()} &nbsp; <b>From:</b> ${from} &nbsp; <b>To:</b> ${to}</p><div class="grid"><div class="card"><div class="muted">Total Revenue</div><div class="metric">${money(rev)}</div></div><div class="card"><div class="muted">Approved/Daily Expenditure</div><div class="metric">${money(exp)}</div></div><div class="card"><div class="muted">Net Position</div><div class="metric">${money(net)}</div></div><div class="card"><div class="muted">Tonnes Milled</div><div class="metric">${Number(tonnesMilled||0).toFixed(3)}</div></div><div class="card"><div class="muted">Ore Produced</div><div class="metric">${Number(oreProduced||0).toFixed(3)}</div></div></div>`+table(rows,false); }
-function downloadReportPdf(){ if(!document.getElementById('reportOutput').innerHTML || document.getElementById('reportOutput').textContent.includes('Choose a period')) generateReport(); const w=window.open('', '_blank'); w.document.write(`<!doctype html><html><head><title>LM Report</title><style>body{font-family:Arial;padding:24px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;font-size:12px}th{background:#f0f3f8}.card{border:1px solid #ddd;padding:10px;margin:8px 0}.metric{font-size:20px;font-weight:800}</style></head><body>${document.getElementById('reportOutput').innerHTML}<script>window.onload=function(){window.print();}<\/script></body></html>`); w.document.close(); }
-async function saveTanks(){ try{ await api('saveTanks',{userId:STATE.user.userId,email:STATE.user.email,date:val('tankDate'),tank1:num('tank1'),tank2:num('tank2'),tank3:num('tank3'),tank4:num('tank4')}); toast('Tank runs saved.'); await refresh(); }catch(e){toast(e.message);} }
+  function formatCurrency(amount) {
+    if (!amount || isNaN(amount)) return "R0";
+    return "R" + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
 
-function updateBullionPreview(){ const total=num('bullionRecovered')*num('pricePerGram'); const el=document.getElementById('bullionValuePreview'); if(el) el.textContent=money(total); }
-['bullionRecovered','pricePerGram'].forEach(id=>document.addEventListener('input',e=>{ if(e.target && e.target.id===id) updateBullionPreview(); }));
-async function saveProduction(){ try{ await api('saveProduction',{userId:STATE.user.userId,email:STATE.user.email,date:val('prodDate'),oreTonnesProduced:num('oreTonnesProduced'),oreAverageGrade:num('oreAverageGrade'),tonnesMilled:num('tonnesMilled'),bullionRecovered:num('bullionRecovered'),pricePerGram:num('pricePerGram')}); toast('Production saved.'); await refresh(); }catch(e){toast(e.message);} }
-function openWhatsAppLinks(links){ (links||[]).filter(Boolean).slice(0,2).forEach((link,i)=>setTimeout(()=>window.open(link,'_blank'),i*350)); }
+  function formatDate(dateStr) {
+    if (!dateStr) return "-";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('en-ZA');
+    } catch { return dateStr; }
+  }
 
-(async function init(){
-  const u = localStorage.getItem('lmUser');
-  if(u){ STATE.user=JSON.parse(u); document.getElementById('loginView').classList.add('hidden'); document.getElementById('appView').classList.remove('hidden'); document.getElementById('userBadge').textContent = `${STATE.user.name} (${STATE.user.role})`; try{ await refresh(); showApprovalLoginAlert(); }catch(e){ toast(e.message); }}
-  fetchUsdZarRate().catch(()=>{});
-})();
+  function getStatusBadge(status) {
+    const statusMap = {
+      'Active': 'status-active',
+      'Expiring Soon': 'status-warning',
+      'Expired': 'status-expired',
+      'Not Insured': 'status-none'
+    };
+    const cls = statusMap[status] || 'status-none';
+    return `<span class="status-badge ${cls}">${status || 'Unknown'}</span>`;
+  }
+
+  function showStatus(msg, type = 'info') {
+    const el = document.getElementById("status");
+    el.textContent = msg;
+    el.className = 'status';
+    if (type === 'error') el.classList.add('error');
+    else if (type === 'success') el.classList.add('success');
+  }
+
+  // ============================================================
+  // API CALLS
+  // ============================================================
+  function fetchInsuranceData() {
+    const url = `${SCRIPT_URL}?action=list&sheetId=${SHEET_ID}&sheetTab=${SHEET_TAB}`;
+    showStatus("Loading insurance data from Google Sheet...", 'info');
+    
+    return fetch(url,{
+    redirect:"follow"
+})
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+
+    console.log("Response:", data);
+
+    if (data.status !== "success") {
+        throw new Error(data.message || "Unknown server error");
+    }
+
+    if (!Array.isArray(data.records))
+    throw new Error("No records returned from server.");
+
+allAssets = data.records;
+
+    renderAll(allAssets);
+    fetchInsuranceClaims();
+
+    showStatus(`Loaded ${allAssets.length} insurance records successfully.`, "success");
+})
+      .catch(err => {
+        console.error("Fetch error:", err);
+        showStatus(`❌ Error: ${err.message}. Please check connection and try again.`, 'error');
+        document.getElementById("tableBody").innerHTML = `<tr><td colspan="15" style="text-align:center;padding:40px;color:var(--danger);">
+          <i class="fas fa-exclamation-circle" style="font-size:24px;display:block;margin-bottom:10px;"></i>
+          Failed to load data: ${err.message}
+        </td></tr>`;
+        return [];
+      });
+  }
+
+
+
+  async function readFileAsData(file) {
+    if (!file) return null;
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = String(reader.result || "");
+        resolve({
+          fileName: file.name,
+          mimeType: file.type || "application/octet-stream",
+          base64: result.includes(",") ? result.split(",")[1] : result
+        });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function postApi(payload) {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      redirect: "follow",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ sheetId: SHEET_ID, sheetTab: SHEET_TAB, ...payload })
+    });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch (err) { throw new Error("Server did not return valid JSON: " + text.slice(0, 180)); }
+    if (data.status !== "success") throw new Error(data.message || "Server error");
+    return data;
+  }
+
+  async function fetchInsuranceClaims() {
+    const url = `${SCRIPT_URL}?action=listClaims&sheetId=${SHEET_ID}`;
+    try {
+      const res = await fetch(url, { redirect: "follow" });
+      const data = await res.json();
+      if (data.status !== "success") throw new Error(data.message || "Could not load claim records");
+      insuranceClaims = Array.isArray(data.claims) ? data.claims : [];
+      updateClaimDashboard(insuranceClaims);
+    } catch (err) {
+      console.warn("Insurance claims load warning:", err);
+      updateClaimDashboard([]);
+    }
+  }
+
+  function collectClaimFormData() {
+    return {
+      claimDate: document.getElementById("claimDate").value.trim(),
+      vehicleReg: document.getElementById("claimVehicleReg").value.trim(),
+      amountPaidOut: document.getElementById("claimAmountPaidOut").value.trim(),
+      insuranceClaimedFrom: document.getElementById("claimInsuranceFrom").value.trim(),
+      claimType: document.getElementById("claimType").value.trim()
+    };
+  }
+
+  function clearClaimForm() {
+    document.querySelectorAll("#claimInputPanel input, #claimInputPanel select").forEach(el => {
+      if (el.tagName === "SELECT") el.selectedIndex = 0;
+      else el.value = "";
+    });
+  }
+
+  async function addInsuranceClaim() {
+    try {
+      const claim = collectClaimFormData();
+      if (!claim.claimDate || !claim.vehicleReg || !claim.amountPaidOut || !claim.insuranceClaimedFrom) {
+        showStatus("❌ Please complete Date of Claim, Vehicle Reg, Amount Paid Out and Insurance Claimed From.", "error");
+        return;
+      }
+      showStatus("Saving insurance claim...", "info");
+      const data = await postApi({ action: "addClaim", claim });
+      clearClaimForm();
+      showStatus(data.message || "Insurance claim saved successfully.", "success");
+      await fetchInsuranceClaims();
+    } catch (err) {
+      console.error(err);
+      showStatus("❌ Claim save failed: " + err.message, "error");
+    }
+  }
+
+  function collectFormData() {
+    const record = {};
+    FIELD_IDS.forEach(id => {
+      const el = document.getElementById("f_" + id);
+      if (el && el.type !== "file") record[id] = el.value.trim();
+    });
+    return record;
+  }
+
+  function clearInputForm() {
+    document.querySelectorAll("#inputPanel input, #inputPanel select").forEach(el => el.value = "");
+  }
+
+  async function addInsuranceRecord() {
+    try {
+      showStatus("Saving insurance record...", "info");
+      const record = collectFormData();
+      const certFile = document.getElementById("f_certificate").files[0];
+      const certificate = await readFileAsData(certFile);
+      const data = await postApi({ action: "add", record, certificate });
+      clearInputForm();
+      showStatus(data.message || "Record saved successfully.", "success");
+      await fetchInsuranceData();
+    } catch (err) {
+      console.error(err);
+      showStatus("❌ Save failed: " + err.message, "error");
+    }
+  }
+
+  function buildRowPayload(rowIndex) {
+    const record = {};
+    FIELD_IDS.forEach(id => {
+      if (id === "daysToExpiry" || id === "insuranceCertificateLink") return;
+      const el = document.querySelector(`[data-row-index="${rowIndex}"][data-field="${id}"]`);
+      if (el) record[id] = el.value.trim();
+    });
+    return record;
+  }
+
+  function editRow(rowIndex) {
+    const row = allAssets.find(r => String(r.rowIndex) === String(rowIndex));
+    if (!row) return;
+    const tr = document.getElementById("row-" + rowIndex);
+    tr.innerHTML = `
+      <td><input class="row-input" data-row-index="${rowIndex}" data-field="registrationNumber" value="${escapeHtml(row.registrationNumber)}"></td>
+      <td><select class="row-input" data-row-index="${rowIndex}" data-field="financedAsset"><option value=""></option><option value="Y" ${row.financedAsset === 'Y' ? 'selected' : ''}>Yes</option><option value="N" ${row.financedAsset === 'N' ? 'selected' : ''}>No</option></select></td>
+      <td><input class="row-input" data-row-index="${rowIndex}" data-field="financeAgreementNumber" value="${escapeHtml(row.financeAgreementNumber)}"></td>
+      <td><input class="row-input" data-row-index="${rowIndex}" data-field="assetDescription" value="${escapeHtml(row.assetDescription)}"></td>
+      <td><input class="row-input" data-row-index="${rowIndex}" data-field="vinNumber" value="${escapeHtml(row.vinNumber)}"></td>
+      <td><input class="row-input" data-row-index="${rowIndex}" data-field="insurer" value="${escapeHtml(row.insurer)}"></td>
+      <td><input class="row-input" data-row-index="${rowIndex}" data-field="policyNumber" value="${escapeHtml(row.policyNumber)}"></td>
+      <td><input class="row-input" data-row-index="${rowIndex}" data-field="coverType" value="${escapeHtml(row.coverType)}"></td>
+      <td><input class="row-input" type="number" step="0.01" data-row-index="${rowIndex}" data-field="annualPremium" value="${escapeHtml(String(row.annualPremium || '').replace(/[^0-9.\-]/g,''))}"></td>
+      <td><input class="row-input" type="number" step="0.01" data-row-index="${rowIndex}" data-field="monthlyPremium" value="${escapeHtml(String(row.monthlyPremium || '').replace(/[^0-9.\-]/g,''))}"></td>
+      <td><input class="row-input" type="date" data-row-index="${rowIndex}" data-field="policyExpiry" value="${normaliseDateForInput(row.policyExpiry)}"></td>
+      <td style="text-align:center;font-weight:600;">${valueOrBlank(row.daysToExpiry) || '-'}</td>
+      <td><select class="row-input" data-row-index="${rowIndex}" data-field="status"><option value="">Auto</option><option value="Active" ${row.status === 'Active' ? 'selected' : ''}>Active</option><option value="Expiring Soon" ${row.status === 'Expiring Soon' ? 'selected' : ''}>Expiring Soon</option><option value="Expired" ${row.status === 'Expired' ? 'selected' : ''}>Expired</option><option value="Not Insured" ${row.status === 'Not Insured' ? 'selected' : ''}>Not Insured</option></select></td>
+      <td>${row.insuranceCertificateLink ? `<a class="cert-link" href="${escapeHtml(row.insuranceCertificateLink)}" target="_blank">View</a>` : '-'}<br><input class="row-input" type="file" data-row-index="${rowIndex}" data-cert-file accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"></td>
+      <td><button class="btn-small btn-save" onclick="saveRow(${rowIndex})"><i class="fas fa-save"></i> Save</button> <button class="btn-small btn-cancel" onclick="applyFilters()"><i class="fas fa-times"></i> Cancel</button></td>
+    `;
+  }
+
+  async function saveRow(rowIndex) {
+    try {
+      showStatus("Saving row changes...", "info");
+      const record = buildRowPayload(rowIndex);
+      const certInput = document.querySelector(`[data-row-index="${rowIndex}"][data-cert-file]`);
+      const certificate = await readFileAsData(certInput && certInput.files[0]);
+      const data = await postApi({ action: "update", rowIndex, record, certificate });
+      showStatus(data.message || "Row updated successfully.", "success");
+      await fetchInsuranceData();
+    } catch (err) {
+      console.error(err);
+      showStatus("❌ Row save failed: " + err.message, "error");
+    }
+  }
+
+  function testConnection() {
+    showStatus("Testing connection to Google Sheets...", 'info');
+    const url = `${SCRIPT_URL}?action=ping`;
+    
+    fetch(url, { method: "GET", mode: 'cors' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          showStatus(`✅ Connection successful! ${data.message || ''}`, 'success');
+        } else {
+          showStatus(`❌ Connection failed: ${data.message || 'Unknown error'}`, 'error');
+        }
+      })
+      .catch(err => {
+        showStatus(`❌ Connection failed: ${err.message}`, 'error');
+      });
+  }
+
+  // ============================================================
+  // RENDER FUNCTIONS
+  // ============================================================
+  function updateDashboard(assets) {
+    const total = assets.length;
+    const insured = assets.filter(a => a.insurer && a.insurer !== 'None' && a.insurer !== '').length;
+    const expiring = assets.filter(a => a.status === 'Expiring Soon').length;
+    const expired = assets.filter(a => a.status === 'Expired').length;
+    const insurers = new Set(assets.filter(a => a.insurer).map(a => a.insurer));
+    
+    let totalPremium = 0;
+    assets.forEach(a => {
+      const val = parseFloat(String(a.annualPremium).replace(/,/g, ''));
+      if (!isNaN(val)) totalPremium += val;
+    });
+
+    document.getElementById("cntTotal").textContent = total;
+    document.getElementById("cntInsured").textContent = insured;
+    document.getElementById("cntExpiring").textContent = expiring;
+    document.getElementById("cntExpired").textContent = expired;
+    document.getElementById("cntInsurers").textContent = insurers.size;
+    document.getElementById("totalPremium").textContent = formatCurrency(totalPremium);
+  }
+
+  function updateClaimDashboard(claims) {
+    let stolenTotal = 0;
+    let damagedTotal = 0;
+
+    (claims || []).forEach(c => {
+      const amount = parseFloat(String(c.amountPaidOut || '').replace(/[^0-9.\-]/g, ''));
+      if (isNaN(amount)) return;
+      const type = String(c.claimType || '').toLowerCase();
+      if (type.includes('stolen')) stolenTotal += amount;
+      else if (type.includes('damaged')) damagedTotal += amount;
+    });
+
+    document.getElementById("totalStolenClaims").textContent = formatCurrency(stolenTotal);
+    document.getElementById("totalDamagedClaims").textContent = formatCurrency(damagedTotal);
+  }
+
+  function renderTable(assets) {
+    const tbody = document.getElementById("tableBody");
+    
+    if (!assets || assets.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="15" style="text-align:center;padding:40px;color:var(--muted);">
+        <i class="fas fa-database" style="font-size:24px;display:block;margin-bottom:10px;"></i>
+        No insurance records found.
+      </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = assets.map((row, index) => {
+      const rowIndex = row.rowIndex || (index + 2);
+      const cert = row.insuranceCertificateLink ? `<a class="cert-link" href="${escapeHtml(row.insuranceCertificateLink)}" target="_blank"><i class="fas fa-eye"></i> View</a>` : '-';
+      return `
+      <tr id="row-${rowIndex}">
+        <td><strong>${escapeHtml(row.registrationNumber)}</strong></td>
+        <td>${valueOrBlank(row.financedAsset) === 'Y' ? '✅ Yes' : '❌ No'}</td>
+        <td>${escapeHtml(row.financeAgreementNumber) || '-'}</td>
+        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(row.assetDescription)}">${escapeHtml(row.assetDescription)}</td>
+        <td style="font-size:11px;font-family:monospace;">${escapeHtml(row.vinNumber) || '-'}</td>
+        <td><strong>${escapeHtml(row.insurer) || '-'}</strong></td>
+        <td>${escapeHtml(row.policyNumber) || '-'}</td>
+        <td>${escapeHtml(row.coverType) || '-'}</td>
+        <td style="font-weight:600;color:var(--primary-blue);">${formatCurrency(row.annualPremium)}</td>
+        <td>${formatCurrency(row.monthlyPremium)}</td>
+        <td>${formatDate(row.policyExpiry)}</td>
+        <td style="text-align:center;font-weight:600;">${valueOrBlank(row.daysToExpiry) || '-'}</td>
+        <td>${getStatusBadge(row.status)}</td>
+        <td>${cert}</td>
+        <td><button class="btn-small btn-edit" onclick="editRow(${rowIndex})"><i class="fas fa-pen"></i> Edit</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function populateInsurerFilter(assets) {
+    const select = document.getElementById("searchInsurer");
+    const insurers = new Set(assets.filter(a => a.insurer).map(a => a.insurer));
+    select.innerHTML = `<option value="">All Insurers</option>`;
+    Array.from(insurers).sort().forEach(ins => {
+      select.innerHTML += `<option value="${ins}">${ins}</option>`;
+    });
+  }
+
+  function renderAll(assets) {
+    updateDashboard(assets);
+    populateInsurerFilter(assets);
+    applyFilters();
+  }
+
+  // ============================================================
+  // FILTERS
+  // ============================================================
+  function applyFilters() {
+    const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
+    const insurerFilter = document.getElementById("searchInsurer").value;
+    const statusFilter = document.getElementById("searchStatus").value;
+
+    let filtered = allAssets.filter(row => {
+      let match = true;
+      
+      if (searchTerm) {
+        const searchFields = [
+          row.registrationNumber, row.assetDescription, row.insurer,
+          row.policyNumber, row.vinNumber
+        ].map(v => String(v || '').toLowerCase());
+        match = searchFields.some(f => f.includes(searchTerm));
+      }
+      
+      if (match && insurerFilter) {
+        match = (row.insurer || '') === insurerFilter;
+      }
+      
+      if (match && statusFilter) {
+        match = (row.status || '') === statusFilter;
+      }
+      
+      return match;
+    });
+
+    renderTable(filtered);
+  }
+
+  // ============================================================
+  // EXPORT FUNCTIONS
+  // ============================================================
+  function exportCSV() {
+    const headers = ['Registration Number', 'Financed', 'Finance Agreement', 'Asset Description',
+      'VIN Number', 'Insurer', 'Policy Number', 'Cover Type', 'Annual Premium',
+      'Monthly Premium', 'Policy Expiry', 'Days to Expiry', 'Status', 'Insurance Certificate Link'];
+    
+    const rows = allAssets.map(row => [
+      row.registrationNumber, row.financedAsset, row.financeAgreementNumber,
+      row.assetDescription, row.vinNumber, row.insurer, row.policyNumber,
+      row.coverType, row.annualPremium, row.monthlyPremium,
+      row.policyExpiry, row.daysToExpiry, row.status, row.insuranceCertificateLink
+    ]);
+    
+    const csvRows = [headers, ...rows];
+    const csv = csvRows.map(row => row.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(",")).join("\n");
+    
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `insurance-register-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ============================================================
+  // EVENT LISTENERS
+  // ============================================================
+  document.addEventListener("DOMContentLoaded", function() {
+    fetchInsuranceData();
+  });
+
+  document.getElementById("addRecordBtn").addEventListener("click", addInsuranceRecord);
+  document.getElementById("clearFormBtn").addEventListener("click", clearInputForm);
+  document.getElementById("addClaimBtn").addEventListener("click", addInsuranceClaim);
+  document.getElementById("clearClaimFormBtn").addEventListener("click", clearClaimForm);
+  document.getElementById("refreshBtn").addEventListener("click", fetchInsuranceData);
+  document.getElementById("testConnectionBtn").addEventListener("click", testConnection);
+  document.getElementById("printBtn").addEventListener("click", () => window.print());
+  document.getElementById("excelBtn").addEventListener("click", exportCSV);
+  document.getElementById("clearSearchBtn").addEventListener("click", function() {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("searchInsurer").value = "";
+    document.getElementById("searchStatus").value = "";
+    applyFilters();
+  });
+
+  document.getElementById("searchInput").addEventListener("input", applyFilters);
+  document.getElementById("searchInsurer").addEventListener("change", applyFilters);
+  document.getElementById("searchStatus").addEventListener("change", applyFilters);
 </script>
 </body>
 </html>
