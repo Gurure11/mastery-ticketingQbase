@@ -190,24 +190,34 @@ function showLoginMessage(type, msg){
   if (type === 'error') { err.textContent = msg; err.style.display = 'block'; }
   if (type === 'success') { ok.textContent = msg; ok.style.display = 'block'; }
 }
-async function fetchUsers(){
-  const encodedTab = encodeURIComponent(USERS_TAB);
-  const urls = [
-    `https://opensheet.elk.sh/${SHEET_ID}/${encodedTab}`,
-    `https://opensheet.vercel.app/${SHEET_ID}/${encodedTab}`
-  ];
-  let lastErr = null;
-  for (const url of urls) {
-    try {
-      const res = await fetch(url,{cache:'no-store'});
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (!Array.isArray(data)) throw new Error('Users response was not a row array');
-      rawUsers = data;
-      return data;
-    } catch(err) { lastErr = err; }
+async function apiPost(payload){
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('/exec') === -1) {
+    throw new Error('APPS_SCRIPT_URL must be the deployed Apps Script Web App URL ending in /exec.');
   }
-  throw lastErr || new Error('Could not load Users tab');
+  const res = await fetch(APPS_SCRIPT_URL,{
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(payload || {})
+  });
+  if (!res.ok) throw new Error(`Apps Script HTTP ${res.status}`);
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e) { throw new Error('Apps Script did not return valid JSON. Deploy Web App as Execute as Me, Anyone with the link, New version.'); }
+}
+async function apiGet(action, params){
+  params = params || {};
+  const url = APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action) + '&cacheBust=' + Date.now() + Object.keys(params).map(k => '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k])).join('');
+  const res = await fetch(url,{cache:'no-store'});
+  if (!res.ok) throw new Error(`Apps Script HTTP ${res.status}`);
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e) { throw new Error('Apps Script did not return valid JSON. Check deployment URL.'); }
+}
+async function fetchUsers(){
+  const result = await apiGet('getUsers', {sheetId:SHEET_ID, sheetTab:USERS_TAB});
+  if (!result || result.status === 'error' || result.success === false) throw new Error((result && result.message) || 'Could not load Users tab');
+  rawUsers = Array.isArray(result.users) ? result.users : [];
+  return rawUsers;
 }
 function isActiveUser(row){
   const active = cleanText(userField(row,['IsActive','Active','Status','User Status'])).toLowerCase();
@@ -216,24 +226,18 @@ function isActiveUser(row){
 }
 function buildUserSession(row){
   return {
-    userId: cleanText(userField(row,['UserID','User Id','ID'])),
-    name: cleanText(userField(row,['Name','Full Name','Employee Name'])) || cleanText(userField(row,['Username','User Name'])),
-    email: cleanText(userField(row,['Email','Email Address'])),
-    username: cleanText(userField(row,['Username','User Name','Login','Login Name'])),
-    role: cleanText(userField(row,['Role','User Role'])),
-    department: cleanText(userField(row,['Department','Dept'])),
-    costCenter: cleanText(userField(row,['Cost Center','Cost Centre','CostCenter','CostCentre']))
+    userId: cleanText(row.UserID || row.userId || row.ID || userField(row,['UserID','User Id','ID'])),
+    name: cleanText(row.Name || row.name || userField(row,['Name','Full Name','Employee Name'])) || cleanText(row.Username || row.username || userField(row,['Username','User Name'])),
+    email: cleanText(row.Email || row.email || userField(row,['Email','Email Address'])),
+    username: cleanText(row.Username || row.username || userField(row,['Username','User Name','Login','Login Name'])),
+    role: cleanText(row.Role || row.role || userField(row,['Role','User Role'])),
+    department: cleanText(row.Department || row.department || userField(row,['Department','Dept'])),
+    costCenter: cleanText(row.CostCenter || row['Cost Center'] || row.costCenter || userField(row,['Cost Center','Cost Centre','CostCenter','CostCentre']))
   };
 }
 async function postLoginToSheet(user){
-  if (!APPS_SCRIPT_URL) return;
-  try{
-    await fetch(APPS_SCRIPT_URL,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({action:'loginUser',sheetId:SHEET_ID,sheetTab:USERS_TAB,user,timestamp:new Date().toISOString()})
-    });
-  }catch(e){ console.warn('Could not post login to Users tab', e); }
+  // Login is now handled directly by Apps Script, which updates LastLogin on the Users tab.
+  return Promise.resolve(user);
 }
 function openApp(user){
   currentUser = user;
@@ -250,21 +254,18 @@ async function handleLogin(){
   const username = cleanText(document.getElementById('loginUsername').value);
   const password = cleanText(document.getElementById('loginPassword').value);
   if (!username || !password) { showLoginMessage('error','Enter username and password.'); return; }
-  showLoginMessage('success','Checking login...');
+  showLoginMessage('success','Checking Apps Script connection...');
   try{
-    const users = await fetchUsers();
-    const found = users.find(row=>{
-      const u = cleanText(userField(row,['Username','User Name','Login','Login Name']));
-      const p = cleanText(userField(row,['Password','PasswordHash','Pin','PIN']));
-      return u.toLowerCase() === username.toLowerCase() && p === password && isActiveUser(row);
-    });
-    if (!found) { showLoginMessage('error','Invalid login or inactive user.'); return; }
-    const user = buildUserSession(found);
-    showLoginMessage('success','Login successful.');
-    await postLoginToSheet(user);
+    const result = await apiPost({action:'login', username, password, sheetId:SHEET_ID, sheetTab:USERS_TAB});
+    if (!result || result.status === 'error' || result.success === false) {
+      showLoginMessage('error',(result && result.message) || 'Invalid login or inactive user.');
+      return;
+    }
+    const user = buildUserSession(result.user || {});
+    showLoginMessage('success', result.message || 'Login successful.');
     openApp(user);
   }catch(err){
-    showLoginMessage('error',`Could not load Users tab. ${err.message || err}`);
+    showLoginMessage('error',`Could not connect to Apps Script login. ${err.message || err}`);
   }
 }
 function logout(){
