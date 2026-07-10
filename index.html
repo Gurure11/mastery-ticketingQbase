@@ -37,6 +37,9 @@
     .grid2 { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; }
     .card { padding:16px; margin-bottom:16px; }
     .metric { font-size:24px; font-weight:800; margin-top:8px; } .muted { color:var(--muted); font-size:13px; }
+    .dashboard-heading { margin-bottom:14px; padding:14px 16px; background:#fff; border:1px solid var(--line); border-radius:14px; }
+    .dashboard-heading h2 { margin:0 0 4px; }
+    .period-label { margin-top:5px; color:var(--muted); font-size:12px; font-weight:700; }
     .row { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; }
     .row3 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; }
     table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; }
@@ -84,6 +87,10 @@
 
     <main class="main">
       <section id="dashboard" class="tabPanel">
+        <div class="dashboard-heading">
+          <h2>Dashboard Summary</h2>
+          <div class="muted" id="dashboardAsAt">Data period loading...</div>
+        </div>
         <div class="grid" id="summaryCards"></div>
       </section>
 
@@ -196,7 +203,7 @@
 
   <div id="toast" class="toast"></div>
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5oXTlWqYtg0APKGI0Yg_KC4qHub2eur0ha0lPs9_1bZ0nCmvDTnXf-cbXWgpMJqT38g/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbygckBkJAZ4mrNrlMHJbUlFieoHVs-th9VltYZcovGk5VyXD3V-tAegoOCFWJaW74TBqw/exec';
 let STATE = { user:null, records:[], summary:{}, currencyMode:'USD', usdZarRate:null, rateUpdated:null, approvalAlertShown:false };
 
 function today(){ return new Date().toISOString().slice(0,10); }
@@ -282,20 +289,30 @@ async function refresh(){
   renderDashboard(); renderApprovals(); renderCreditors(); renderRecords();
 }
 function renderDashboard(){
-  const s=STATE.summary, cards=[
-    ['Daily Revenue',money(s.dailyRevenue)],['Weekly Revenue',money(s.weeklyRevenue)],['Monthly Revenue',money(s.monthlyRevenue)],
-    ['Daily Expenditure',money(s.dailyExpenditure)],['Weekly Expenditure',money(s.weeklyExpenditure)],['Monthly Expenditure',money(s.monthlyExpenditure)],
-    ['Pending Executive1',s.pendingExecutive1||0],['Pending Executive2',s.pendingExecutive2||0],['Total Approval Requests',s.totalApprovalRequests||0],
-    ['Total Tanks So Far',s.totalTanks||0],['Total Rock Samples',s.totalRockSamples||0],['Total Sand Samples',s.totalSandSamples||0],
-    ['Average Rock Grade',Number(s.averageRockGrade||0).toFixed(3)],['Average Sand Grade',Number(s.averageSandGrade||0).toFixed(3)],
-    ['Total Sands Tonnage Leached',Number(s.totalSandsTonnageLeached||0).toFixed(3)],['Average Sample Grade',Number(s.averageSampleGrade||0).toFixed(3)],
-    ['Expected Bullion',Number(s.expectedBullion||0).toFixed(3)],
-    ['Daily Ore Production',Number(s.dailyOreProduction||0).toFixed(3)],['Weekly Ore Production',Number(s.weeklyOreProduction||0).toFixed(3)],['Monthly Ore Production',Number(s.monthlyOreProduction||0).toFixed(3)],
-    ['Total Ore Production',Number(s.totalOreProduction||0).toFixed(3)],['Daily Tonnes Milled',Number(s.dailyTonnesMilled||0).toFixed(3)],['Weekly Tonnes Milled',Number(s.weeklyTonnesMilled||0).toFixed(3)],['Monthly Tonnes Milled',Number(s.monthlyTonnesMilled||0).toFixed(3)],['Total Tonnes Milled',Number(s.totalTonnesMilled||0).toFixed(3)],['Average Ore Grade',Number(s.averageOreGrade||0).toFixed(3)],
-    ['Bullion Recovered',Number(s.totalBullionRecovered||0).toFixed(3)],['Bullion Total Value',money(s.bullionTotalValue||0)],
-    ['Creditors Due 30 Days',money(s.creditorsDue30Amount||0)],['Creditors Due 60 Days',money(s.creditorsDue60Amount||0)]
+  const s=STATE.summary || {};
+  const dailyLabel=s.dailyLabel||s.summaryDateLabel||'Current day';
+  const weeklyLabel=s.weeklyLabel||'Current week';
+  const monthlyLabel=s.monthlyLabel||'Current month';
+  const asAtLabel=s.asAtLabel||s.summaryDateLabel||'Latest Google Sheet data';
+  const totalLabel=s.totalLabel||('All records as at '+asAtLabel);
+  const currentLabel='Current as at '+asAtLabel;
+  const heading=document.getElementById('dashboardAsAt');
+  if(heading) heading.textContent='Data reflected as at '+asAtLabel+' • Week: '+weeklyLabel+' • Month: '+monthlyLabel;
+
+  const cards=[
+    ['Daily Revenue',money(s.dailyRevenue),dailyLabel],['Weekly Revenue',money(s.weeklyRevenue),weeklyLabel],['Monthly Revenue',money(s.monthlyRevenue),monthlyLabel],
+    ['Daily Expenditure',money(s.dailyExpenditure),dailyLabel],['Weekly Expenditure',money(s.weeklyExpenditure),weeklyLabel],['Monthly Expenditure',money(s.monthlyExpenditure),monthlyLabel],
+    ['Pending Executive1',s.pendingExecutive1||0,currentLabel],['Pending Executive2',s.pendingExecutive2||0,currentLabel],['Total Approval Requests',s.totalApprovalRequests||0,currentLabel],
+    ['Total Tanks So Far',s.totalTanks||0,totalLabel],['Total Rock Samples',s.totalRockSamples||0,totalLabel],['Total Sand Samples',s.totalSandSamples||0,totalLabel],
+    ['Average Rock Grade',Number(s.averageRockGrade||0).toFixed(3),totalLabel],['Average Sand Grade',Number(s.averageSandGrade||0).toFixed(3),totalLabel],
+    ['Total Sands Tonnage Leached',Number(s.totalSandsTonnageLeached||0).toFixed(3),totalLabel],['Average Sample Grade',Number(s.averageSampleGrade||0).toFixed(3),totalLabel],
+    ['Expected Bullion',Number(s.expectedBullion||0).toFixed(3),totalLabel],
+    ['Daily Ore Production',Number(s.dailyOreProduction||0).toFixed(3),dailyLabel],['Weekly Ore Production',Number(s.weeklyOreProduction||0).toFixed(3),weeklyLabel],['Monthly Ore Production',Number(s.monthlyOreProduction||0).toFixed(3),monthlyLabel],
+    ['Total Ore Production',Number(s.totalOreProduction||0).toFixed(3),totalLabel],['Daily Tonnes Milled',Number(s.dailyTonnesMilled||0).toFixed(3),dailyLabel],['Weekly Tonnes Milled',Number(s.weeklyTonnesMilled||0).toFixed(3),weeklyLabel],['Monthly Tonnes Milled',Number(s.monthlyTonnesMilled||0).toFixed(3),monthlyLabel],['Total Tonnes Milled',Number(s.totalTonnesMilled||0).toFixed(3),totalLabel],['Average Ore Grade',Number(s.averageOreGrade||0).toFixed(3),totalLabel],
+    ['Bullion Recovered',Number(s.totalBullionRecovered||0).toFixed(3),totalLabel],['Bullion Total Value',money(s.bullionTotalValue||0),totalLabel],
+    ['Creditors Due 30 Days',money(s.creditorsDue30Amount||0),'Due within 30 days from '+asAtLabel],['Creditors Due 60 Days',money(s.creditorsDue60Amount||0),'Due 31–60 days from '+asAtLabel]
   ];
-  document.getElementById('summaryCards').innerHTML = cards.map(c=>`<div class="card"><div class="muted">${c[0]}</div><div class="metric">${c[1]}</div></div>`).join('');
+  document.getElementById('summaryCards').innerHTML = cards.map(c=>`<div class="card"><div class="muted">${c[0]}</div><div class="period-label">${c[2]}</div><div class="metric">${c[1]}</div></div>`).join('');
 }
 function renderApprovals(){
   const role=(STATE.user.role||'').toLowerCase(); const basket = role==='executive1'?'Executive1':role==='executive2'?'Executive2':'';
