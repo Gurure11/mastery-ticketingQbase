@@ -581,7 +581,7 @@
         <input type="hidden" id="vehicleRegBookLink">
         <input type="hidden" id="trackingCertificateLink">
         <input type="hidden" id="vehicleInvoiceLink">
-        <input type="hidden" id="totalInstallmentsPaid">
+        <input type="hidden" id="assetTotalInstallmentsPaid">
         <input type="hidden" id="regBookLink">
         <input type="hidden" id="imageLinks">
         <input type="hidden" id="assetStatus">
@@ -630,7 +630,7 @@
   const MAIN_SHEET_NAME = "Asssert Reg";
   const EQUIPMENT_SHEET_NAME = "Drilling_Equipment";
   const EQUIPMENT_FILTERS = ["Drilling", "Yellow Plant", "Small Plant"];
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvgK2BUoZ9zSRCDfHinGZ-vs-GN8-9iRq6E2UNcs2L3IvoLvL63JJdwkVCif1r7E0Z/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyQuBXv-pLgp9Blf-RnqdRMOtd8E4XH2KxKolrnVj0OhMozqZ32e3E9v7gGJaRnC2uq/exec";
 
   const FIELD_IDS = [
     "code","assetClass","purchaseDate","purchasedBy","financing","description",
@@ -785,6 +785,20 @@
     return ((asAt.getFullYear() - start.getFullYear()) * 12) + (asAt.getMonth() - start.getMonth()) + 1;
   }
 
+  function installmentMonthsFromPurchase(purchaseDate, asAtDate = new Date()) {
+    const purchase = parseAssetDate(purchaseDate);
+    if (!purchase || purchase > asAtDate) return 0;
+    return ((asAtDate.getFullYear() - purchase.getFullYear()) * 12)
+      + (asAtDate.getMonth() - purchase.getMonth()) + 1;
+  }
+
+  function calculateTotalInstallmentsPaid(asset, asAtDate = new Date()) {
+    const installment = toNumber(getField(asset, "installmentAmount"));
+    if (installment <= 0) return 0;
+    const months = installmentMonthsFromPurchase(getField(asset, "purchaseDate"), asAtDate);
+    return installment * months;
+  }
+
   function applyDepreciationToData(data, options = {}) {
     const purchasePrice = getAnyNumber(data, ["purchasePrice", "Purchase Price", "cost", "Cost"]);
     let residualValue = getAnyNumber(data, ["residualValue", "Residual Value", "residual", "Residual"]);
@@ -935,7 +949,9 @@
     const soldRows = allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === "sold");
     document.getElementById("totalAssetValue").textContent = money(activeRows.reduce((sum, a) => sum + calcAssetValue(a), 0));
     document.getElementById("totalDepreciation").textContent = money(activeRows.reduce((sum, a) => sum + toNumber(getField(a, "accumDpn")), 0));
-    document.getElementById("totalInstallmentsPaid").textContent = money(allAssets.reduce((sum, a) => sum + toNumber(getField(a, "totalInstallmentsPaid")), 0));
+    document.getElementById("totalInstallmentsPaid").textContent = money(
+      allAssets.reduce((sum, asset) => sum + calculateTotalInstallmentsPaid(asset), 0)
+    );
     document.getElementById("cntStolen").textContent = stolenRows.length;
     document.getElementById("valStolen").textContent = money(stolenRows.reduce((sum, a) => sum + calcAssetValue(a), 0));
     document.getElementById("cntSold").textContent = soldRows.length;
@@ -1138,7 +1154,7 @@
         document.getElementById("vehicleRegBookLink").value = getField(data, "vehicleRegBookLink") || "";
         document.getElementById("trackingCertificateLink").value = getField(data, "trackingCertificateLink") || "";
         document.getElementById("vehicleInvoiceLink").value = getField(data, "vehicleInvoiceLink") || "";
-        document.getElementById("totalInstallmentsPaid").value = getField(data, "totalInstallmentsPaid") || "";
+        document.getElementById("assetTotalInstallmentsPaid").value = calculateTotalInstallmentsPaid(data);
         document.getElementById("regBookLink").value = data.regBookLink || "";
         document.getElementById("imageLinks").value = getField(data, "imageLinks") || "";
         document.getElementById("assetStatus").value = getField(data, "assetStatus") || "Active";
@@ -1320,7 +1336,7 @@
     data.vehicleRegBookLink = document.getElementById("vehicleRegBookLink").value || "";
     data.trackingCertificateLink = document.getElementById("trackingCertificateLink").value || "";
     data.vehicleInvoiceLink = document.getElementById("vehicleInvoiceLink").value || "";
-    data.totalInstallmentsPaid = document.getElementById("totalInstallmentsPaid").value || "";
+    data.totalInstallmentsPaid = calculateTotalInstallmentsPaid(data);
     data.regBookLink = document.getElementById("regBookLink").value || "";
     data.action = "saveAsset";
     data.sheetId = SHEET_ID;
@@ -1342,7 +1358,7 @@
       document.getElementById("vehicleRegBookLink").value = "";
       document.getElementById("trackingCertificateLink").value = "";
       document.getElementById("vehicleInvoiceLink").value = "";
-      document.getElementById("totalInstallmentsPaid").value = "";
+      document.getElementById("assetTotalInstallmentsPaid").value = "";
       document.getElementById("regBookLink").value = "";
       document.getElementById("saveBtn").textContent = "Save Asset";
       await loadAssets();
@@ -1358,7 +1374,7 @@
     document.getElementById("vehicleRegBookLink").value = "";
     document.getElementById("trackingCertificateLink").value = "";
       document.getElementById("vehicleInvoiceLink").value = "";
-      document.getElementById("totalInstallmentsPaid").value = "";
+      document.getElementById("assetTotalInstallmentsPaid").value = "";
     document.getElementById("regBookLink").value = "";
     document.getElementById("saveBtn").textContent = "Save Asset";
     showStatus("Form cleared.");
@@ -1371,7 +1387,7 @@
     document.getElementById("vehicleRegBookLink").value = "";
     document.getElementById("trackingCertificateLink").value = "";
       document.getElementById("vehicleInvoiceLink").value = "";
-      document.getElementById("totalInstallmentsPaid").value = "";
+      document.getElementById("assetTotalInstallmentsPaid").value = "";
     document.getElementById("regBookLink").value = "";
     document.getElementById("saveBtn").textContent = "Save Asset";
     window.scrollTo({ top: document.getElementById("entrySection").offsetTop - 20, behavior: "smooth" });
@@ -1384,7 +1400,7 @@
     document.getElementById("vehicleRegBookLink").value = "";
     document.getElementById("trackingCertificateLink").value = "";
       document.getElementById("vehicleInvoiceLink").value = "";
-      document.getElementById("totalInstallmentsPaid").value = "";
+      document.getElementById("assetTotalInstallmentsPaid").value = "";
     document.getElementById("regBookLink").value = "";
     document.getElementById("saveBtn").textContent = "Save Asset";
     showStatus("");
@@ -1399,7 +1415,7 @@
     document.getElementById("vehicleRegBookLink").value = "";
     document.getElementById("trackingCertificateLink").value = "";
       document.getElementById("vehicleInvoiceLink").value = "";
-      document.getElementById("totalInstallmentsPaid").value = "";
+      document.getElementById("assetTotalInstallmentsPaid").value = "";
     document.getElementById("regBookLink").value = "";
     document.getElementById("saveBtn").textContent = "Save Asset";
     showStatus("");
