@@ -2,395 +2,1498 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LM Commodities Income & Expenditure</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Distinct Infrastructure · Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    :root { --bg:#f5f7fb; --card:#fff; --text:#172033; --muted:#667085; --brand:#1f7a4d; --bad:#b42318; --warn:#b54708; --line:#d9dee8; }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family:Arial, sans-serif; background:var(--bg); color:var(--text); }
-    .brand-lockup { display:flex; align-items:center; gap:12px; }
-    .brand-logo { width:72px; height:72px; object-fit:contain; border-radius:14px; background:#fff; box-shadow:0 8px 24px rgba(0,0,0,.12); }
-    .top-logo { width:48px; height:48px; object-fit:contain; border-radius:10px; background:#fff; margin-right:10px; vertical-align:middle; }
-    .wa-link { display:inline-block; margin-top:6px; padding:8px 10px; border-radius:9px; background:#25D366; color:#fff; text-decoration:none; font-weight:700; font-size:12px; }
+    :root {
+      --primary-blue: #0b2f6b;
+      --deep-blue: #071f47;
+      --bright-blue: #1464d2;
+      --soft-blue: #eaf3ff;
+      --gold: #d4af37;
+      --gold-light: #ffe7a3;
+      --gold-deep: #9a7416;
+      --white: #ffffff;
+      --text: #12304f;
+      --muted: #6b7a90;
+      --line: rgba(20,68,126,0.16);
+      --shadow: 0 20px 60px rgba(7,31,71,0.18);
+      --card-radius: 22px;
+      --transition: 0.2s ease;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Roboto, Arial, sans-serif; }
+    body {
+      min-height:100vh;
+      background: radial-gradient(circle at top left, rgba(212,175,55,0.32), transparent 30%),
+                  linear-gradient(135deg, var(--deep-blue) 0%, var(--primary-blue) 45%, var(--bright-blue) 100%);
+      padding:24px;
+      color:var(--text);
+      overflow-x:hidden;
+    }
+    body::before {
+      content:"";
+      position:fixed;
+      inset:-30%;
+      background:linear-gradient(120deg, transparent, rgba(255,255,255,0.12), transparent);
+      animation:shine 8s linear infinite;
+      pointer-events:none;
+    }
+    @keyframes shine {
+      0%{transform:translateX(-40%) rotate(10deg)}
+      100%{transform:translateX(40%) rotate(10deg)}
+    }
+    .container {
+      max-width:1400px;
+      margin:auto;
+      background:rgba(255,255,255,0.96);
+      padding:28px;
+      border-radius:26px;
+      box-shadow:var(--shadow);
+      border:1px solid rgba(255,255,255,0.5);
+      animation:pageIn 0.75s ease both;
+    }
+    @keyframes pageIn {
+      from{opacity:0; transform:translateY(18px)}
+      to{opacity:1; transform:translateY(0)}
+    }
+    .header {
+      text-align:center;
+      margin-bottom:28px;
+      padding:28px 20px;
+      border-radius:22px;
+      background:linear-gradient(135deg, var(--primary-blue), var(--bright-blue));
+      color:white;
+      box-shadow:0 14px 35px rgba(11,47,107,0.28);
+      position:relative;
+      overflow:hidden;
+    }
+    .header::after {
+      content:"";
+      position:absolute;
+      width:180px;
+      height:180px;
+      border-radius:50%;
+      background:rgba(212,175,55,0.25);
+      right:-50px;
+      top:-70px;
+      animation:floatOrb 5s ease-in-out infinite alternate;
+    }
+    @keyframes floatOrb {
+      from{transform:translateY(0) scale(1)}
+      to{transform:translateY(22px) scale(1.08)}
+    }
+    .header h1 { color:white; margin-bottom:8px; font-size:clamp(26px, 4vw, 42px); letter-spacing:0.5px; }
+    .header p { color:#eef6ff; font-size:14px; line-height:1.5; position:relative; z-index:1; }
+    .header strong { color:var(--gold-light); }
+
+    /* ----- DASHBOARD CARDS (clickable) ----- */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 18px;
+      margin: 28px 0 24px 0;
+    }
+    .stat-card {
+      background: white;
+      padding: 18px 12px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 18px rgba(11,47,107,0.06);
+      text-align: center;
+      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+      backdrop-filter: blur(2px);
+      background: rgba(255,255,255,0.85);
+      cursor: pointer;
+      position: relative;
+    }
+    .stat-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 18px 30px rgba(11,47,107,0.18);
+      border-color: var(--gold);
+    }
+    .stat-card:active {
+      transform: scale(0.96);
+    }
+    .stat-card i {
+      font-size: 28px;
+      color: var(--bright-blue);
+      background: var(--soft-blue);
+      padding: 10px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+    .stat-card .count {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--primary-blue);
+      line-height: 1.2;
+    }
+    .stat-card .label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .stat-card .sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .stat-card .filter-badge {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      font-size: 10px;
+      background: var(--gold);
+      color: #071f47;
+      padding: 2px 8px;
+      border-radius: 10px;
+      opacity: 0.7;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin: 12px 0 22px 0;
+      gap: 12px;
+    }
+    .action-row .btn-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+      color: #071f47;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 15px;
+      box-shadow: 0 10px 24px rgba(154,116,22,0.28);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-gold:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 32px rgba(154,116,22,0.36);
+      filter: saturate(1.1);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--primary-blue);
+      color: var(--primary-blue);
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-outline:hover {
+      background: var(--primary-blue);
+      color: white;
+    }
+    .btn-back {
+      background: linear-gradient(135deg, #6c7a8a, #4a5568);
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-back:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+
+    /* form section */
+    #entrySection {
+      margin-top: 28px;
+      border-top: 2px dashed var(--line);
+      padding-top: 20px;
+    }
+    #entrySection h2 {
+      color: var(--primary-blue);
+      margin-bottom: 16px;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .form-grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap:16px;
+      margin-bottom:22px;
+    }
+    .form-group {
+      display:flex;
+      flex-direction:column;
+      padding:14px;
+      background:linear-gradient(180deg, #ffffff, var(--soft-blue));
+      border:1px solid var(--line);
+      border-radius:18px;
+      transition:transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+      animation:cardIn 0.45s ease both;
+    }
+    .form-group:hover {
+      transform:translateY(-3px);
+      box-shadow:0 14px 28px rgba(11,47,107,0.12);
+      border-color:rgba(212,175,55,0.7);
+    }
+    @keyframes cardIn {
+      from{opacity:0; transform:translateY(10px)}
+      to{opacity:1; transform:translateY(0)}
+    }
+    label {
+      margin-bottom:7px;
+      font-weight:bold;
+      color:var(--primary-blue);
+      font-size:13px;
+    }
+    input, select, textarea {
+      width:100%;
+      padding:12px 13px;
+      border:1px solid rgba(11,47,107,0.22);
+      border-radius:12px;
+      font-size:14px;
+      background:white;
+      color:var(--text);
+      transition:border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline:none;
+      border-color:var(--gold);
+      box-shadow:0 0 0 4px rgba(212,175,55,0.2);
+      transform:translateY(-1px);
+    }
+    textarea { min-height:44px; resize:vertical; }
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 10px;
+    }
+    button {
+      background:linear-gradient(135deg, var(--gold), var(--gold-deep));
+      color:#071f47;
+      border:none;
+      padding:14px 30px;
+      border-radius:999px;
+      cursor:pointer;
+      font-size:15px;
+      font-weight:800;
+      box-shadow:0 12px 26px rgba(154,116,22,0.28);
+      transition:transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+    button:hover {
+      transform:translateY(-3px);
+      box-shadow:0 18px 34px rgba(154,116,22,0.36);
+      filter:saturate(1.1);
+    }
+    .btn-blue {
+      background:linear-gradient(135deg, var(--bright-blue), var(--primary-blue));
+      color:white;
+    }
+    .btn-danger {
+      background:linear-gradient(135deg, #ef4444, #991b1b);
+      color:white;
+    }
+    .status {
+      margin-top:16px;
+      font-weight:bold;
+      color:var(--primary-blue);
+      background:rgba(212,175,55,0.16);
+      border-left:5px solid var(--gold);
+      padding:12px 14px;
+      border-radius:12px;
+      min-height:20px;
+    }
+    .table-wrap {
+      width:100%;
+      overflow:auto;
+      border-radius:18px;
+      border:1px solid var(--line);
+      margin-top:20px;
+      box-shadow:0 10px 24px rgba(11,47,107,0.08);
+      max-height:72vh;
+    }
+    table {
+      width:100%;
+      min-width:700px;
+      border-collapse:collapse;
+      background:white;
+      table-layout:auto;
+    }
+    th {
+      background:linear-gradient(135deg, var(--primary-blue), var(--bright-blue));
+      color:white;
+      padding:9px;
+      text-align:left;
+      font-size:11px;
+      line-height:1.15;
+      white-space:nowrap;
+      border-bottom:2px solid var(--gold);
+      position:sticky;
+      top:0;
+      z-index:2;
+    }
+    td {
+      padding:8px 9px;
+      border-bottom:1px solid var(--line);
+      font-size:11px;
+      line-height:1.15;
+      color:var(--text);
+      white-space:nowrap;
+      max-width:170px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    tr:hover { background:#f4f8ff; }
     .hidden { display:none !important; }
-    .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
-    .login-card, .card { background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:0 10px 30px rgba(20,30,50,.07); }
-    .login-card { width:420px; padding:28px; }
-    h1,h2,h3 { margin:0 0 14px; }
-    label { display:block; font-weight:700; margin:10px 0 6px; font-size:13px; }
-    input, select, textarea { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; font-size:14px; background:#fff; }
-    textarea { min-height:80px; resize:vertical; }
-    button { border:0; border-radius:10px; padding:11px 14px; background:var(--brand); color:white; font-weight:700; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease; }
-    button:hover { transform:translateY(-1px); box-shadow:0 8px 18px rgba(31,122,77,.22); opacity:.95; }
-    button:disabled { opacity:.65; cursor:wait; transform:none; box-shadow:none; }
-    .syncing { position:relative; pointer-events:none; opacity:.78; }
-    .syncing::after { content:'Synchronising...'; position:fixed; right:18px; top:78px; background:#0b2b1c; color:#fff; padding:10px 14px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,.18); z-index:5; }
-    .filters { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; align-items:end; }
-    .report-box { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px; margin-top:14px; }
-    @media print { .topbar,.tabs,button,.no-print { display:none !important; } body { background:#fff; } .card { box-shadow:none; border:0; } }
-    button.secondary { background:#344054; } button.danger { background:var(--bad); } button.light { background:#eef2f6; color:#172033; }
-    .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:#0b2b1c; color:#fff; position:sticky; top:0; z-index:2; }
-    .tabs { display:flex; gap:8px; flex-wrap:wrap; padding:14px 20px; background:#fff; border-bottom:1px solid var(--line); }
-    .tabs button { background:#eef2f6; color:#172033; } .tabs button.active { background:var(--brand); color:#fff; }
-    .main { padding:20px; max-width:1400px; margin:0 auto; }
-    .grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px; }
-    .grid2 { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; }
-    .card { padding:16px; margin-bottom:16px; }
-    .metric { font-size:24px; font-weight:800; margin-top:8px; } .muted { color:var(--muted); font-size:13px; }
-    .dashboard-heading { margin-bottom:14px; padding:14px 16px; background:#fff; border:1px solid var(--line); border-radius:14px; }
-    .dashboard-heading h2 { margin:0 0 4px; }
-    .period-label { margin-top:5px; color:var(--muted); font-size:12px; font-weight:700; }
-    .row { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; }
-    .row3 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; }
-    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; }
-    th,td { padding:10px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; vertical-align:top; }
-    th { background:#f0f3f8; }
-    .pill { display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700; background:#eef2f6; }
-    .ok { color:var(--brand); } .bad { color:var(--bad); } .warn { color:var(--warn); }
-    .toast { position:fixed; right:18px; bottom:18px; background:#172033; color:#fff; padding:12px 16px; border-radius:12px; display:none; z-index:3; max-width:380px; }
-    .currency-tools { display:inline-flex; align-items:center; gap:8px; margin-right:10px; flex-wrap:wrap; }
-    .rate-badge { font-size:12px; color:#c7f9dd; }
-    .approval-badge { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; margin-left:6px; padding:0 7px; border-radius:999px; background:var(--bad); color:#fff; font-size:12px; font-weight:800; vertical-align:middle; }
-    .approval-alert { border:1px solid #fed7aa; background:#fff7ed; color:#9a3412; border-radius:14px; padding:12px 14px; margin-bottom:14px; font-weight:700; }
-    @media(max-width:900px){ .grid,.grid2,.row,.row3 { grid-template-columns:1fr; } .topbar { align-items:flex-start; gap:10px; flex-direction:column; } }
+    
+    /* Actions column - moved to right */
+    .action-col {
+      min-width: 110px;
+      text-align: right;
+      position:sticky;
+      right:0;
+      background:#fff;
+      z-index:1;
+    }
+    .action-col .row-actions {
+      display: flex;
+      gap: 4px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .row-actions button {
+      padding: 4px 8px;
+      font-size: 10px;
+      margin: 0;
+      border-radius: 14px;
+    }
+    .row-actions .btn-sm-edit { background: var(--bright-blue); color: white; }
+    .row-actions .btn-sm-edit:hover { filter: brightness(1.1); }
+    .row-actions .btn-sm-upload { background: var(--gold); color: #071f47; }
+    .row-actions .btn-sm-upload:hover { filter: brightness(1.1); }
+    .row-actions .btn-sm-delete { background: #ef4444; color: white; }
+    .row-actions .btn-sm-stolen { background: #f97316; color: white; }
+    .row-actions .btn-sm-sold { background: #16a34a; color: white; }
+
+    .regbook-link {
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .regbook-link a {
+      color: var(--bright-blue);
+      text-decoration: none;
+      border-bottom: 1px dotted var(--bright-blue);
+    }
+    .regbook-link a:hover { color: var(--gold-deep); }
+
+
+    th.action-col {
+      z-index:3;
+      background:linear-gradient(135deg, var(--primary-blue), var(--bright-blue));
+    }
+    #assetTable td:nth-child(6),
+    #assetTable td:nth-child(11),
+    #assetTable td:nth-child(12),
+    #assetTable td:nth-child(17),
+    #assetTable td:nth-child(18),
+    #assetTable td:nth-child(19),
+    #assetTable td:nth-child(25) {
+      max-width:130px;
+    }
+
+    .filter-active {
+      border-color: var(--gold) !important;
+      box-shadow: 0 0 0 3px rgba(212,175,55,0.3) !important;
+    }
+
+
+    .transaction-toolbar {
+      display: grid;
+      grid-template-columns: 1.3fr repeat(4, minmax(145px, 1fr)) auto auto;
+      gap: 10px;
+      align-items: end;
+      padding: 12px;
+      margin: 8px 0 14px 0;
+      background: linear-gradient(180deg, #ffffff, var(--soft-blue));
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .transaction-toolbar .filter-box {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .transaction-toolbar label {
+      margin-bottom: 0;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.25px;
+    }
+    .transaction-toolbar input,
+    .transaction-toolbar select {
+      padding: 9px 10px;
+      font-size: 12px;
+      border-radius: 10px;
+    }
+    .transaction-toolbar button {
+      padding: 10px 16px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+      body { padding:12px; }
+      .container { padding:16px; border-radius:20px; }
+      .dashboard-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .action-row { flex-direction: column; align-items: stretch; }
+      .btn-gold, .btn-outline { justify-content: center; }
+      .form-actions { flex-direction: column; }
+      .form-actions button { width: 100%; justify-content: center; }
+      .action-col .row-actions { justify-content: center; }
+      .transaction-toolbar { grid-template-columns: 1fr; }
+      .transaction-toolbar button { width: 100%; justify-content: center; }
+    }
+    @media print {
+      body { background:white; }
+      .header, .action-row, #entrySection, .toolbar, .connection-panel, .status, .btn-gold, .btn-outline { display:none !important; }
+      .container { box-shadow:none; border:none; max-width:none; padding:0; }
+    }
   </style>
 </head>
 <body>
-  <div id="loginView" class="login-wrap">
-    <div class="login-card">
-      <div class="brand-lockup"><img src="lmcommodities.png" alt="LM Commodities Logo" class="brand-logo"><div><h1>LM Commodities</h1><p class="muted">Income, expenditure, approvals, samples and tanks dashboard.</p></div></div>
-      <label>Username</label><input id="loginUsername" autocomplete="username" />
-      <label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" />
-      <button style="width:100%;margin-top:16px" onclick="login()">Login</button>
-      <p class="muted">Users are fetched from the <b>Users</b> tab.</p>
+<div class="container" id="appContainer">
+  <div class="header">
+    <h1>Distinct Infrastructure</h1>
+    <p>Vehicle & Asset Register · Dashboard</p>
+    <p><strong>Google Storage:</strong> Asset Register O/a Distinct Infrastructure</p>
+  </div>
+
+  <!-- DASHBOARD CARDS (clickable) - Focus on Drilling, Yellow, and Small Plant -->
+  <div class="dashboard-grid" id="dashboardCards">
+    <div class="stat-card" data-filter="Drilling"><i class="fas fa-oil-can"></i><div class="count" id="cntDrilling">0</div><div class="label">Drilling Plant</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Yellow Plant"><i class="fas fa-digging"></i><div class="count" id="cntYellow">0</div><div class="label">Yellow Plant</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Small Plant"><i class="fas fa-th-list"></i><div class="count" id="cntSmallPlant">0</div><div class="label">Small Plant</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Trucks"><i class="fas fa-truck"></i><div class="count" id="cntTrucks">0</div><div class="label">Trucks</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Trailers"><i class="fas fa-trailer"></i><div class="count" id="cntTrailers">0</div><div class="label">Trailers</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Executive"><i class="fas fa-car"></i><div class="count" id="cntExecutive">0</div><div class="label">Executive Cars</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Bowser"><i class="fas fa-gas-pump"></i><div class="count" id="cntBowser">0</div><div class="label">Bowsers</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Admin"><i class="fas fa-building"></i><div class="count" id="cntAdmin">0</div><div class="label">Admin</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-filter="Projects &amp; Tender"><i class="fas fa-briefcase"></i><div class="count" id="cntProjects">0</div><div class="label">Projects &amp; Tender</div><span class="filter-badge">click</span></div>
+  </div>
+
+  <div class="dashboard-grid" id="executiveSummaryCards">
+    <div class="stat-card" data-special-filter="all-active"><i class="fas fa-coins"></i><div class="count" id="totalAssetValue">R 0.00</div><div class="label">Total Vehicle & Equipment Value</div><div class="sub">Active NBV / Value</div></div>
+    <div class="stat-card" data-special-filter="all-active"><i class="fas fa-chart-line"></i><div class="count" id="totalDepreciation">R 0.00</div><div class="label">Total Depreciation To Date</div><div class="sub">Accumulated DPN</div></div>
+    <div class="stat-card"><i class="fas fa-money-check-alt"></i><div class="count" id="totalInstallmentsPaid">R 0.00</div><div class="label">Total Installments Paid</div><div class="sub">Cumulative VAF payments</div></div>
+    <div class="stat-card" data-special-filter="Stolen"><i class="fas fa-exclamation-triangle"></i><div class="count" id="cntStolen">0</div><div class="label">Stolen Vehicles / Equipment</div><div class="sub" id="valStolen">R 0.00</div><span class="filter-badge">click</span></div>
+    <div class="stat-card" data-special-filter="Sold"><i class="fas fa-hand-holding-usd"></i><div class="count" id="cntSold">0</div><div class="label">Sold Vehicles / Equipment</div><div class="sub" id="valSold">R 0.00</div><span class="filter-badge">click</span></div>
+  </div>
+
+  <!-- ACTION ROW -->
+  <div class="action-row">
+    <div class="btn-group">
+      <button class="btn-gold" id="newEntryBtn"><i class="fas fa-plus-circle"></i> New Entry</button>
+      <button class="btn-outline" id="refreshDashBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+      <button class="btn-outline" id="clearFilterBtn"><i class="fas fa-times-circle"></i> Clear Filter</button>
+    </div>
+    <div class="btn-group">
+      <button class="btn-outline" id="printBtn"><i class="fas fa-print"></i> Print</button>
+      <button class="btn-outline" id="excelBtn"><i class="fas fa-file-excel"></i> CSV</button>
     </div>
   </div>
 
-  <div id="appView" class="hidden">
-    <div class="topbar">
-      <div class="brand-lockup"><img src="lmcommodities.png" alt="LM Commodities Logo" class="top-logo"><div><b>LM Commodities Income & Expenditure</b><div class="muted" id="liveStatus" style="color:#c7f9dd">Connecting...</div></div></div>
-      <div><span class="currency-tools"><button class="light" id="currencyToggle" onclick="toggleCurrencyDisplay()">Convert to Rand</button><span id="rateBadge" class="rate-badge"></span></span><span id="userBadge"></span> <button class="light" onclick="logout()">Logout</button></div>
-    </div>
-    <div class="tabs">
-      <button class="active" onclick="showTab('dashboard',this)">Dashboard</button>
-      <button onclick="showTab('revenue',this)">Daily Revenue</button>
-      <button onclick="showTab('expense',this)">Expense Request</button>
-      <button onclick="showTab('dailyexpense',this)">Daily Expenditure</button>
-      <button onclick="showTab('approvals',this)">Approvals <span id="approvalTabBadge" class="approval-badge hidden">0</span></button>
-      <button onclick="showTab('samples',this)">Rock/Sand Samples</button>
-      <button onclick="showTab('tanks',this)">Tanks Run</button>
-      <button onclick="showTab('production',this)">Ore Production</button>
-      <button onclick="showTab('reports',this)">Reports</button>
-      <button onclick="showTab('creditors',this)">Creditors</button>
-      <button onclick="showTab('records',this)">Records</button>
-    </div>
-
-    <main class="main">
-      <section id="dashboard" class="tabPanel">
-        <div class="dashboard-heading">
-          <h2>Dashboard Summary</h2>
-          <div class="muted" id="dashboardAsAt">Data period loading...</div>
-        </div>
-        <div class="grid" id="summaryCards"></div>
-      </section>
-
-      <section id="revenue" class="tabPanel hidden">
-        <div class="card">
-          <h2>Record Daily Revenue</h2>
-          <div class="row3"><div><label>Date</label><input id="revDate" type="date"></div><div><label>Amount</label><input id="revAmount" inputmode="decimal"></div><div><label>Category</label><input id="revCategory" value="Revenue"></div></div>
-          <label>Description</label><textarea id="revDescription"></textarea>
-          <button onclick="saveRevenue()">Save Revenue</button>
-        </div>
-      </section>
-
-      <section id="expense" class="tabPanel hidden">
-        <div class="card">
-          <h2>Request Funds for Expense</h2>
-          <div class="row3"><div><label>Date</label><input id="expDate" type="date"></div><div><label>Amount</label><input id="expAmount" inputmode="decimal"></div><div><label>Request Approval Number</label><input id="expApprovalNo" placeholder="Approval / request no."></div></div>
-          <div class="row3"><div><label>Category</label><select id="expCategory" onchange="toggleExpenseOther()"><option>Diesel</option><option>Mercury</option><option>Electricity</option><option>Salaries</option><option>Wages</option><option>Transport</option><option>Drill bits</option><option>R/D oil</option><option>Cyanide</option><option>Caustic Soda</option><option>Burnt Lime</option><option>Hydrogen peroxide</option><option>Hydrochloric acid</option><option>Nitric acid</option><option>Borax</option><option>Hand gas</option><option>Acetilyn</option><option>Explosives</option><option>Drill steel</option><option>Grease</option><option>Engine Oil</option><option>Other</option></select></div></div>
-          <div id="expOtherWrap" class="hidden"><label>Other Category</label><input id="expOtherCategory" placeholder="Enter expense category"></div>
-          <label>Purpose for request of funds</label><textarea id="expPurpose"></textarea>
-          <label>Payment request info</label><textarea id="expPaymentInfo" placeholder="Supplier, bank details, invoice reference, notes"></textarea>
-          <button onclick="requestExpense()">Submit Expense Request</button>
-        </div>
-      </section>
-
-
-      <section id="dailyexpense" class="tabPanel hidden">
-        <div class="card">
-          <h2>Enter Daily Expenditure</h2>
-          <p class="muted">This posts directly to Daily Expenses on the dashboard and accrues into weekly and monthly expenses.</p>
-          <div class="row3">
-            <div><label>Date</label><input id="dailyExpDate" type="date"></div>
-            <div><label>Amount</label><input id="dailyExpAmount" inputmode="decimal"></div>
-            <div><label>Request Approval Number</label><input id="dailyExpApprovalNo" placeholder="Required approval / request no."></div>
-          </div>
-          <div class="row3">
-            <div><label>Category</label><input id="dailyExpCategory" value="Daily Expenditure"></div>
-            <div><label>Supplier / Payment Info</label><input id="dailyExpPaymentInfo" placeholder="Supplier, invoice, paid by"></div>
-            <div><label>Notes / Purpose</label><input id="dailyExpPurpose" placeholder="What was paid for"></div>
-          </div>
-          <button onclick="saveDailyExpense()">Save Daily Expenditure</button>
-        </div>
-      </section>
-
-      <section id="approvals" class="tabPanel hidden">
-        <div class="card"><h2>Approval Basket <span id="approvalBasketCount" class="approval-badge hidden">0</span></h2><div id="approvalPendingAlert" class="approval-alert hidden"></div><div id="approvalTable"></div></div>
-      </section>
-
-      <section id="samples" class="tabPanel hidden">
-        <div class="card">
-          <h2>Rock / Sand Sample Results</h2>
-          <div class="row3"><div><label>Date</label><input id="sampleDate" type="date"></div><div><label>Sample Type</label><select id="sampleType"><option>Rock</option><option>Sand</option></select></div><div><label>Batch / Reference</label><input id="sampleBatch"></div></div>
-          <div class="grid2" id="sampleInputs"></div>
-          <label>Tonnage Leached (mainly for sands)</label><input id="tonnageLeached" inputmode="decimal" value="0">
-          <button onclick="saveSamples()">Save Sample Results</button>
-        </div>
-      </section>
-
-      <section id="tanks" class="tabPanel hidden">
-        <div class="card">
-          <h2>Number of Tanks Run Per Week</h2>
-          <div class="row3"><div><label>Week Date</label><input id="tankDate" type="date"></div><div><label>Tank 1</label><input id="tank1" inputmode="numeric" value="0"></div><div><label>Tank 2</label><input id="tank2" inputmode="numeric" value="0"></div></div>
-          <div class="row"><div><label>Tank 3</label><input id="tank3" inputmode="numeric" value="0"></div><div><label>Tank 4</label><input id="tank4" inputmode="numeric" value="0"></div></div>
-          <button onclick="saveTanks()">Save Tank Runs</button>
-        </div>
-      </section>
-
-      <section id="production" class="tabPanel hidden">
-        <div class="card">
-          <h2>Daily Ore Production & Bullion Recovery</h2>
-          <div class="row3"><div><label>Date</label><input id="prodDate" type="date"></div><div><label>Daily Ore Production</label><input id="oreTonnesProduced" inputmode="decimal" placeholder="Tonnes produced"></div><div><label>Average Grade</label><input id="oreAverageGrade" inputmode="decimal" placeholder="g/t or grade"></div></div>
-          <div class="row3"><div><label>Tonnes Milled</label><input id="tonnesMilled" inputmode="decimal"></div><div><label>Bullion Recovered</label><input id="bullionRecovered" inputmode="decimal" placeholder="grams"></div><div><label>Price Per Gram</label><input id="pricePerGram" inputmode="decimal"></div></div>
-          <div class="card" style="background:#f8fafc"><div class="muted">Calculated Total Value</div><div class="metric" id="bullionValuePreview">$ 0.00</div></div>
-          <button onclick="saveProduction()">Save Production</button>
-        </div>
-      </section>
-
-
-      <section id="reports" class="tabPanel hidden">
-        <div class="card">
-          <h2>Income & Expenditure Reports</h2>
-          <div class="filters no-print">
-            <div><label>Period</label><select id="reportPeriod"><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option></select></div>
-            <div><label>From</label><input id="reportFrom" type="date"></div>
-            <div><label>To</label><input id="reportTo" type="date"></div>
-            <div><label>Type</label><select id="reportType"><option value="all">Income & Expenditure</option><option value="Revenue">Revenue Only</option><option value="Expense">Expenditure Only</option></select></div>
-            <div><button onclick="generateReport()">Generate Report</button></div>
-          </div>
-          <div style="margin-top:10px" class="no-print"><button class="secondary" onclick="downloadReportPdf()">Download PDF</button></div>
-          <div id="reportOutput" class="report-box">Choose a period and click Generate Report.</div>
-        </div>
-      </section>
-
-      <section id="creditors" class="tabPanel hidden">
-        <div class="card">
-          <h2>Creditors</h2>
-          <div class="row3"><div><label>Creditor / Supplier</label><input id="creditorName"></div><div><label>Invoice / Reference</label><input id="creditorInvoice"></div><div><label>Amount</label><input id="creditorAmount" inputmode="decimal"></div></div>
-          <div class="row3"><div><label>Invoice Date</label><input id="creditorDate" type="date"></div><div><label>Due Date</label><input id="creditorDueDate" type="date"></div><div><label>Category</label><input id="creditorCategory" value="Creditor"></div></div>
-          <label>Notes / Purpose</label><textarea id="creditorNotes"></textarea>
-          <button onclick="saveCreditor()">Save Creditor</button>
-        </div>
-        <div class="grid"><div class="card"><div class="muted">Creditors Due in 30 Days</div><div class="metric" id="due30Metric">0</div></div><div class="card"><div class="muted">Creditors Due in 60 Days</div><div class="metric" id="due60Metric">0</div></div></div>
-        <div class="card"><h2>Creditors List</h2><div id="creditorsTable"></div></div>
-      </section>
-
-      <section id="records" class="tabPanel hidden">
-        <div class="card"><h2>All Records</h2><div id="recordsTable"></div></div>
-      </section>
-    </main>
+  <!-- ENTRY SECTION -->
+  <div id="entrySection" class="hidden">
+    <h2>
+      <span><i class="fas fa-pen-alt" style="color:var(--gold);"></i> New Asset Entry</span>
+      <button class="btn-back" id="backToDashboardBtn"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
+    </h2>
+      <button type="button" class="btn-outline" onclick="window.location.href='insurance.html'"><i class="fas fa-shield-alt"></i> Insurance Report</button>
+    <form id="assetForm">
+      <div class="form-grid">
+        <div class="form-group"><label>Code</label><select id="code"><option value="">Select Code</option><option>73803</option><option>73802</option><option>82130</option><option>73801</option><option>73800</option></select></div>
+        <div class="form-group"><label>Asset Class</label><select id="assetClass"><option value="">Select Asset Class</option><option>Admin</option><option>Bowser</option><option>Drilling</option><option>Executive</option><option>Projects &amp; Tender</option><option>Small Plant</option><option>Trailers</option><option>Trucks</option><option>Yellow Plant</option></select></div>
+        <div class="form-group"><label>Purchase Date</label><input type="date" id="purchaseDate"></div>
+        <div class="form-group"><label>Purchased by</label><select id="purchasedBy"><option value="">Select Purchased By</option><option>Onpoint</option><option>Aqua Telecoms</option><option>Nkanyezi</option><option>Distinct</option></select></div>
+        <div class="form-group"><label>Financing</label><input type="text" id="financing"></div>
+        <div class="form-group"><label>Description</label><input type="text" id="description"></div>
+        <input type="hidden" id="model">
+        <div class="form-group"><label>Make of Vehicle</label><select id="makeOfVehicle"><option value="">Select Make</option><option>Toyota</option><option>Faw</option><option>Ford</option><option>Foton</option><option>Mahindra</option><option>Isuzu</option><option>Mercedes Benz</option><option>VW</option><option>Nissan</option></select></div>
+        <div class="form-group"><label>Body Type</label><select id="bodyType"><option value="">Select Body Type</option><option>Sedan</option><option>Hatchback</option><option>Truck</option><option>Minibus</option><option>SUV</option><option>Bakkie</option><option>Lorry</option></select></div>
+        <div class="form-group"><label>Registration no</label><input type="text" id="registrationNo"></div>
+        <div class="form-group"><label>Engine no</label><input type="text" id="engineNo"></div>
+        <div class="form-group"><label>Vin no</label><input type="text" id="vinNo"></div>
+        <div class="form-group"><label>Cost</label><input type="text" inputmode="decimal" id="cost"></div>
+        <div class="form-group"><label>Market Value</label><input type="text" inputmode="decimal" id="marketValue"></div>
+        <div class="form-group"><label>ZOHO</label><select id="zoho"><option value="">Select ZOHO</option><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label>Location</label><input type="text" id="location"></div>
+        <div class="form-group"><label>Driver/Operator</label><input type="text" id="driverOperator"></div>
+        <div class="form-group"><label>Allocation/Dept</label><input type="text" id="allocationDept"></div>
+        <div class="form-group"><label>Registered Entity</label><input type="text" id="registeredEntity"></div>
+        <div class="form-group"><label>Covered by</label><select id="coveredBy"><option value="">Select Insurance</option><option>Outsurance</option><option>Auto General</option><option>Standard Bank</option><option>Other</option></select></div>
+        <div class="form-group"><label>TRACKING COMPANY</label><select id="trackingCompany"><option value="">Select Tracking</option><option>Netstar</option><option>Car Tracker</option><option>The Both(Car Tracker & Netstar)</option></select></div>
+        <div class="form-group"><label>Installment Amount</label><input type="text" inputmode="decimal" id="installmentAmount"></div>
+        <div class="form-group"><label>Last Installment date</label><input type="date" id="lastInstallmentDate"></div>
+        <div class="form-group"><label>eTag Toll</label><select id="eTagToll"><option value="">Select eTag</option><option>Yes</option><option>No</option></select></div>
+        <div class="form-group"><label>NOTES</label><textarea id="notes"></textarea></div>
+        <div class="form-group"><label>Reg. Boo</label><input type="text" id="regBoo"></div>
+        <div class="form-group"><label>Useful life</label><input type="text" inputmode="decimal" id="usefulLife"></div>
+        <div class="form-group"><label>Recharge</label><input type="text" inputmode="decimal" id="recharge"></div>
+        <div class="form-group"><label>Monthly dpn</label><input type="text" inputmode="decimal" id="monthlyDpn"></div>
+        <div class="form-group"><label>Year</label><select id="year"><option value="">Select Year</option><option value="2000">2000</option><option value="2001">2001</option><option value="2002">2002</option><option value="2003">2003</option><option value="2004">2004</option><option value="2005">2005</option><option value="2006">2006</option><option value="2007">2007</option><option value="2008">2008</option><option value="2009">2009</option><option value="2010">2010</option><option value="2011">2011</option><option value="2012">2012</option><option value="2013">2013</option><option value="2014">2014</option><option value="2015">2015</option><option value="2016">2016</option><option value="2017">2017</option><option value="2018">2018</option><option value="2019">2019</option><option value="2020">2020</option><option value="2021">2021</option><option value="2022">2022</option><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option><option value="2033">2033</option><option value="2034">2034</option><option value="2035">2035</option><option value="2036">2036</option><option value="2037">2037</option><option value="2038">2038</option><option value="2039">2039</option><option value="2040">2040</option><option value="2041">2041</option><option value="2042">2042</option><option value="2043">2043</option><option value="2044">2044</option><option value="2045">2045</option></select></div>
+        <div class="form-group"><label>Months Dpn</label><input type="text" inputmode="decimal" id="monthsDpn"></div>
+        <div class="form-group"><label>Accum dpn</label><input type="text" inputmode="decimal" id="accumDpn"></div>
+        <div class="form-group"><label>Residual Value (5% - 10%)</label><input type="text" inputmode="decimal" id="residualValue" placeholder="Auto 10% of Cost if blank"></div>
+        <div class="form-group"><label>NBV</label><input type="text" inputmode="decimal" id="nbv"></div>
+        <div class="form-group"><label>Outstanding VAF</label><input type="text" inputmode="decimal" id="oustandingVaf"></div>
+        <div class="form-group"><label>Value</label><input type="text" inputmode="decimal" id="value"></div>
+        <div class="form-group"><label>Vehicle Reg Book Upload</label><input type="file" id="vehicleRegBookFile" accept="image/*,application/pdf,.doc,.docx"></div>
+        <div class="form-group"><label>Tracking Certificate Upload</label><input type="file" id="trackingCertificateFile" accept="image/*,application/pdf,.doc,.docx"></div>
+        <div class="form-group"><label>Vehicle Invoice Upload</label><input type="file" id="vehicleInvoiceFile" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"></div>
+        <div class="form-group"><label>Upload up to 5 Images</label><input type="file" id="imageFiles" accept="image/*" multiple><small style="color:var(--muted);margin-top:6px;">Maximum 5 images. Links post to Google Sheet.</small></div>
+        <input type="hidden" id="rowNumber">
+        <input type="hidden" id="vehicleRegBookLink">
+        <input type="hidden" id="trackingCertificateLink">
+        <input type="hidden" id="vehicleInvoiceLink">
+        <input type="hidden" id="totalInstallmentsPaid">
+        <input type="hidden" id="regBookLink">
+        <input type="hidden" id="imageLinks">
+        <input type="hidden" id="assetStatus">
+        <input type="hidden" id="statusDate">
+        <input type="hidden" id="soldValue">
+      </div>
+      <div class="form-actions">
+        <button type="submit" id="saveBtn">Save Asset</button>
+        <button type="button" class="btn-blue" id="clearBtn">Clear Form</button>
+        <button type="button" class="btn-outline" id="cancelEntryBtn">Cancel</button>
+      </div>
+    </form>
+    <div class="status" id="status"></div>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <!-- transaction journal -->
+  <div class="table-wrap">
+    <h2 style="color:var(--primary-blue);margin-top:28px;margin-bottom:10px;">
+      Transaction Journal
+      <span id="filterIndicator" style="font-size:14px;font-weight:normal;color:var(--muted);margin-left:12px;"></span>
+    </h2>
+    <div class="transaction-toolbar" id="transactionToolbar">
+      <div class="filter-box"><label>Search</label><input type="search" id="transactionSearch" placeholder="Search registration, description, make..."></div>
+      <div class="filter-box"><label>Sort</label><select id="transactionSort"><option value="">Default</option><option value="alphaAsc">Alphabet A-Z</option><option value="alphaDesc">Alphabet Z-A</option><option value="dateNewest">Date Newest</option><option value="dateOldest">Date Oldest</option></select></div>
+      <div class="filter-box"><label>Class</label><select id="transactionClassFilter"><option value="">All Classes</option></select></div>
+      <div class="filter-box"><label>Car Model</label><select id="transactionModelFilter"><option value="">All Models</option></select></div>
+      <div class="filter-box"><label>Cost Center</label><select id="transactionCostCenterFilter"><option value="">All Cost Centers</option></select></div>
+      <button type="button" class="btn-blue" id="transactionSearchBtn"><i class="fas fa-search"></i> Search</button>
+      <button type="button" class="btn-outline" id="transactionClearBtn"><i class="fas fa-eraser"></i> Reset</button>
+    </div>
+    <table id="assetTable">
+      <thead><tr>
+        <th>Code</th><th>Asset Class</th><th>Purchase Date</th><th>Purchased by</th><th>Financing</th><th>Description</th><th>Model</th><th>Make of Vehicle</th><th>Body Type</th><th>Registration no</th><th>Engine no</th><th>Vin no</th><th>Cost</th><th>Market Value</th><th>ZOHO</th><th>Location</th><th>Driver/Operator</th>
+        <th>Allocation/Dept</th><th>Registered Entity</th><th>Covered by</th><th>TRACKING COMPANY</th><th>Installment Amount</th><th>Last Installment date</th><th>eTag Toll</th><th>NOTES</th><th>Reg. Boo</th><th>Useful life</th><th>Recharge</th><th>Monthly dpn</th><th>Year</th><th>Months Dpn</th><th>Accum dpn</th><th>Residual Value</th><th>NBV</th><th>Outstanding VAF</th><th>Value</th><th>Vehicle Reg Book</th><th>Tracking Certificate</th><th>Vehicle Invoice</th><th>Images</th><th>Status</th><th>Status Date</th><th>Sold Value</th>
+        <th class="action-col">Actions</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSkfV9mjVqIzNqjVY0hOit5VpoX7ifKF65paguZxV1d-bxq8S_h-B4jU-Cp7kn7HwA/exec';
-let STATE = { user:null, records:[], summary:{}, currencyMode:'USD', usdZarRate:null, rateUpdated:null, approvalAlertShown:false };
+  // ======================== CONFIG =========================
+  const SHEET_ID = "1eM_UPV9MRaEU9lDoNk-D2FHac9PXTpHzOUBBXvzEAfw";
+  const DRIVE_FOLDER_ID = "1wMxg8AdipSeDI5lmL8PNECzD_U3CVC8W";
+  const MAIN_SHEET_NAME = "Asssert Reg";
+  const EQUIPMENT_SHEET_NAME = "Drilling_Equipment";
+  const EQUIPMENT_FILTERS = ["Drilling", "Yellow Plant", "Small Plant"];
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvgK2BUoZ9zSRCDfHinGZ-vs-GN8-9iRq6E2UNcs2L3IvoLvL63JJdwkVCif1r7E0Z/exec";
 
-function today(){ return new Date().toISOString().slice(0,10); }
-['revDate','expDate','dailyExpDate','sampleDate','tankDate','prodDate','reportFrom','reportTo','creditorDate','creditorDueDate'].forEach(id => setTimeout(()=>{ const el=document.getElementById(id); if(el) el.value=today(); },0));
-for(let i=1;i<=10;i++){ const d=document.createElement('div'); d.innerHTML=`<label>Sample ${i}</label><input id="sample${i}" inputmode="decimal" placeholder="Grade result ${i}">`; document.addEventListener('DOMContentLoaded',()=>document.getElementById('sampleInputs').appendChild(d)); }
-
-async function api(action, data={}){
-  setSync(true);
-  try{
-    if(!SCRIPT_URL || SCRIPT_URL.includes('PASTE_DEPLOYED')) throw new Error('Paste your deployed Apps Script Web App URL into SCRIPT_URL in the HTML.');
-    const res = await fetch(SCRIPT_URL, { method:'POST', mode:'cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({action, ...data}) });
-    const text = await res.text();
-    let json; try { json = JSON.parse(text); } catch(e){ throw new Error('Apps Script returned non-JSON. Deploy as Web App, Execute as Me, Anyone with link. Response: '+text.slice(0,160)); }
-    if(!json.ok) throw new Error(json.error || 'Request failed');
-    return json;
-  } finally { setSync(false); }
-}
-function money(n){
-  const amount = Number(n||0);
-  if(STATE.currencyMode === 'ZAR'){
-    const converted = amount * Number(STATE.usdZarRate || 0);
-    return 'R ' + converted.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2});
-  }
-  return '$ ' + amount.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-}
-async function fetchUsdZarRate(){
-  try{
-    const res = await fetch('https://open.er-api.com/v6/latest/USD', { cache:'no-store' });
-    const json = await res.json();
-    if(json && json.rates && json.rates.ZAR){
-      STATE.usdZarRate = Number(json.rates.ZAR);
-      STATE.rateUpdated = new Date();
-      updateRateBadge();
-      return STATE.usdZarRate;
-    }
-    throw new Error('USD/ZAR rate unavailable');
-  }catch(e){
-    updateRateBadge('Rate unavailable');
-    throw e;
-  }
-}
-function updateRateBadge(msg){
-  const el=document.getElementById('rateBadge');
-  if(!el) return;
-  if(msg){ el.textContent=msg; return; }
-  el.textContent = STATE.usdZarRate ? `USD/ZAR ${STATE.usdZarRate.toFixed(4)}` : '';
-}
-async function toggleCurrencyDisplay(){
-  try{
-    if(STATE.currencyMode === 'USD'){
-      if(!STATE.usdZarRate) await fetchUsdZarRate();
-      STATE.currencyMode = 'ZAR';
-      document.getElementById('currencyToggle').textContent = 'Show $';
-      toast('Showing converted Rand values using today\'s online USD/ZAR rate.');
-    }else{
-      STATE.currencyMode = 'USD';
-      document.getElementById('currencyToggle').textContent = 'Convert to Rand';
-      toast('Showing values in USD.');
-    }
-    renderDashboard(); renderCreditors(); renderRecords(); renderApprovals(); updateBullionPreview();
-  }catch(e){ toast('Could not fetch online USD/ZAR rate.'); }
-}
-function num(id){ return Number(String(document.getElementById(id).value||'0').replace(',','.').replace(/[^0-9.\-]/g,'')) || 0; }
-function val(id){ return document.getElementById(id).value.trim(); }
-function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',3500); }
-function setSync(on){ document.body.classList.toggle('syncing', !!on); document.querySelectorAll('button').forEach(b=>{ if(on){ b.dataset.oldText=b.dataset.oldText||b.textContent; b.disabled=true; } else { b.disabled=false; if(b.dataset.oldText){ b.textContent=b.dataset.oldText; delete b.dataset.oldText; } } }); }
-
-async function login(){
-  try{
-    const r = await api('login',{username:val('loginUsername'), password:val('loginPassword')});
-    STATE.user = r.user; localStorage.setItem('lmUser', JSON.stringify(r.user));
-    document.getElementById('loginView').classList.add('hidden'); document.getElementById('appView').classList.remove('hidden');
-    document.getElementById('userBadge').textContent = `${r.user.name} (${r.user.role})`;
-    await refresh();
-    showApprovalLoginAlert();
-  }catch(e){ toast(e.message); }
-}
-function logout(){ localStorage.removeItem('lmUser'); location.reload(); }
-async function refresh(){
-  const r = await api('bootstrap',{userId:STATE.user.userId, email:STATE.user.email});
-  STATE.records = r.records || []; STATE.summary = r.summary || {};
-  document.getElementById('liveStatus').textContent = 'Live connection active • Last sync ' + new Date().toLocaleTimeString();
-  renderDashboard(); renderApprovals(); renderCreditors(); renderRecords();
-}
-function renderDashboard(){
-  const s=STATE.summary || {};
-  const dailyLabel=s.dailyLabel||s.summaryDateLabel||'Current day';
-  const weeklyLabel=s.weeklyLabel||'Current week';
-  const monthlyLabel=s.monthlyLabel||'Current month';
-  const asAtLabel=s.asAtLabel||s.summaryDateLabel||'Latest Google Sheet data';
-  const totalLabel=s.totalLabel||('All records as at '+asAtLabel);
-  const currentLabel='Current as at '+asAtLabel;
-  const heading=document.getElementById('dashboardAsAt');
-  if(heading) heading.textContent='Data reflected as at '+asAtLabel+' • Week: '+weeklyLabel+' • Month: '+monthlyLabel;
-
-  const cards=[
-    ['Daily Revenue',money(s.dailyRevenue),dailyLabel],['Weekly Revenue',money(s.weeklyRevenue),weeklyLabel],['Monthly Revenue',money(s.monthlyRevenue),monthlyLabel],
-    ['Daily Expenditure',money(s.dailyExpenditure),dailyLabel],['Weekly Expenditure',money(s.weeklyExpenditure),weeklyLabel],['Monthly Expenditure',money(s.monthlyExpenditure),monthlyLabel],
-    ['Pending Executive1',s.pendingExecutive1||0,currentLabel],['Pending Executive2',s.pendingExecutive2||0,currentLabel],['Total Approval Requests',s.totalApprovalRequests||0,currentLabel],
-    ['Total Tanks So Far',s.totalTanks||0,totalLabel],['Total Rock Samples',s.totalRockSamples||0,totalLabel],['Total Sand Samples',s.totalSandSamples||0,totalLabel],
-    ['Average Rock Grade',Number(s.averageRockGrade||0).toFixed(3),totalLabel],['Average Sand Grade',Number(s.averageSandGrade||0).toFixed(3),totalLabel],
-    ['Total Sands Tonnage Leached',Number(s.totalSandsTonnageLeached||0).toFixed(3),totalLabel],['Average Sample Grade',Number(s.averageSampleGrade||0).toFixed(3),totalLabel],
-    ['Expected Bullion',Number(s.expectedBullion||0).toFixed(3),totalLabel],
-    ['Daily Ore Production',Number(s.dailyOreProduction||0).toFixed(3),dailyLabel],['Weekly Ore Production',Number(s.weeklyOreProduction||0).toFixed(3),weeklyLabel],['Monthly Ore Production',Number(s.monthlyOreProduction||0).toFixed(3),monthlyLabel],
-    ['Total Ore Production',Number(s.totalOreProduction||0).toFixed(3),totalLabel],['Daily Tonnes Milled',Number(s.dailyTonnesMilled||0).toFixed(3),dailyLabel],['Weekly Tonnes Milled',Number(s.weeklyTonnesMilled||0).toFixed(3),weeklyLabel],['Monthly Tonnes Milled',Number(s.monthlyTonnesMilled||0).toFixed(3),monthlyLabel],['Total Tonnes Milled',Number(s.totalTonnesMilled||0).toFixed(3),totalLabel],['Average Ore Grade',Number(s.averageOreGrade||0).toFixed(3),totalLabel],
-    ['Bullion Recovered',Number(s.totalBullionRecovered||0).toFixed(3),totalLabel],['Bullion Total Value',money(s.bullionTotalValue||0),totalLabel],
-    ['Creditors Due 30 Days',money(s.creditorsDue30Amount||0),'Due within 30 days from '+asAtLabel],['Creditors Due 60 Days',money(s.creditorsDue60Amount||0),'Due 31–60 days from '+asAtLabel]
+  const FIELD_IDS = [
+    "code","assetClass","purchaseDate","purchasedBy","financing","description",
+    "model","makeOfVehicle","bodyType","registrationNo","engineNo","vinNo","cost","marketValue",
+    "zoho","location","driverOperator",
+    "allocationDept","registeredEntity","coveredBy","trackingCompany","installmentAmount",
+    "lastInstallmentDate","eTagToll","notes","regBoo","usefulLife","recharge",
+    "monthlyDpn","year","monthsDpn","accumDpn","residualValue","nbv","oustandingVaf","value",
+    "imageLinks","assetStatus","statusDate","soldValue","totalInstallmentsPaid"
   ];
-  document.getElementById('summaryCards').innerHTML = cards.map(c=>`<div class="card"><div class="muted">${c[0]}</div><div class="period-label">${c[2]}</div><div class="metric">${c[1]}</div></div>`).join('');
-}
-function renderApprovals(){
-  const role=(STATE.user.role||'').toLowerCase(); const basket = role==='executive1'?'Executive1':role==='executive2'?'Executive2':'';
-  const rows = basket ? STATE.records.filter(r=>r.recordType==='Expense' && r.currentBasket===basket) : [];
-  updateApprovalCount(rows.length);
-  if(!basket){ document.getElementById('approvalTable').innerHTML='<p class="muted">Only Executive1 and Executive2 can approve expense requests.</p>'; return; }
-  document.getElementById('approvalTable').innerHTML = table(rows, true);
-}
-function updateApprovalCount(count){
-  const tabBadge=document.getElementById('approvalTabBadge');
-  const basketBadge=document.getElementById('approvalBasketCount');
-  const alertBox=document.getElementById('approvalPendingAlert');
-  [tabBadge,basketBadge].forEach(el=>{ if(!el) return; el.textContent=count; el.classList.toggle('hidden', count<=0); });
-  if(alertBox){
-    alertBox.textContent = count>0 ? `You have ${count} approval request${count===1?'':'s'} pending in your Approval Basket.` : '';
-    alertBox.classList.toggle('hidden', count<=0);
+
+  const FIELD_ALIASES = {
+    code: ["code","Code"],
+    assetClass: ["assetClass","Asset Class","AssetClass"],
+    purchaseDate: ["purchaseDate","Purchase Date"],
+    purchasedBy: ["purchasedBy","Purchased by","Purchased By"],
+    financing: ["financing","Financing"],
+    description: ["description","Description"],
+    model: ["model","Model"],
+    makeOfVehicle: ["makeOfVehicle","Make of Vehicle","Make Of Vehicle"],
+    bodyType: ["bodyType","Body Type"],
+    registrationNo: ["registrationNo","Registration no","Registration No"],
+    engineNo: ["engineNo","Engine no","Engine No"],
+    vinNo: ["vinNo","Vin no","Vin No"],
+    cost: ["cost","Cost","purchasePrice","Purchase Price"],
+    residualValue: ["residualValue","Residual Value","residual","Residual"],
+    marketValue: ["marketValue","Market Value"],
+    zoho: ["zoho","ZOHO"],
+    location: ["location","Location"],
+    driverOperator: ["driverOperator","Driver/Operator","Driver Operator"],
+    allocationDept: ["allocationDept","Allocation/Dept","Allocation Dept"],
+    registeredEntity: ["registeredEntity","Registered Entity"],
+    coveredBy: ["coveredBy","Covered by","Covered By"],
+    trackingCompany: ["trackingCompany","TRACKING COMPANY","Tracking Company"],
+    installmentAmount: ["installmentAmount","Installment Amount"],
+    lastInstallmentDate: ["lastInstallmentDate","Last Installment date","Last Installment Date"],
+    eTagToll: ["eTagToll","eTag Toll","ETag Toll"],
+    notes: ["notes","NOTES","Notes"],
+    regBoo: ["regBoo","Reg. Boo","Reg Book"],
+    usefulLife: ["usefulLife","Useful life","Useful Life"],
+    recharge: ["recharge","Recharge"],
+    monthlyDpn: ["monthlyDpn","Monthly dpn","Monthly Dpn"],
+    year: ["year","Year"],
+    monthsDpn: ["monthsDpn","Months Dpn"],
+    accumDpn: ["accumDpn","Accum dpn","Accum Dpn"],
+    nbv: ["nbv","NBV"],
+    oustandingVaf: ["oustandingVaf","Outstanding VAF","Outstanding Vaf"],
+    value: ["value","Value"],
+    vehicleRegBookLink: ["vehicleRegBookLink","Vehicle Reg Book","Vehicle Reg Book Link","regBookLink"],
+    trackingCertificateLink: ["trackingCertificateLink","Tracking Certificate","Tracking Certificate Link"],
+    vehicleInvoiceLink: ["vehicleInvoiceLink","Vehicle Invoice","Vehicle Invoice Link","Invoice Link"],
+    totalInstallmentsPaid: ["totalInstallmentsPaid","Total Installments Paid","Installments Paid"],
+    imageLinks: ["imageLinks", "Image Links", "Images", "Asset Images"],
+    assetStatus: ["assetStatus", "Asset Status", "Status"],
+    statusDate: ["statusDate", "Status Date"],
+    soldValue: ["soldValue", "Sold Value"],
+    costCenter: ["costCenter", "Cost Center", "Cost Centre", "CostCenter", "CostCentre", "allocationDept", "Allocation/Dept", "registeredEntity", "Registered Entity", "purchasedBy", "Purchased by", "Purchased By"]
+  };
+
+  let mainAssets = [];
+  let equipmentAssets = [];
+  let allAssets = [];
+  let currentFilter = null;
+  const transactionControls = { search: "", sort: "", assetClass: "", model: "", costCenter: "" };
+
+  function getField(row, field) {
+    const aliases = FIELD_ALIASES[field] || [field];
+    for (const key of aliases) {
+      if (row && row[key] !== undefined && row[key] !== null && row[key] !== "") return row[key];
+    }
+    return "";
   }
-}
-function currentApprovalRows(){
-  const role=(STATE.user&&STATE.user.role||'').toLowerCase();
-  const basket = role==='executive1'?'Executive1':role==='executive2'?'Executive2':'';
-  return basket ? STATE.records.filter(r=>r.recordType==='Expense' && r.currentBasket===basket) : [];
-}
-function showApprovalLoginAlert(){
-  const count=currentApprovalRows().length;
-  if(count>0 && !STATE.approvalAlertShown){
-    STATE.approvalAlertShown=true;
-    setTimeout(()=>alert(`LM Commodities: You have ${count} approval request${count===1?'':'s'} pending in your Approval Basket.`), 250);
+
+  function setFormValue(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const val = valueOrBlank(value);
+    if (el.tagName === "SELECT" && val && ![...el.options].some(o => o.value == val || o.textContent == val)) {
+      const opt = document.createElement("option");
+      opt.value = val;
+      opt.textContent = val;
+      el.appendChild(opt);
+    }
+    el.value = val;
   }
-}
-function renderCreditors(){
-  const rows = STATE.records.filter(r=>r.recordType==='Creditor');
-  const now = new Date(); now.setHours(0,0,0,0);
-  const due30 = rows.filter(r=>daysUntil(r.dueDate,now)>=0 && daysUntil(r.dueDate,now)<=30);
-  const due60 = rows.filter(r=>daysUntil(r.dueDate,now)>30 && daysUntil(r.dueDate,now)<=60);
-  document.getElementById('due30Metric').textContent = `${due30.length} / ${money(due30.reduce((a,b)=>a+Number(b.amount||0),0))}`;
-  document.getElementById('due60Metric').textContent = `${due60.length} / ${money(due60.reduce((a,b)=>a+Number(b.amount||0),0))}`;
-  document.getElementById('creditorsTable').innerHTML = creditorsTable(rows);
-}
-function daysUntil(dateStr, now=new Date()){ const d=new Date(dateStr); if(isNaN(d)) return 99999; d.setHours(0,0,0,0); return Math.ceil((d-now)/86400000); }
-function creditorsTable(rows){
-  if(!rows.length) return '<p class="muted">No creditors found.</p>';
-  return `<table><thead><tr><th>Creditor</th><th>Invoice</th><th>Amount</th><th>Invoice Date</th><th>Due Date</th><th>Days</th><th>Status</th><th>Notes</th></tr></thead><tbody>`+
-    rows.map(r=>`<tr><td>${escapeHtml(r.creditorName||'')}</td><td>${escapeHtml(r.creditorInvoice||'')}</td><td>${money(r.amount)}</td><td>${r.date||''}</td><td>${r.dueDate||''}</td><td>${daysUntil(r.dueDate)}</td><td><span class="pill">${r.status||'Open'}</span></td><td>${escapeHtml(r.purpose||'')}</td></tr>`).join('')+'</tbody></table>';
-}
-function renderRecords(){ document.getElementById('recordsTable').innerHTML = table(STATE.records, false); }
-function table(rows, actions){
-  if(!rows.length) return '<p class="muted">No records found.</p>';
-  return `<table><thead><tr><th>Date</th><th>Type</th><th>Unique No.</th><th>Approval No.</th><th>Requester</th><th>Amount</th><th>Info</th><th>Status</th>${actions?'<th>Action</th>':''}</tr></thead><tbody>`+
-  rows.map(r=>`<tr><td>${r.date||''}</td><td>${r.recordType||''}</td><td>${r.uniqueNumber||r.recordId||''}</td><td>${r.requestApprovalNumber||''}</td><td>${r.requestedByName||''}</td><td>${r.amount?money(r.amount):''}</td><td>${escapeHtml(r.purpose||r.revenueDescription||r.sampleType||'')}</td><td><span class="pill">${r.status||''}</span></td>${actions?`<td><textarea id="c_${r.uniqueNumber}" placeholder="Comment"></textarea><button onclick="approve('${r.uniqueNumber}','approve')">Approve</button> <button class="danger" onclick="approve('${r.uniqueNumber}','reject')">Reject</button>${r.approvalLink?`<br><a class="wa-link" href="${r.approvalLink}" target="_blank">Open System Link</a>`:''}</td>`:''}</tr>`).join('')+
-  '</tbody></table>';
-}
-function escapeHtml(s){ return String(s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
-function showTab(id,btn){ document.querySelectorAll('.tabPanel').forEach(x=>x.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); }
 
-async function saveRevenue(){ try{ await api('saveRevenue',{userId:STATE.user.userId,email:STATE.user.email,date:val('revDate'),amount:num('revAmount'),category:val('revCategory'),description:val('revDescription')}); toast('Revenue saved.'); await refresh(); }catch(e){toast(e.message);} }
-async function requestExpense(){ try{ const r=await api('requestExpense',{userId:STATE.user.userId,email:STATE.user.email,date:val('expDate'),amount:num('expAmount'),requestApprovalNumber:val('expApprovalNo'),category:getExpenseCategory(),purpose:val('expPurpose'),paymentInfo:val('expPaymentInfo')}); toast('Expense request submitted: '+r.uniqueNumber); openWhatsAppLinks(r.whatsappLinks); await refresh(); }catch(e){toast(e.message);} }
-async function saveDailyExpense(){ try{ await api('saveDailyExpense',{userId:STATE.user.userId,email:STATE.user.email,date:val('dailyExpDate'),amount:num('dailyExpAmount'),requestApprovalNumber:val('dailyExpApprovalNo'),category:val('dailyExpCategory'),purpose:val('dailyExpPurpose'),paymentInfo:val('dailyExpPaymentInfo')}); toast('Daily expenditure saved.'); await refresh(); }catch(e){toast(e.message);} }
-async function approve(unique, decision){ try{ const r=await api('approveExpense',{userId:STATE.user.userId,email:STATE.user.email,uniqueNumber:unique,decision,comment:val('c_'+unique)}); toast('Expense request updated.'); openWhatsAppLinks(r.whatsappLinks); await refresh(); }catch(e){toast(e.message);} }
-async function saveSamples(){ try{ const data={userId:STATE.user.userId,email:STATE.user.email,date:val('sampleDate'),sampleType:val('sampleType'),sampleBatch:val('sampleBatch'),tonnageLeached:num('tonnageLeached')}; for(let i=1;i<=10;i++) data['sample'+i]=num('sample'+i); await api('saveSamples',data); toast('Sample results saved.'); await refresh(); }catch(e){toast(e.message);} }
-function toggleExpenseOther(){ document.getElementById('expOtherWrap').classList.toggle('hidden', val('expCategory')!=='Other'); }
-function getExpenseCategory(){ return val('expCategory')==='Other' ? val('expOtherCategory') : val('expCategory'); }
-async function saveCreditor(){ try{ await api('saveCreditor',{userId:STATE.user.userId,email:STATE.user.email,creditorName:val('creditorName'),invoice:val('creditorInvoice'),amount:num('creditorAmount'),date:val('creditorDate'),dueDate:val('creditorDueDate'),category:val('creditorCategory'),notes:val('creditorNotes')}); toast('Creditor saved.'); await refresh(); }catch(e){toast(e.message);} }
-function rangeForPeriod(period){ const now=new Date(); let from=new Date(now), to=new Date(now); if(period==='weekly'){ const day=from.getDay(); from.setDate(from.getDate()-day+(day===0?-6:1)); } if(period==='monthly'){ from=new Date(now.getFullYear(),now.getMonth(),1); } if(period==='quarterly'){ from=new Date(now.getFullYear(),Math.floor(now.getMonth()/3)*3,1); } if(period==='yearly'){ from=new Date(now.getFullYear(),0,1); } return [from.toISOString().slice(0,10), to.toISOString().slice(0,10)]; }
-function generateReport(){ const period=val('reportPeriod'); let from=val('reportFrom'), to=val('reportTo'); if(!from||!to){ [from,to]=rangeForPeriod(period); document.getElementById('reportFrom').value=from; document.getElementById('reportTo').value=to; } const type=val('reportType'); const rows=STATE.records.filter(r=>['Revenue','Expense','DailyExpense'].includes(r.recordType)).filter(r=>((type==='all')||(type==='Revenue'&&r.recordType==='Revenue')||(type==='Expense'&&['Expense','DailyExpense'].includes(r.recordType))) && r.date>=from && r.date<=to); const prodRows=STATE.records.filter(r=>r.recordType==='Production' && r.date>=from && r.date<=to); const rev=rows.filter(r=>r.recordType==='Revenue').reduce((a,b)=>a+Number(b.amount||0),0); const exp=rows.filter(r=>(r.recordType==='DailyExpense') || (r.recordType==='Expense' && ['Approved','Paid','Posted'].includes(r.status))).reduce((a,b)=>a+Number(b.amount||0),0); const tonnesMilled=prodRows.reduce((a,b)=>a+Number(b.tonnesMilled||0),0); const oreProduced=prodRows.reduce((a,b)=>a+Number(b.oreTonnesProduced||0),0); const net=rev-exp; document.getElementById('reportOutput').innerHTML=`<h2>LM Commodities Income & Expenditure Report</h2><p><b>Period:</b> ${period.toUpperCase()} &nbsp; <b>From:</b> ${from} &nbsp; <b>To:</b> ${to}</p><div class="grid"><div class="card"><div class="muted">Total Revenue</div><div class="metric">${money(rev)}</div></div><div class="card"><div class="muted">Approved/Daily Expenditure</div><div class="metric">${money(exp)}</div></div><div class="card"><div class="muted">Net Position</div><div class="metric">${money(net)}</div></div><div class="card"><div class="muted">Tonnes Milled</div><div class="metric">${Number(tonnesMilled||0).toFixed(3)}</div></div><div class="card"><div class="muted">Ore Produced</div><div class="metric">${Number(oreProduced||0).toFixed(3)}</div></div></div>`+table(rows,false); }
-function downloadReportPdf(){ if(!document.getElementById('reportOutput').innerHTML || document.getElementById('reportOutput').textContent.includes('Choose a period')) generateReport(); const w=window.open('', '_blank'); w.document.write(`<!doctype html><html><head><title>LM Report</title><style>body{font-family:Arial;padding:24px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;font-size:12px}th{background:#f0f3f8}.card{border:1px solid #ddd;padding:10px;margin:8px 0}.metric{font-size:20px;font-weight:800}</style></head><body>${document.getElementById('reportOutput').innerHTML}<script>window.onload=function(){window.print();}<\/script></body></html>`); w.document.close(); }
-async function saveTanks(){ try{ await api('saveTanks',{userId:STATE.user.userId,email:STATE.user.email,date:val('tankDate'),tank1:num('tank1'),tank2:num('tank2'),tank3:num('tank3'),tank4:num('tank4')}); toast('Tank runs saved.'); await refresh(); }catch(e){toast(e.message);} }
+  function valueOrBlank(v) {
+    if (v === undefined || v === null) return "";
+    if (typeof v === "string" && v.includes("T")) {
+      const d = new Date(v);
+      if (!isNaN(d)) return d.toISOString().split('T')[0];
+    }
+    return v;
+  }
 
-function updateBullionPreview(){ const total=num('bullionRecovered')*num('pricePerGram'); const el=document.getElementById('bullionValuePreview'); if(el) el.textContent=money(total); }
-['bullionRecovered','pricePerGram'].forEach(id=>document.addEventListener('input',e=>{ if(e.target && e.target.id===id) updateBullionPreview(); }));
-async function saveProduction(){ try{ await api('saveProduction',{userId:STATE.user.userId,email:STATE.user.email,date:val('prodDate'),oreTonnesProduced:num('oreTonnesProduced'),oreAverageGrade:num('oreAverageGrade'),tonnesMilled:num('tonnesMilled'),bullionRecovered:num('bullionRecovered'),pricePerGram:num('pricePerGram')}); toast('Production saved.'); await refresh(); }catch(e){toast(e.message);} }
-function openWhatsAppLinks(links){ (links||[]).filter(Boolean).slice(0,2).forEach((link,i)=>setTimeout(()=>window.open(link,'_blank'),i*350)); }
 
-(async function init(){
-  const u = localStorage.getItem('lmUser');
-  if(u){ STATE.user=JSON.parse(u); document.getElementById('loginView').classList.add('hidden'); document.getElementById('appView').classList.remove('hidden'); document.getElementById('userBadge').textContent = `${STATE.user.name} (${STATE.user.role})`; try{ await refresh(); showApprovalLoginAlert(); }catch(e){ toast(e.message); }}
-  fetchUsdZarRate().catch(()=>{});
-})();
+
+  const CURRENCY_FIELDS = new Set(["cost","marketValue","installmentAmount","recharge","monthlyDpn","accumDpn","residualValue","nbv","oustandingVaf","value","soldValue","totalInstallmentsPaid"]);
+
+  function toNumber(v) {
+    if (v === undefined || v === null || v === "") return 0;
+    let s = String(v).trim().replace(/\s/g, "").replace(/R/gi, "");
+    if (s.includes(",") && s.includes(".")) {
+      s = s.lastIndexOf(",") > s.lastIndexOf(".") ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
+    } else if (s.includes(",")) {
+      s = s.replace(",", ".");
+    }
+    const n = Number(s.replace(/[^0-9.\-]/g, ""));
+    return isNaN(n) ? 0 : n;
+  }
+
+  function money(v) {
+    return "R " + toNumber(v).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function displayDate(value) {
+    const d = parseAssetDate(value);
+    if (!d) return valueOrBlank(value);
+    return String(d.getDate()).padStart(2, "0") + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + d.getFullYear();
+  }
+
+  function getAnyNumber(data, keys) {
+    for (const key of keys) {
+      const direct = data && data[key];
+      const aliasValue = getField(data, key);
+      const n = toNumber(direct !== undefined && direct !== null && direct !== "" ? direct : aliasValue);
+      if (n) return n;
+    }
+    return 0;
+  }
+
+  function parseAssetDate(value) {
+    if (!value) return null;
+    if (value instanceof Date && !isNaN(value)) return value;
+    const text = String(value).trim();
+    let d = new Date(text);
+    if (!isNaN(d)) return d;
+    const m = text.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+    if (m) {
+      d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+      if (!isNaN(d)) return d;
+    }
+    return null;
+  }
+
+  function depreciationMonthsFromPurchase(purchaseDate, asAtDate = new Date()) {
+    const p = parseAssetDate(purchaseDate);
+    if (!p) return 0;
+    const start = new Date(p.getFullYear(), p.getMonth(), 1);
+    const asAt = new Date(asAtDate.getFullYear(), asAtDate.getMonth(), 1);
+    if (asAt < start) return 0;
+    return ((asAt.getFullYear() - start.getFullYear()) * 12) + (asAt.getMonth() - start.getMonth()) + 1;
+  }
+
+  function applyDepreciationToData(data, options = {}) {
+    const purchasePrice = getAnyNumber(data, ["purchasePrice", "Purchase Price", "cost", "Cost"]);
+    let residualValue = getAnyNumber(data, ["residualValue", "Residual Value", "residual", "Residual"]);
+    const usefulLifeYears = getAnyNumber(data, ["usefulLife", "Useful life", "Useful Life"]);
+    const purchaseDate = getField(data, "purchaseDate") || data.purchaseDate || data["Purchase Date"];
+    const manualMonthlyText = data.monthlyDpn !== undefined && data.monthlyDpn !== null ? String(data.monthlyDpn).trim() : "";
+    const manualMonthlyDpn = manualMonthlyText === "" ? null : toNumber(manualMonthlyText);
+
+    // Residual Value formula: if blank, use 10% of Cost. User may still edit/save any value.
+    if (!residualValue && purchasePrice > 0) {
+      residualValue = purchasePrice * 0.10;
+      data.residualValue = residualValue;
+    }
+
+    if (purchasePrice <= 0 || usefulLifeYears <= 0) {
+      if (manualMonthlyDpn === null) data.monthlyDpn = "";
+      data.monthsDpn = data.monthsDpn || 0;
+      data.accumDpn = data.accumDpn || 0;
+      data.nbv = data.nbv || purchasePrice;
+      data.value = data.value || purchasePrice;
+      return data;
+    }
+
+    const depreciableAmount = Math.max(0, purchasePrice - residualValue);
+    const calculatedMonthlyDpn = depreciableAmount / usefulLifeYears / 12;
+    const monthlyDpn = manualMonthlyDpn === null ? calculatedMonthlyDpn : manualMonthlyDpn;
+    const usefulLifeMonths = Math.max(1, Math.round(usefulLifeYears * 12));
+    const monthsDpn = data.monthsDpn !== undefined && String(data.monthsDpn).trim() !== "" ? toNumber(data.monthsDpn) : Math.min(depreciationMonthsFromPurchase(purchaseDate), usefulLifeMonths);
+    const accumDpn = data.accumDpn !== undefined && String(data.accumDpn).trim() !== "" ? toNumber(data.accumDpn) : Math.min(depreciableAmount, monthlyDpn * monthsDpn);
+    const nbv = data.nbv !== undefined && String(data.nbv).trim() !== "" ? toNumber(data.nbv) : Math.max(residualValue, purchasePrice - accumDpn);
+
+    data.monthsDpn = monthsDpn;
+    data.monthlyDpn = manualMonthlyDpn === null ? calculatedMonthlyDpn : data.monthlyDpn;
+    data.accumDpn = accumDpn;
+    data.nbv = nbv;
+    data.value = data.value !== undefined && String(data.value).trim() !== "" ? data.value : nbv;
+    return data;
+  }
+
+  function linkListCell(links, label) {
+    const parts = String(links || "").split(/\s*\|\s*/).filter(Boolean).slice(0, 5);
+    if (!parts.length) return `<span style="color:#aaa;">—</span>`;
+    return parts.map((link, i) => `<div class="regbook-link"><a href="${link}" target="_blank"><i class="fas fa-image"></i> ${label || 'Image'} ${i + 1}</a></div>`).join("");
+  }
+
+  function calcAssetValue(row) {
+    return toNumber(getField(row, "value")) || toNumber(getField(row, "nbv")) || toNumber(getField(row, "marketValue")) || toNumber(getField(row, "cost"));
+  }
+
+  function isEquipmentFilter(filter) {
+    return EQUIPMENT_FILTERS.some(f => f.toLowerCase() === String(filter || "").toLowerCase());
+  }
+
+  function sheetForAsset(asset) {
+    const cls = String(getField(asset, "assetClass") || "").toLowerCase();
+    return EQUIPMENT_FILTERS.some(f => cls.includes(f.toLowerCase())) ? EQUIPMENT_SHEET_NAME : MAIN_SHEET_NAME;
+  }
+
+  function apiPost(payload) {
+    return fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    }).then(res => res.json());
+  }
+
+  function fileToPayload(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) return resolve(null);
+      const reader = new FileReader();
+      reader.onload = ev => resolve({
+        fileName: file.name,
+        mimeType: file.type || "application/octet-stream",
+        fileData: String(ev.target.result).split(',')[1]
+      });
+      reader.onerror = () => reject(new Error("Could not read file: " + file.name));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function filesToPayloads(fileList, maxFiles = 5) {
+    const files = Array.from(fileList || []).slice(0, maxFiles);
+    return Promise.all(files.map(fileToPayload));
+  }
+
+  function linkCell(link, label) {
+    return link ? `<div class="regbook-link"><a href="${link}" target="_blank"><i class="fas fa-file-alt"></i> ${label || 'View'}</a></div>` : `<span style="color:#aaa;">—</span>`;
+  }
+
+  function normaliseRows(response, sheetName) {
+    let rows = [];
+    if (Array.isArray(response)) rows = response;
+    else if (response && Array.isArray(response.data)) rows = response.data;
+    else if (response && Array.isArray(response.rows)) rows = response.rows;
+    else if (response && Array.isArray(response.assets)) rows = response.assets;
+    return rows.map(r => ({ ...r, _sheetName: r._sheetName || sheetName }));
+  }
+
+  function showStatus(msg, isError = false) {
+    const statusEl = document.getElementById("status");
+    statusEl.innerHTML = msg || "";
+    statusEl.style.borderLeftColor = isError ? "#ef4444" : "var(--gold)";
+    statusEl.style.background = isError ? "rgba(239,68,68,0.1)" : "rgba(212,175,55,0.16)";
+  }
+
+  function isActiveAsset(asset) {
+    const status = String(getField(asset, "assetStatus") || "Active").trim().toLowerCase();
+    return status !== "sold" && status !== "stolen";
+  }
+
+  function updateDashboard() {
+    const classMap = {
+      'Drilling': ['drilling', 'drilling plant'],
+      'Yellow Plant': ['yellow plant', 'yellow', 'yellowplant'],
+      'Small Plant': ['small plant', 'smallplant', 'small'],
+      'Trucks': ['truck', 'trucks'],
+      'Trailers': ['trailer', 'trailers'],
+      'Executive': ['executive', 'executive cars', 'exec'],
+      'Bowser': ['bowser', 'bowsers'],
+      'Admin': ['admin', 'administration'],
+      'Projects & Tender': ['projects', 'projects & tender', 'projects and tender', 'project & tender', 'project and tender', 'tender']
+    };
+    const counts = {};
+    Object.keys(classMap).forEach(key => counts[key] = 0);
+
+    Object.keys(classMap).forEach(key => {
+      // Do not count Sold or Stolen assets in dashboard class totals.
+      // They must only appear in the Sold/Stolen windows below.
+      const source = (isEquipmentFilter(key) ? equipmentAssets : mainAssets).filter(isActiveAsset);
+      source.forEach(a => {
+        const cls = String(getField(a, "assetClass")).trim().toLowerCase();
+        if (classMap[key].some(kw => cls.includes(kw) || cls === kw)) counts[key]++;
+      });
+    });
+
+    document.getElementById("cntDrilling").textContent = counts['Drilling'];
+    document.getElementById("cntYellow").textContent = counts['Yellow Plant'];
+    document.getElementById("cntSmallPlant").textContent = counts['Small Plant'];
+    document.getElementById("cntTrucks").textContent = counts['Trucks'];
+    document.getElementById("cntTrailers").textContent = counts['Trailers'];
+    document.getElementById("cntExecutive").textContent = counts['Executive'];
+    document.getElementById("cntBowser").textContent = counts['Bowser'];
+    document.getElementById("cntAdmin").textContent = counts['Admin'];
+    document.getElementById("cntProjects").textContent = counts['Projects & Tender'];
+
+    const activeRows = allAssets.filter(isActiveAsset);
+    const stolenRows = allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === "stolen");
+    const soldRows = allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === "sold");
+    document.getElementById("totalAssetValue").textContent = money(activeRows.reduce((sum, a) => sum + calcAssetValue(a), 0));
+    document.getElementById("totalDepreciation").textContent = money(activeRows.reduce((sum, a) => sum + toNumber(getField(a, "accumDpn")), 0));
+    document.getElementById("totalInstallmentsPaid").textContent = money(allAssets.reduce((sum, a) => sum + toNumber(getField(a, "totalInstallmentsPaid")), 0));
+    document.getElementById("cntStolen").textContent = stolenRows.length;
+    document.getElementById("valStolen").textContent = money(stolenRows.reduce((sum, a) => sum + calcAssetValue(a), 0));
+    document.getElementById("cntSold").textContent = soldRows.length;
+    document.getElementById("valSold").textContent = money(soldRows.reduce((sum, a) => sum + (toNumber(getField(a, "soldValue")) || calcAssetValue(a)), 0));
+
+    document.querySelectorAll('.stat-card[data-filter]').forEach(card => {
+      const filter = card.dataset.filter;
+      card.onclick = () => applyFilter(filter);
+    });
+    document.querySelectorAll('.stat-card[data-special-filter]').forEach(card => {
+      const status = card.dataset.specialFilter;
+      card.onclick = () => applyStatusFilter(status);
+    });
+  }
+
+  function getTransactionCostCenter(row) {
+    return getField(row, "costCenter") || getField(row, "registeredEntity") || getField(row, "purchasedBy") || getField(row, "allocationDept");
+  }
+
+  function getAlphabetValue(row) {
+    return String(getField(row, "description") || getField(row, "registrationNo") || getField(row, "makeOfVehicle") || getField(row, "model") || "").toLowerCase();
+  }
+
+  function getCurrentBaseRows() {
+    if (!currentFilter) return allAssets;
+    if (currentFilter === "all-active") {
+      return allAssets.filter(a => !["sold","stolen"].includes(String(getField(a, "assetStatus") || "Active").toLowerCase()));
+    }
+    if (["Sold", "Stolen"].includes(currentFilter)) {
+      return allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === currentFilter.toLowerCase());
+    }
+    return isEquipmentFilter(currentFilter) ? equipmentAssets : mainAssets;
+  }
+
+  function applyTransactionControls(rows) {
+    let filtered = (rows || []).slice();
+    const search = transactionControls.search.toLowerCase();
+
+    if (search) {
+      filtered = filtered.filter(row => {
+        const searchable = [
+          getField(row, "registrationNo"), getField(row, "description"), getField(row, "makeOfVehicle"),
+          getField(row, "model"), getField(row, "assetClass"), getTransactionCostCenter(row),
+          getField(row, "driverOperator"), getField(row, "location")
+        ].join(" ").toLowerCase();
+        return searchable.includes(search);
+      });
+    }
+
+    if (transactionControls.assetClass) {
+      filtered = filtered.filter(row => String(getField(row, "assetClass")).trim().toLowerCase() === transactionControls.assetClass.toLowerCase());
+    }
+    if (transactionControls.model) {
+      filtered = filtered.filter(row => String(getField(row, "model")).trim().toLowerCase() === transactionControls.model.toLowerCase());
+    }
+    if (transactionControls.costCenter) {
+      filtered = filtered.filter(row => String(getTransactionCostCenter(row)).trim().toLowerCase() === transactionControls.costCenter.toLowerCase());
+    }
+
+    if (transactionControls.sort === "alphaAsc") filtered.sort((a,b) => getAlphabetValue(a).localeCompare(getAlphabetValue(b)));
+    if (transactionControls.sort === "alphaDesc") filtered.sort((a,b) => getAlphabetValue(b).localeCompare(getAlphabetValue(a)));
+    if (transactionControls.sort === "dateNewest") filtered.sort((a,b) => (parseAssetDate(getField(b, "purchaseDate")) || 0) - (parseAssetDate(getField(a, "purchaseDate")) || 0));
+    if (transactionControls.sort === "dateOldest") filtered.sort((a,b) => (parseAssetDate(getField(a, "purchaseDate")) || 0) - (parseAssetDate(getField(b, "purchaseDate")) || 0));
+
+    return filtered;
+  }
+
+  function refreshTransactionOptions() {
+    const optionMap = [
+      ["transactionClassFilter", row => getField(row, "assetClass"), transactionControls.assetClass],
+      ["transactionModelFilter", row => getField(row, "model"), transactionControls.model],
+      ["transactionCostCenterFilter", row => getTransactionCostCenter(row), transactionControls.costCenter]
+    ];
+    optionMap.forEach(([id, getter, selected]) => {
+      const select = document.getElementById(id);
+      if (!select) return;
+      const first = select.options[0] ? select.options[0].outerHTML : '<option value="">All</option>';
+      const values = [...new Set(allAssets.map(getter).map(v => String(v || "").trim()).filter(Boolean))]
+        .sort((a,b) => a.localeCompare(b));
+      select.innerHTML = first + values.map(v => `<option value="${String(v).replace(/"/g, '&quot;')}">${v}</option>`).join("");
+      select.value = selected || "";
+    });
+  }
+
+  function readTransactionControls() {
+    transactionControls.search = (document.getElementById("transactionSearch")?.value || "").trim();
+    transactionControls.sort = document.getElementById("transactionSort")?.value || "";
+    transactionControls.assetClass = document.getElementById("transactionClassFilter")?.value || "";
+    transactionControls.model = document.getElementById("transactionModelFilter")?.value || "";
+    transactionControls.costCenter = document.getElementById("transactionCostCenterFilter")?.value || "";
+  }
+
+  function renderCurrentTransactionTable() {
+    readTransactionControls();
+    renderTable(getCurrentBaseRows(), currentFilter && !["all-active", "Sold", "Stolen"].includes(currentFilter) ? currentFilter : null);
+  }
+
+  function resetTransactionControls() {
+    ["transactionSearch", "transactionSort", "transactionClassFilter", "transactionModelFilter", "transactionCostCenterFilter"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    transactionControls.search = transactionControls.sort = transactionControls.assetClass = transactionControls.model = transactionControls.costCenter = "";
+    renderTable(getCurrentBaseRows(), currentFilter && !["all-active", "Sold", "Stolen"].includes(currentFilter) ? currentFilter : null);
+  }
+
+  function applyFilter(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.toggle('filter-active', c.dataset.filter === filter));
+    document.getElementById('filterIndicator').textContent = `Filter: ${filter}`;
+
+    const source = isEquipmentFilter(filter) ? equipmentAssets : mainAssets;
+    renderTable(source, filter);
+  }
+
+  function applyStatusFilter(status) {
+    currentFilter = status;
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.toggle('filter-active', c.dataset.specialFilter === status));
+    document.getElementById('filterIndicator').textContent = status === 'all-active' ? 'Filter: Active Assets' : `Filter: ${status}`;
+    const rows = status === 'all-active'
+      ? allAssets.filter(a => !['sold','stolen'].includes(String(getField(a, "assetStatus") || "Active").toLowerCase()))
+      : allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === status.toLowerCase());
+    renderTable(rows);
+  }
+
+  function clearFilter() {
+    currentFilter = null;
+    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('filter-active'));
+    document.getElementById('filterIndicator').textContent = '';
+    renderTable(allAssets);
+  }
+
+  function renderTable(assets, filter) {
+    const tbody = document.querySelector("#assetTable tbody");
+    let rows = assets || allAssets;
+    if (filter) {
+      const filterLower = filter.toLowerCase();
+      rows = rows.filter(a => String(getField(a, "assetClass")).trim().toLowerCase().includes(filterLower));
+    }
+    rows = applyTransactionControls(rows);
+    const activeParts = [];
+    if (filter) activeParts.push("Filter: " + filter);
+    if (transactionControls.search) activeParts.push("Search: " + transactionControls.search);
+    if (transactionControls.assetClass) activeParts.push("Class: " + transactionControls.assetClass);
+    if (transactionControls.model) activeParts.push("Model: " + transactionControls.model);
+    if (transactionControls.costCenter) activeParts.push("Cost Center: " + transactionControls.costCenter);
+    if (transactionControls.sort) activeParts.push("Sort applied");
+    if (activeParts.length) document.getElementById('filterIndicator').textContent = activeParts.join(" · ");
+    tbody.innerHTML = "";
+    if (!rows.length) {
+      const colCount = document.querySelector("#assetTable thead tr").children.length;
+      tbody.innerHTML = `<tr><td colspan="${colCount}">No entries found${filter ? ' for filter: '+filter : ''}.</td></tr>`;
+      return;
+    }
+
+    rows.forEach(function(data){
+      const row = document.createElement("tr");
+      const displayFields = FIELD_IDS.filter(id => !["licenced","typeOfLicence","validityOfLicence","imageLinks","assetStatus","statusDate","soldValue","totalInstallmentsPaid"].includes(id));
+      displayFields.forEach(field => {
+        const td = document.createElement("td");
+        td.textContent = CURRENCY_FIELDS.has(field) ? money(getField(data, field)) : (["purchaseDate","lastInstallmentDate"].includes(field) ? displayDate(getField(data, field)) : valueOrBlank(getField(data, field)));
+        row.appendChild(td);
+      });
+
+      const regTd = document.createElement("td");
+      regTd.innerHTML = linkCell(getField(data, "vehicleRegBookLink"), "View Reg Book");
+      row.appendChild(regTd);
+
+      const trackingTd = document.createElement("td");
+      trackingTd.innerHTML = linkCell(getField(data, "trackingCertificateLink"), "View Tracking");
+      row.appendChild(trackingTd);
+
+      const invoiceTd = document.createElement("td");
+      invoiceTd.innerHTML = linkCell(getField(data, "vehicleInvoiceLink"), "View Invoice");
+      row.appendChild(invoiceTd);
+
+      const imagesTd = document.createElement("td");
+      imagesTd.innerHTML = linkListCell(getField(data, "imageLinks"), "Image");
+      row.appendChild(imagesTd);
+
+      ["assetStatus", "statusDate", "soldValue"].forEach(field => {
+        const td = document.createElement("td");
+        td.textContent = field === "soldValue" ? money(getField(data, field)) : (field === "statusDate" ? displayDate(getField(data, field)) : valueOrBlank(getField(data, field) || (field === "assetStatus" ? "Active" : "")));
+        row.appendChild(td);
+      });
+
+      const actionCell = document.createElement("td");
+      actionCell.className = "action-col";
+      const actionDiv = document.createElement("div");
+      actionDiv.className = "row-actions";
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "btn-sm-edit";
+      editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+      editBtn.title = "Edit row";
+      editBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        FIELD_IDS.forEach(id => setFormValue(id, getField(data, id)));
+        document.getElementById("rowNumber").value = data.rowNumber || "";
+        document.getElementById("vehicleRegBookLink").value = getField(data, "vehicleRegBookLink") || "";
+        document.getElementById("trackingCertificateLink").value = getField(data, "trackingCertificateLink") || "";
+        document.getElementById("vehicleInvoiceLink").value = getField(data, "vehicleInvoiceLink") || "";
+        document.getElementById("totalInstallmentsPaid").value = getField(data, "totalInstallmentsPaid") || "";
+        document.getElementById("regBookLink").value = data.regBookLink || "";
+        document.getElementById("imageLinks").value = getField(data, "imageLinks") || "";
+        document.getElementById("assetStatus").value = getField(data, "assetStatus") || "Active";
+        document.getElementById("statusDate").value = getField(data, "statusDate") || "";
+        document.getElementById("soldValue").value = getField(data, "soldValue") || "";
+        document.getElementById("saveBtn").textContent = "Update Asset";
+        document.getElementById("entrySection").classList.remove("hidden");
+        window.scrollTo({ top: document.getElementById("entrySection").offsetTop - 20, behavior: "smooth" });
+      });
+
+      function makeUploadButton(docType, title, fieldName) {
+        const btn = document.createElement("button");
+        btn.className = "btn-sm-upload";
+        btn.innerHTML = '<i class="fas fa-upload"></i>';
+        btn.title = "Upload " + title;
+        btn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          const fileInput = document.createElement("input");
+          fileInput.type = "file";
+          fileInput.accept = "image/*,application/pdf,.doc,.docx";
+          fileInput.onchange = function(ev) {
+            const file = ev.target.files[0];
+            if (!file) return showStatus("No file selected", true);
+            showStatus("Uploading " + file.name + "...");
+            fileToPayload(file).then(filePayload => {
+              return apiPost({
+                action: "uploadDocument",
+                rowNumber: data.rowNumber,
+                docType,
+                sheetField: fieldName,
+                sheetId: SHEET_ID,
+                sheetName: data._sheetName || sheetForAsset(data),
+                folderId: DRIVE_FOLDER_ID,
+                ...filePayload
+              });
+            }).then(res => {
+              if (res.status === "success") {
+                showStatus("✅ " + title + " uploaded and link posted to Google Sheet");
+                data[fieldName] = res.fileLink;
+                loadAssets();
+              } else {
+                showStatus("❌ Upload failed: " + (res.message || "unknown error"), true);
+              }
+            }).catch(err => {
+              console.error(err);
+              showStatus("❌ Upload error: " + err.message, true);
+            });
+          };
+          fileInput.click();
+        });
+        return btn;
+      }
+
+      const uploadRegBtn = makeUploadButton("Vehicle Reg Book", "Vehicle Reg Book", "vehicleRegBookLink");
+      const uploadTrackingBtn = makeUploadButton("Tracking Certificate", "Tracking Certificate", "trackingCertificateLink");
+      const uploadInvoiceBtn = makeUploadButton("Vehicle Invoice", "Vehicle Invoice", "vehicleInvoiceLink");
+
+      function makeStatusButton(status) {
+        const btn = document.createElement("button");
+        btn.className = status === "Sold" ? "btn-sm-sold" : "btn-sm-stolen";
+        btn.innerHTML = status === "Sold" ? '<span style="font-weight:900;">R</span>' : '<i class="fas fa-exclamation-triangle"></i>';
+        btn.title = "Move to " + status + " window";
+        btn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          let soldValue = "";
+          if (status === "Sold") soldValue = prompt("Enter sold value", calcAssetValue(data));
+          if (status === "Sold" && soldValue === null) return;
+          if (!confirm("Move this asset to " + status + " window?")) return;
+          apiPost({
+            action: "moveAssetStatus",
+            rowNumber: data.rowNumber,
+            assetStatus: status,
+            soldValue,
+            sheetId: SHEET_ID,
+            sheetName: data._sheetName || sheetForAsset(data)
+          }).then(res => {
+            if (res.status === "success") { showStatus("✅ " + res.message); loadAssets(); }
+            else showStatus("❌ Status update failed: " + res.message, true);
+          }).catch(err => showStatus("❌ Status update error: " + err.message, true));
+        });
+        return btn;
+      }
+
+      const stolenBtn = makeStatusButton("Stolen");
+      const soldBtn = makeStatusButton("Sold");
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "btn-sm-delete";
+      delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+      delBtn.title = "Delete row";
+      delBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        if (!confirm("Delete this asset entry?")) return;
+        apiPost({
+          action: "deleteAsset",
+          rowNumber: data.rowNumber,
+          sheetId: SHEET_ID,
+          sheetName: data._sheetName || sheetForAsset(data)
+        }).then(res => {
+          if (res.status === "success") {
+            showStatus("✅ Deleted successfully");
+            loadAssets();
+          } else {
+            showStatus("❌ Delete failed: " + res.message, true);
+          }
+        }).catch(err => showStatus("❌ Delete error: " + err.message, true));
+      });
+
+      actionDiv.appendChild(editBtn);
+      actionDiv.appendChild(uploadRegBtn);
+      actionDiv.appendChild(uploadTrackingBtn);
+      actionDiv.appendChild(uploadInvoiceBtn);
+      actionDiv.appendChild(stolenBtn);
+      actionDiv.appendChild(soldBtn);
+      actionDiv.appendChild(delBtn);
+      actionCell.appendChild(actionDiv);
+      row.appendChild(actionCell);
+      tbody.appendChild(row);
+    });
+  }
+
+  function loadSheetAssets(sheetName) {
+    const url = `${SCRIPT_URL}?action=list&sheetId=${encodeURIComponent(SHEET_ID)}&sheetName=${encodeURIComponent(sheetName)}`;
+    return fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error("Network response was not ok");
+        return res.json();
+      })
+      .then(response => {
+        if (response && response.status === "error") throw new Error(response.message || "Sheet load failed");
+        return normaliseRows(response, sheetName);
+      });
+  }
+
+  async function loadAssets() {
+    showStatus("Loading dashboard from Assert Reg and Drilling_Equipment...");
+    try {
+      // Safe month-end check: Apps Script only deducts VAF installments when today is the last day of the month.
+      // On other days it returns skipped and does not alter the sheet.
+      try { await apiPost({ action: "runMonthEndInstallmentsIfDue", sheetId: SHEET_ID }); } catch(e) { console.warn("Month-end VAF check skipped", e); }
+      const results = await Promise.allSettled([
+        loadSheetAssets(MAIN_SHEET_NAME),
+        loadSheetAssets(EQUIPMENT_SHEET_NAME)
+      ]);
+      mainAssets = results[0].status === "fulfilled" ? results[0].value.map(applyDepreciationToData) : [];
+      equipmentAssets = results[1].status === "fulfilled" ? results[1].value.map(applyDepreciationToData) : [];
+      allAssets = [...mainAssets, ...equipmentAssets];
+      refreshTransactionOptions();
+
+      updateDashboard();
+      const initialRows = allAssets.slice(0, 120);
+      if (currentFilter) applyFilter(currentFilter);
+      else {
+        renderTable(initialRows);
+        if (allAssets.length > initialRows.length) {
+          const renderFull = () => renderTable(allAssets);
+          if ("requestIdleCallback" in window) requestIdleCallback(renderFull, { timeout: 1500 });
+          else setTimeout(renderFull, 250);
+        }
+      }
+
+      const failures = results.filter(r => r.status === "rejected").map(r => r.reason.message).join("; ");
+      if (failures) showStatus("⚠️ Loaded with warning: " + failures, true);
+      else showStatus(`✅ Loaded ${mainAssets.length} Assert Reg entries and ${equipmentAssets.length} Drilling_Equipment entries`);
+      return allAssets;
+    } catch (err) {
+      console.error(err);
+      showStatus("❌ Could not load data: " + err.message, true);
+      return [];
+    }
+  }
+
+  document.getElementById("assetForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+    const data = {};
+    FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
+    const rowNum = document.getElementById("rowNumber").value;
+    if (rowNum) data.rowNumber = rowNum;
+    data.vehicleRegBookLink = document.getElementById("vehicleRegBookLink").value || "";
+    data.trackingCertificateLink = document.getElementById("trackingCertificateLink").value || "";
+    data.vehicleInvoiceLink = document.getElementById("vehicleInvoiceLink").value || "";
+    data.totalInstallmentsPaid = document.getElementById("totalInstallmentsPaid").value || "";
+    data.regBookLink = document.getElementById("regBookLink").value || "";
+    data.action = "saveAsset";
+    data.sheetId = SHEET_ID;
+    data.sheetName = sheetForAsset(data);
+    data.folderId = DRIVE_FOLDER_ID;
+    applyDepreciationToData(data);
+
+    try {
+      showStatus("Saving asset and documents...");
+      data.vehicleRegBookFile = await fileToPayload(document.getElementById("vehicleRegBookFile").files[0]);
+      data.trackingCertificateFile = await fileToPayload(document.getElementById("trackingCertificateFile").files[0]);
+      data.vehicleInvoiceFile = await fileToPayload(document.getElementById("vehicleInvoiceFile").files[0]);
+      data.imageFiles = await filesToPayloads(document.getElementById("imageFiles").files, 5);
+      const response = await apiPost(data);
+      if (response.status !== "success") throw new Error(response.message || "Save failed");
+      showStatus(rowNum ? "✅ Asset Updated Successfully" : "✅ Asset Saved Successfully");
+      document.getElementById("assetForm").reset();
+      document.getElementById("rowNumber").value = "";
+      document.getElementById("vehicleRegBookLink").value = "";
+      document.getElementById("trackingCertificateLink").value = "";
+      document.getElementById("vehicleInvoiceLink").value = "";
+      document.getElementById("totalInstallmentsPaid").value = "";
+      document.getElementById("regBookLink").value = "";
+      document.getElementById("saveBtn").textContent = "Save Asset";
+      await loadAssets();
+    } catch (err) {
+      console.error(err);
+      showStatus("❌ Error Saving Asset: " + err.message, true);
+    }
+  });
+
+  document.getElementById("clearBtn").addEventListener("click", function(){
+    document.getElementById("assetForm").reset();
+    document.getElementById("rowNumber").value = "";
+    document.getElementById("vehicleRegBookLink").value = "";
+    document.getElementById("trackingCertificateLink").value = "";
+      document.getElementById("vehicleInvoiceLink").value = "";
+      document.getElementById("totalInstallmentsPaid").value = "";
+    document.getElementById("regBookLink").value = "";
+    document.getElementById("saveBtn").textContent = "Save Asset";
+    showStatus("Form cleared.");
+  });
+
+  document.getElementById("newEntryBtn").addEventListener("click", function(){
+    document.getElementById("entrySection").classList.remove("hidden");
+    document.getElementById("assetForm").reset();
+    document.getElementById("rowNumber").value = "";
+    document.getElementById("vehicleRegBookLink").value = "";
+    document.getElementById("trackingCertificateLink").value = "";
+      document.getElementById("vehicleInvoiceLink").value = "";
+      document.getElementById("totalInstallmentsPaid").value = "";
+    document.getElementById("regBookLink").value = "";
+    document.getElementById("saveBtn").textContent = "Save Asset";
+    window.scrollTo({ top: document.getElementById("entrySection").offsetTop - 20, behavior: "smooth" });
+  });
+
+  document.getElementById("backToDashboardBtn").addEventListener("click", function(){
+    document.getElementById("entrySection").classList.add("hidden");
+    document.getElementById("assetForm").reset();
+    document.getElementById("rowNumber").value = "";
+    document.getElementById("vehicleRegBookLink").value = "";
+    document.getElementById("trackingCertificateLink").value = "";
+      document.getElementById("vehicleInvoiceLink").value = "";
+      document.getElementById("totalInstallmentsPaid").value = "";
+    document.getElementById("regBookLink").value = "";
+    document.getElementById("saveBtn").textContent = "Save Asset";
+    showStatus("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (currentFilter) applyFilter(currentFilter); else renderTable(allAssets);
+  });
+
+  document.getElementById("cancelEntryBtn").addEventListener("click", function(){
+    document.getElementById("entrySection").classList.add("hidden");
+    document.getElementById("assetForm").reset();
+    document.getElementById("rowNumber").value = "";
+    document.getElementById("vehicleRegBookLink").value = "";
+    document.getElementById("trackingCertificateLink").value = "";
+      document.getElementById("vehicleInvoiceLink").value = "";
+      document.getElementById("totalInstallmentsPaid").value = "";
+    document.getElementById("regBookLink").value = "";
+    document.getElementById("saveBtn").textContent = "Save Asset";
+    showStatus("");
+    if (currentFilter) applyFilter(currentFilter); else renderTable(allAssets);
+  });
+
+  document.getElementById("transactionSearchBtn").addEventListener("click", renderCurrentTransactionTable);
+  document.getElementById("transactionClearBtn").addEventListener("click", resetTransactionControls);
+  ["transactionSort", "transactionClassFilter", "transactionModelFilter", "transactionCostCenterFilter"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", renderCurrentTransactionTable);
+  });
+  const searchInput = document.getElementById("transactionSearch");
+  if (searchInput) searchInput.addEventListener("keydown", e => { if (e.key === "Enter") renderCurrentTransactionTable(); });
+
+  document.getElementById("refreshDashBtn").addEventListener("click", loadAssets);
+  document.getElementById("clearFilterBtn").addEventListener("click", clearFilter);
+  document.getElementById("printBtn").addEventListener("click", () => window.print());
+
+  document.getElementById("excelBtn").addEventListener("click", function(){
+    let rows = allAssets;
+    if (currentFilter) {
+      rows = (isEquipmentFilter(currentFilter) ? equipmentAssets : mainAssets).filter(a => String(getField(a, "assetClass")).toLowerCase().includes(currentFilter.toLowerCase()));
+    }
+    const displayFields = FIELD_IDS.filter(id => !["licenced","typeOfLicence","validityOfLicence","imageLinks","assetStatus","statusDate","soldValue","totalInstallmentsPaid"].includes(id));
+    const headers = [...displayFields, "vehicleRegBookLink", "trackingCertificateLink", "imageLinks", "assetStatus", "statusDate", "soldValue"];
+    const csvRows = [headers, ...rows.map(row => {
+      const vals = displayFields.map(id => valueOrBlank(getField(row, id)));
+      vals.push(getField(row, "vehicleRegBookLink"));
+      vals.push(getField(row, "trackingCertificateLink"));
+      vals.push(getField(row, "imageLinks"));
+      vals.push(getField(row, "assetStatus"));
+      vals.push(getField(row, "statusDate"));
+      vals.push(getField(row, "soldValue"));
+      return vals;
+    })];
+    const csv = csvRows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "asset-register-report.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+
+
+
+  function setupOtherDropdowns() {
+    document.querySelectorAll('select').forEach(sel => {
+      if (![...sel.options].some(o => o.value === "Other" || o.textContent === "Other")) {
+        const opt = document.createElement("option");
+        opt.value = "Other";
+        opt.textContent = "Other";
+        sel.appendChild(opt);
+      }
+      sel.addEventListener("change", function() {
+        if (this.value !== "Other") return;
+        const custom = prompt("Enter other value");
+        if (!custom) { this.value = ""; return; }
+        const opt = document.createElement("option");
+        opt.value = custom; opt.textContent = custom; opt.selected = true;
+        this.appendChild(opt);
+      });
+    });
+  }
+
+  function setupDepreciationFields() {
+    ["cost", "usefulLife", "residualValue"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("change", () => {
+        const data = {};
+        FIELD_IDS.forEach(fid => { const f = document.getElementById(fid); if (f) data[fid] = f.value; });
+        const residualWasBlank = !String(data.residualValue || "").trim();
+        applyDepreciationToData(data);
+        ["residualValue", "monthlyDpn", "accumDpn", "nbv", "value"].forEach(fid => {
+          const f = document.getElementById(fid);
+          if (!f || document.activeElement === f) return;
+          // Only auto-fill Monthly dpn if it is currently blank, so user edits are never overwritten.
+          if (fid === "monthlyDpn" && String(f.value || "").trim() !== "") return;
+          if (fid === "residualValue" && !residualWasBlank) return;
+          if (data[fid] !== undefined && data[fid] !== "") f.value = Number(toNumber(data[fid])).toFixed(2);
+        });
+      });
+    });
+  }
+
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setupOtherDropdowns();
+    setupDepreciationFields();
+    loadAssets();
+  });
 </script>
 </body>
 </html>
