@@ -456,7 +456,70 @@
   </style>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkiMhM-oXVCB_7ClSpouCh_accsSQWvtMU0hZ6o18PlBqFrPf2ZdUtEBLTGPEqgOfP/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKKq6tFRrsVLUB0l5T4WXjxTL2_4HgVIrLQte11c7vgAiOb7vDtMfqkBnzu1rc9U_U/exec";
+</script>
+
+
+<script>
+  async function apiRequest(action, payload) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
+    try {
+      let response;
+
+      if (payload === undefined) {
+        const separator = SCRIPT_URL.includes('?') ? '&' : '?';
+        const url = SCRIPT_URL + separator + 'action=' + encodeURIComponent(action) + '&_=' + Date.now();
+        response = await fetch(url, {
+          method: 'GET',
+          cache: 'no-store',
+          redirect: 'follow',
+          signal: controller.signal
+        });
+      } else {
+        response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action, payload }),
+          redirect: 'follow',
+          signal: controller.signal
+        });
+      }
+
+      const text = await response.text();
+      let result;
+
+      try {
+        result = JSON.parse(text);
+      } catch (_) {
+        throw new Error(
+          'The Web App did not return JSON. Redeploy the latest Apps Script version and allow access to anyone with the link.'
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(result.message || ('Request failed with HTTP ' + response.status));
+      }
+
+      return result;
+    } catch (error) {
+      if (error && error.name === 'AbortError') {
+        throw new Error('Connection timed out. Check the Apps Script deployment and internet connection.');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  function apiGet(action) {
+    return apiRequest(action);
+  }
+
+  function apiPost(action, payload) {
+    return apiRequest(action, payload);
+  }
 </script>
 
 </head>
@@ -662,6 +725,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkiMhM-oXVCB_7ClSpo
       bindEvents();
       checkConnection();
       loadRecords();
+      setInterval(checkConnection, 60000);
     });
 
     function bindEvents() {
@@ -678,15 +742,16 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkiMhM-oXVCB_7ClSpo
       });
     }
 
-    function checkConnection() {
-      google.script.run
-        .withSuccessHandler(result => {
-          setConnection(Boolean(result && result.success), result && result.message);
-        })
-        .withFailureHandler(error => {
-          setConnection(false, getErrorMessage(error));
-        })
-        .healthCheck();
+    async function checkConnection() {
+      try {
+        const result = await apiGet('health');
+        const connected = Boolean(result && result.success);
+        setConnection(connected, connected ? 'Live connection' : (result && result.message));
+        return connected;
+      } catch (error) {
+        setConnection(false, getErrorMessage(error));
+        return false;
+      }
     }
 
     function setConnection(connected, message) {
@@ -698,32 +763,29 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkiMhM-oXVCB_7ClSpo
       text.textContent = connected ? 'Live connection' : (message || 'Connection failed');
     }
 
-    function loadRecords() {
+    async function loadRecords() {
       showLoader('Fetching incident records...');
 
-      google.script.run
-        .withSuccessHandler(result => {
-          hideLoader();
+      try {
+        const result = await apiGet('list');
 
-          if (!result || !result.success) {
-            showToast(result && result.message ? result.message : 'Unable to load records.', 'error');
-            return;
-          }
+        if (!result || !result.success) {
+          throw new Error(result && result.message ? result.message : 'Unable to load records.');
+        }
 
-          state.records = Array.isArray(result.records) ? result.records : [];
-          updateDashboard(result.summary || {});
-          applySearch();
-          setConnection(true, 'Connected');
-        })
-        .withFailureHandler(error => {
-          hideLoader();
-          setConnection(false, getErrorMessage(error));
-          showToast(getErrorMessage(error), 'error');
-        })
-        .getVehicleIncidents();
+        state.records = Array.isArray(result.records) ? result.records : [];
+        updateDashboard(result.summary || {});
+        applySearch();
+        setConnection(true, 'Live connection');
+      } catch (error) {
+        setConnection(false, getErrorMessage(error));
+        showToast(getErrorMessage(error), 'error');
+      } finally {
+        hideLoader();
+      }
     }
 
-    function handleSubmit(event) {
+    async function handleSubmit(event) {
       event.preventDefault();
 
       const payload = {
@@ -750,26 +812,24 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkiMhM-oXVCB_7ClSpo
       setSaveState(true);
       showLoader(payload.incidentId ? 'Updating incident...' : 'Saving incident...');
 
-      google.script.run
-        .withSuccessHandler(result => {
-          hideLoader();
-          setSaveState(false);
+      try {
+        const result = await apiPost('save', payload);
 
-          if (!result || !result.success) {
-            showToast(result && result.message ? result.message : 'Unable to save incident.', 'error');
-            return;
-          }
+        if (!result || !result.success) {
+          throw new Error(result && result.message ? result.message : 'Unable to save incident.');
+        }
 
-          showToast(result.message, 'success');
-          resetForm();
-          loadRecords();
-        })
-        .withFailureHandler(error => {
-          hideLoader();
-          setSaveState(false);
-          showToast(getErrorMessage(error), 'error');
-        })
-        .saveVehicleIncident(payload);
+        setConnection(true, 'Live connection');
+        showToast(result.message, 'success');
+        resetForm();
+        await loadRecords();
+      } catch (error) {
+        setConnection(false, getErrorMessage(error));
+        showToast(getErrorMessage(error), 'error');
+      } finally {
+        hideLoader();
+        setSaveState(false);
+      }
     }
 
     function editRecord(incidentId) {
@@ -797,7 +857,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkiMhM-oXVCB_7ClSpo
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function deleteRecord(incidentId) {
+    async function deleteRecord(incidentId) {
       const record = state.records.find(item => item.incidentId === incidentId);
       const description = record ? `${record.regNo} - ${record.staffName}` : 'this incident';
 
@@ -805,28 +865,27 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkiMhM-oXVCB_7ClSpo
 
       showLoader('Deleting incident...');
 
-      google.script.run
-        .withSuccessHandler(result => {
-          hideLoader();
+      try {
+        const result = await apiPost('delete', { incidentId });
 
-          if (!result || !result.success) {
-            showToast(result && result.message ? result.message : 'Unable to delete incident.', 'error');
-            return;
-          }
+        if (!result || !result.success) {
+          throw new Error(result && result.message ? result.message : 'Unable to delete incident.');
+        }
 
-          showToast(result.message, 'success');
+        setConnection(true, 'Live connection');
+        showToast(result.message, 'success');
 
-          if (state.editingId === incidentId) {
-            resetForm();
-          }
+        if (state.editingId === incidentId) {
+          resetForm();
+        }
 
-          loadRecords();
-        })
-        .withFailureHandler(error => {
-          hideLoader();
-          showToast(getErrorMessage(error), 'error');
-        })
-        .deleteVehicleIncident(incidentId);
+        await loadRecords();
+      } catch (error) {
+        setConnection(false, getErrorMessage(error));
+        showToast(getErrorMessage(error), 'error');
+      } finally {
+        hideLoader();
+      }
     }
 
     function applySearch() {
@@ -1033,19 +1092,6 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkiMhM-oXVCB_7ClSpo
         .replace(/\n/g, '\\n');
     }
   </script>
-
-<script>
-function apiGet(action){
-  return fetch(SCRIPT_URL + "?action=" + encodeURIComponent(action)).then(r=>r.json());
-}
-function apiPost(action,payload){
-  return fetch(SCRIPT_URL + "?action=" + encodeURIComponent(action), {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(payload||{})
-  }).then(r=>r.json());
-}
-</script>
 
 </body>
 </html>
