@@ -149,7 +149,7 @@
 
 <script>
 // Replace this with your deployed Apps Script Web App URL.
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby4jF8UVOAFPqxLNxpLDJwf7a3Y_3btgyNufwPw_DEnqhTke1dEzTvLrvnK3EM3oAOe/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7NBXZN7Ygk2VzAWnk0SQxGt_q0RcoF0b7pqO7qwkxZYeZFkMzAYqw1HK87jV0Z-wzvg/exec';
 let USER = JSON.parse(localStorage.getItem('ob_user') || 'null');
 let STATE = {tickets:[], globalTickets:[], dashboardTickets:[], users:[], referenceData:[], summary:{}};
 let LAST_GOOD_STATE = {tickets:[], globalTickets:[], dashboardTickets:[], users:[], referenceData:[], summary:{}};
@@ -540,8 +540,39 @@ async function submitTicket(){
     loadTicketsView('all',500,{silent:true,background:true});
   }catch(e){alertErr(e);}
 }
-function approve1(){const ticketId=DETAIL.ticket.TicketID;postApi('executive1Approve',{userId:USER.UserID,ticketId:ticketId,score:scoreIn.value,comment:scoreComment.value}).then(data=>{const saved=data&&data.ticket?data.ticket:{};updateTicketInCache(ticketId,{...saved,CurrentBasket:'Executive2',Executive1Score:saved.Executive1Score??scoreIn.value,Executive1Name:saved.Executive1Name||USER.Name,Status:saved.Status||'Executive1 Approved'});alert('Executive1 approval successful. Score posted to Scores, Performance updated, and ticket moved to Executive2.');closeDrawer();loadTicketsView('all',500,{silent:true,background:true});}).catch(alertErr)}
-function approve2(){const ticketId=DETAIL.ticket.TicketID;postApi('executive2Approve',{userId:USER.UserID,ticketId:ticketId,score:scoreIn.value,comment:scoreComment.value}).then(()=>{updateTicketInCache(ticketId,{CurrentBasket:'Closed',Status:'Closed',Executive2Score:scoreIn.value,Executive2Name:USER.Name,ClosedAt:new Date().toISOString(),ClosedTiming:DETAIL.ticket.ClosedTiming||DETAIL.ticket.TimeRemainingText||''});alert('Executive2 approval successful. Ticket is permanently closed and removed from Executive2 Review.');closeDrawer();CURRENT_FILTER='closed';showTab('closed');loadTicketsView('all',500,{silent:true,background:true});}).catch(alertErr)}
+function approvalScoreValues(){
+  const scoreEl=document.getElementById('scoreIn');
+  const commentEl=document.getElementById('scoreComment');
+  const scoreValue=scoreEl?String(scoreEl.value||'').trim():'';
+  if(scoreValue==='') throw new Error('Enter a score before approving.');
+  return {score:scoreValue,comment:commentEl?commentEl.value:''};
+}
+function approve1(){
+  try{
+    const ticketId=DETAIL.ticket.TicketID;
+    const values=approvalScoreValues();
+    postApi('executive1Approve',{userId:USER.UserID,ticketId,score:values.score,comment:values.comment}).then(data=>{
+      const saved=data&&data.ticket?data.ticket:{};
+      updateTicketInCache(ticketId,{...saved,CurrentBasket:'Executive2',Executive1Score:saved.Executive1Score??values.score,Executive1Name:saved.Executive1Name||USER.Name,Status:saved.Status||'Executive1 Approved'});
+      alert('Executive1 approval successful. Score posted to Scores and ticket moved to Executive2.');
+      closeDrawer();
+      loadTicketsView('all',500,{silent:true,background:true});
+    }).catch(alertErr);
+  }catch(e){alertErr(e);}
+}
+function approve2(){
+  try{
+    const ticketId=DETAIL.ticket.TicketID;
+    const values=approvalScoreValues();
+    postApi('executive2Approve',{userId:USER.UserID,ticketId,score:values.score,comment:values.comment}).then(data=>{
+      const saved=data&&data.ticket?data.ticket:{};
+      updateTicketInCache(ticketId,{...saved,CurrentBasket:'Closed',Status:'Closed',Executive2Score:saved.Executive2Score??values.score,Executive2Name:saved.Executive2Name||USER.Name,FinalScore:saved.FinalScore,ClosedAt:saved.ClosedAt||new Date().toISOString(),ClosedTiming:saved.ClosedTiming||DETAIL.ticket.TimeRemainingText||''});
+      alert('Executive2 approval successful. Score and final score posted to Scores.');
+      closeDrawer();CURRENT_FILTER='closed';showTab('closed');
+      loadTicketsView('all',500,{silent:true,background:true});
+    }).catch(alertErr);
+  }catch(e){alertErr(e);}
+}
 function uploadFile(){
   const f=fileUp.files[0];
   if(!f) return alert('Choose a file first.');
