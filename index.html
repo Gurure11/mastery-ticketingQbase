@@ -1,972 +1,1019 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Construction Company Database</title>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vehicle Incident Register</title>
   <style>
     :root {
-      --primary: #176b3a;
-      --primary-dark: #0f4d29;
-      --primary-light: #e8f5ec;
-      --accent: #d9a520;
-      --danger: #c62828;
-      --warning: #ef6c00;
-      --success: #2e7d32;
-      --info: #1565c0;
-      --bg: #f4f7f5;
-      --card: #ffffff;
-      --text: #183229;
-      --muted: #6b7f76;
-      --border: #dbe5df;
-      --shadow: 0 10px 30px rgba(18, 76, 43, 0.10);
+      --green-950: #052e16;
+      --green-900: #14532d;
+      --green-800: #166534;
+      --green-700: #15803d;
+      --green-600: #16a34a;
+      --green-100: #dcfce7;
+      --green-50: #f0fdf4;
+      --white: #ffffff;
+      --slate-900: #0f172a;
+      --slate-700: #334155;
+      --slate-500: #64748b;
+      --slate-300: #cbd5e1;
+      --slate-200: #e2e8f0;
+      --slate-100: #f1f5f9;
+      --red-600: #dc2626;
+      --amber-500: #f59e0b;
+      --shadow: 0 12px 28px rgba(15, 23, 42, 0.11);
+      --radius: 18px;
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: Inter, Arial, Helvetica, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top right, rgba(34, 197, 94, .22), transparent 30%),
+        linear-gradient(135deg, var(--green-950), var(--green-800) 52%, var(--green-700));
+      color: var(--slate-900);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    .app-header {
-      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-      color: white;
-      padding: 24px;
-      box-shadow: var(--shadow);
-    }
+    button, input, select { font: inherit; }
 
-    .header-content {
-      max-width: 1500px;
+    .app-shell {
+      width: min(1480px, calc(100% - 28px));
       margin: 0 auto;
+      padding: 28px 0 50px;
+    }
+
+    .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 20px;
-      flex-wrap: wrap;
+      gap: 18px;
+      color: var(--white);
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border-radius: 17px;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.28);
+      font-size: 28px;
+      backdrop-filter: blur(12px);
     }
 
     .brand h1 {
-      margin: 0 0 6px;
-      font-size: clamp(24px, 3vw, 38px);
+      font-size: clamp(1.35rem, 2.7vw, 2.15rem);
+      margin: 0;
+      line-height: 1.1;
     }
 
     .brand p {
-      margin: 0;
-      opacity: 0.9;
+      margin: 6px 0 0;
+      color: rgba(255,255,255,.78);
+      font-size: .93rem;
     }
 
     .connection {
       display: inline-flex;
       align-items: center;
       gap: 9px;
-      background: rgba(255,255,255,0.14);
-      border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 999px;
       padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.13);
+      border: 1px solid rgba(255,255,255,.22);
+      font-size: .87rem;
       font-weight: 700;
+      white-space: nowrap;
     }
 
-    .dot {
-      width: 11px;
-      height: 11px;
+    .connection-dot {
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      background: #ffca28;
-      box-shadow: 0 0 0 4px rgba(255,202,40,0.2);
+      background: var(--amber-500);
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, .17);
     }
 
-    .dot.connected {
-      background: #7cff87;
-      box-shadow: 0 0 0 4px rgba(124,255,135,0.2);
+    .connection.connected .connection-dot {
+      background: #4ade80;
+      box-shadow: 0 0 0 4px rgba(74, 222, 128, .18);
     }
 
-    .dot.disconnected {
-      background: #ff6b6b;
-      box-shadow: 0 0 0 4px rgba(255,107,107,0.2);
+    .connection.disconnected .connection-dot {
+      background: #f87171;
+      box-shadow: 0 0 0 4px rgba(248, 113, 113, .18);
     }
 
-    main {
-      max-width: 1500px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-
-    .dashboard {
+    .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(160px, 1fr));
-      gap: 16px;
-      margin-bottom: 22px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
     }
 
     .stat-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 18px;
+      position: relative;
+      overflow: hidden;
+      min-height: 138px;
+      padding: 20px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.96);
       box-shadow: var(--shadow);
+    }
+
+    .stat-card::after {
+      content: "";
+      position: absolute;
+      width: 92px;
+      height: 92px;
+      right: -26px;
+      top: -28px;
+      border-radius: 50%;
+      background: var(--green-100);
     }
 
     .stat-label {
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 700;
+      position: relative;
+      z-index: 1;
+      color: var(--slate-500);
+      font-size: .83rem;
       text-transform: uppercase;
-      letter-spacing: .5px;
+      letter-spacing: .07em;
+      font-weight: 800;
     }
 
     .stat-value {
-      font-size: 30px;
-      font-weight: 800;
-      margin-top: 8px;
-      color: var(--primary-dark);
+      position: relative;
+      z-index: 1;
+      margin-top: 15px;
+      font-size: clamp(1.55rem, 2.4vw, 2.15rem);
+      font-weight: 900;
+      color: var(--green-900);
+      line-height: 1;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(330px, 420px) minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
     }
 
     .panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
+      background: rgba(255,255,255,.98);
+      border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow: hidden;
-      margin-bottom: 22px;
     }
 
     .panel-header {
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--border);
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--slate-200);
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 14px;
     }
 
     .panel-header h2 {
       margin: 0;
-      font-size: 20px;
+      font-size: 1.08rem;
     }
 
-    .toolbar {
-      padding: 16px 20px;
+    .panel-header p {
+      margin: 5px 0 0;
+      color: var(--slate-500);
+      font-size: .86rem;
+    }
+
+    .form-body { padding: 22px; }
+
+    .form-grid {
       display: grid;
-      grid-template-columns: 2fr repeat(4, minmax(150px, 1fr)) auto;
-      gap: 12px;
-      border-bottom: 1px solid var(--border);
-      background: #fbfdfb;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
     }
 
-    input, select, textarea {
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--slate-700);
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .required { color: var(--red-600); }
+
+    input, select {
       width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 11px 12px;
-      font: inherit;
-      background: white;
-      color: var(--text);
+      min-height: 44px;
+      border: 1px solid var(--slate-300);
+      border-radius: 11px;
+      background: var(--white);
+      padding: 10px 12px;
+      color: var(--slate-900);
       outline: none;
+      transition: .18s ease;
     }
 
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(23, 107, 58, 0.12);
+    input:focus, select:focus {
+      border-color: var(--green-600);
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, .12);
+    }
+
+    .money-wrap { position: relative; }
+
+    .money-wrap span {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--slate-500);
+      font-weight: 800;
+    }
+
+    .money-wrap input { padding-left: 31px; }
+
+    .form-actions {
+      display: flex;
+      gap: 11px;
+      margin-top: 20px;
     }
 
     .btn {
       border: 0;
-      border-radius: 10px;
-      padding: 11px 16px;
-      font: inherit;
-      font-weight: 800;
+      border-radius: 11px;
+      min-height: 44px;
+      padding: 10px 16px;
+      font-weight: 850;
       cursor: pointer;
-      transition: transform .15s ease, opacity .15s ease, box-shadow .15s ease;
-      display: inline-flex;
+      transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { cursor: not-allowed; opacity: .62; transform: none; }
+
+    .btn-primary {
+      flex: 1;
+      background: linear-gradient(135deg, var(--green-800), var(--green-600));
+      color: var(--white);
+      box-shadow: 0 8px 18px rgba(22, 101, 52, .22);
+    }
+
+    .btn-secondary {
+      background: var(--slate-100);
+      color: var(--slate-700);
+    }
+
+    .toolbar {
+      display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
-      white-space: nowrap;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
-    .btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 18px rgba(0,0,0,.12);
+    .search {
+      min-width: min(300px, 100%);
     }
-
-    .btn:disabled {
-      opacity: .55;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-secondary { background: #eef3f0; color: var(--text); }
-    .btn-danger { background: var(--danger); color: white; }
-    .btn-warning { background: var(--warning); color: white; }
-    .btn-small { padding: 8px 10px; font-size: 13px; }
 
     .table-wrap {
-      width: 100%;
       overflow: auto;
-      max-height: 620px;
+      max-height: 685px;
     }
 
     table {
-      border-collapse: collapse;
-      min-width: 1900px;
       width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 1280px;
     }
 
     th, td {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--border);
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--slate-200);
       text-align: left;
-      vertical-align: top;
-      font-size: 13px;
+      font-size: .82rem;
+      white-space: nowrap;
+      vertical-align: middle;
     }
 
     th {
       position: sticky;
       top: 0;
-      z-index: 3;
-      background: var(--primary-dark);
-      color: white;
-      white-space: nowrap;
+      z-index: 2;
+      background: var(--green-50);
+      color: var(--green-900);
+      font-size: .76rem;
+      text-transform: uppercase;
+      letter-spacing: .035em;
     }
 
-    tbody tr:hover { background: var(--primary-light); }
+    tbody tr:hover { background: #f8fafc; }
 
-    .badge {
+    .status-badge {
       display: inline-flex;
       align-items: center;
-      padding: 5px 9px;
+      padding: 6px 10px;
       border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      background: #eef2ef;
+      background: var(--green-100);
+      color: var(--green-900);
+      font-weight: 850;
+      font-size: .74rem;
     }
 
-    .badge.lead { background: #e3f2fd; color: #0d47a1; }
-    .badge.contacted { background: #fff3e0; color: #a64b00; }
-    .badge.quoted { background: #ede7f6; color: #4527a0; }
-    .badge.won { background: #e8f5e9; color: #1b5e20; }
-    .badge.lost { background: #ffebee; color: #b71c1c; }
-    .badge.in-progress { background: #e0f7fa; color: #006064; }
+    .status-badge.closed,
+    .status-badge.completed {
+      background: #e0f2fe;
+      color: #075985;
+    }
 
-    .actions {
+    .status-badge.pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .row-actions {
       display: flex;
       gap: 7px;
-      flex-wrap: wrap;
+    }
+
+    .icon-btn {
+      border: 0;
+      padding: 7px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: .76rem;
+      font-weight: 850;
+    }
+
+    .edit-btn {
+      background: var(--green-100);
+      color: var(--green-900);
+    }
+
+    .delete-btn {
+      background: #fee2e2;
+      color: #991b1b;
     }
 
     .empty {
+      padding: 46px 20px;
       text-align: center;
-      color: var(--muted);
-      padding: 45px 20px;
-      font-weight: 700;
+      color: var(--slate-500);
     }
 
-    .modal {
-      display: none;
+    .loader-overlay {
       position: fixed;
       inset: 0;
-      z-index: 1000;
-      background: rgba(7, 30, 18, .62);
-      padding: 20px;
-      overflow-y: auto;
+      z-index: 999;
+      display: none;
+      place-items: center;
+      background: rgba(5, 46, 22, .62);
+      backdrop-filter: blur(3px);
     }
 
-    .modal.show { display: block; }
+    .loader-overlay.show { display: grid; }
 
-    .modal-card {
-      width: min(1100px, 100%);
-      margin: 30px auto;
-      background: white;
-      border-radius: 18px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.28);
-      overflow: hidden;
+    .loader-card {
+      padding: 22px 28px;
+      border-radius: 16px;
+      background: var(--white);
+      box-shadow: var(--shadow);
+      text-align: center;
+      font-weight: 850;
+      color: var(--green-900);
     }
 
-    .modal-head {
-      padding: 18px 22px;
-      background: var(--primary-dark);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .modal-head h3 { margin: 0; }
-
-    .close-btn {
-      border: none;
-      background: rgba(255,255,255,.14);
-      color: white;
-      width: 36px;
-      height: 36px;
+    .spinner {
+      width: 34px;
+      height: 34px;
+      margin: 0 auto 12px;
+      border: 4px solid var(--green-100);
+      border-top-color: var(--green-700);
       border-radius: 50%;
-      cursor: pointer;
-      font-size: 20px;
+      animation: spin .8s linear infinite;
     }
 
-    form { padding: 22px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .form-grid {
+    .toast-container {
+      position: fixed;
+      z-index: 1000;
+      right: 18px;
+      bottom: 18px;
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 13px;
-      font-weight: 800;
-      margin-bottom: 7px;
-      color: var(--primary-dark);
-    }
-
-    .span-2 { grid-column: span 2; }
-    .span-3 { grid-column: span 3; }
-
-    .form-actions {
-      display: flex;
-      justify-content: flex-end;
       gap: 10px;
-      margin-top: 20px;
-      padding-top: 18px;
-      border-top: 1px solid var(--border);
+      width: min(380px, calc(100% - 36px));
     }
 
     .toast {
-      position: fixed;
-      right: 20px;
-      bottom: 20px;
-      z-index: 2000;
-      min-width: 260px;
-      max-width: 420px;
-      background: #173e2a;
-      color: white;
+      background: var(--slate-900);
+      color: var(--white);
       border-radius: 12px;
       padding: 14px 16px;
-      box-shadow: 0 14px 35px rgba(0,0,0,.24);
-      display: none;
-    }
-
-    .toast.show { display: block; }
-    .toast.error { background: #a61b1b; }
-
-    .loading-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 3000;
-      background: rgba(255,255,255,.74);
-      backdrop-filter: blur(3px);
-      align-items: center;
-      justify-content: center;
-    }
-
-    .loading-overlay.show { display: flex; }
-
-    .loader-card {
-      background: white;
-      border-radius: 16px;
-      padding: 22px 28px;
       box-shadow: var(--shadow);
-      font-weight: 800;
-      color: var(--primary-dark);
+      font-weight: 700;
+      animation: slideIn .22s ease;
     }
 
-    @media (max-width: 1100px) {
-      .dashboard { grid-template-columns: repeat(2, 1fr); }
-      .toolbar { grid-template-columns: 1fr 1fr; }
-      .form-grid { grid-template-columns: repeat(2, 1fr); }
-      .span-3 { grid-column: span 2; }
+    .toast.success { background: var(--green-800); }
+    .toast.error { background: #991b1b; }
+
+    @keyframes slideIn {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
 
-    @media (max-width: 650px) {
-      main { padding: 14px; }
-      .dashboard { grid-template-columns: 1fr; }
-      .toolbar { grid-template-columns: 1fr; }
+    @media (max-width: 1120px) {
+      .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+      .content-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 680px) {
+      .app-shell { width: min(100% - 18px, 1480px); padding-top: 16px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .dashboard-grid { grid-template-columns: 1fr; }
       .form-grid { grid-template-columns: 1fr; }
-      .span-2, .span-3 { grid-column: span 1; }
-      .form-actions { flex-direction: column-reverse; }
-      .btn { width: 100%; }
+      .field.full { grid-column: auto; }
+      .panel-header { align-items: flex-start; flex-direction: column; }
+      .toolbar, .search { width: 100%; }
     }
   </style>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkiMhM-oXVCB_7ClSpouCh_accsSQWvtMU0hZ6o18PlBqFrPf2ZdUtEBLTGPEqgOfP/exec";
+</script>
+
 </head>
 <body>
-  <header class="app-header">
-    <div class="header-content">
+  <div class="app-shell">
+    <header class="topbar">
       <div class="brand">
-        <h1>Construction Company Database</h1>
-        <p>Client, project opportunity, quotation and follow-up management</p>
+        <div class="brand-icon">🚘</div>
+        <div>
+          <h1>Vehicle Incident Register</h1>
+          <p>Capture, monitor and manage vehicle accident records.</p>
+        </div>
       </div>
-      <div class="connection">
-        <span id="connectionDot" class="dot"></span>
-        <span id="connectionText">Checking connection…</span>
-      </div>
-    </div>
-  </header>
 
-  <main>
-    <section class="dashboard">
-      <div class="stat-card">
-        <div class="stat-label">Total Clients</div>
-        <div id="totalClients" class="stat-value">0</div>
+      <div id="connectionStatus" class="connection">
+        <span class="connection-dot"></span>
+        <span id="connectionText">Checking connection...</span>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Active Opportunities</div>
-        <div id="activeOpportunities" class="stat-value">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Quotations Sent</div>
-        <div id="quotesSent" class="stat-value">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Follow-Ups Due</div>
-        <div id="followUpsDue" class="stat-value">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Estimated Pipeline</div>
-        <div id="pipelineValue" class="stat-value">R 0.00</div>
-      </div>
+    </header>
+
+    <section class="dashboard-grid">
+      <article class="stat-card">
+        <div class="stat-label">Total Insurance Payment</div>
+        <div id="totalInsurancePayment" class="stat-value">R 0.00</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-label">Total Number of Incidents</div>
+        <div id="totalIncidents" class="stat-value">0</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-label">Staff Payments</div>
+        <div id="totalStaffPayments" class="stat-value">R 0.00</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-label">Company Payments</div>
+        <div id="totalCompanyPayments" class="stat-value">R 0.00</div>
+      </article>
     </section>
 
-    <section class="panel">
-      <div class="panel-header">
-        <h2>Client & Project Records</h2>
-        <button class="btn btn-primary" onclick="openAddModal()">＋ Add New Client</button>
-      </div>
-
-      <div class="toolbar">
-        <input id="searchInput" type="search" placeholder="Search company, person, phone, email, service…" oninput="applyFilters()" />
-        <select id="statusFilter" onchange="applyFilters()">
-          <option value="">All Statuses</option>
-          <option>Lead</option>
-          <option>Contacted</option>
-          <option>Qualified</option>
-          <option>Quotation Sent</option>
-          <option>Negotiation</option>
-          <option>Won</option>
-          <option>Lost</option>
-          <option>In Progress</option>
-          <option>Completed</option>
-          <option>On Hold</option>
-        </select>
-        <select id="provinceFilter" onchange="applyFilters()">
-          <option value="">All Provinces / Locations</option>
-        </select>
-        <select id="industryFilter" onchange="applyFilters()">
-          <option value="">All Project Types</option>
-        </select>
-        <select id="assignedFilter" onchange="applyFilters()">
-          <option value="">All Assigned Staff</option>
-        </select>
-        <button class="btn btn-secondary" onclick="loadData()">↻ Refresh</button>
-      </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Client ID</th>
-              <th>Company Name</th>
-              <th>Contact Person</th>
-              <th>Position</th>
-              <th>Phone Number</th>
-              <th>Email Address</th>
-              <th>Industry / Project Type</th>
-              <th>Province / Location</th>
-              <th>Services Required</th>
-              <th>Last Contact</th>
-              <th>Next Follow-Up</th>
-              <th>Quotation Sent</th>
-              <th>Estimated Project Value</th>
-              <th>Status</th>
-              <th>Assigned To</th>
-              <th>Notes</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="recordsBody"></tbody>
-        </table>
-        <div id="emptyState" class="empty" style="display:none;">No construction client records found.</div>
-      </div>
-    </section>
-  </main>
-
-  <div id="recordModal" class="modal" onclick="backdropClose(event)">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3 id="modalTitle">Add New Client</h3>
-        <button class="close-btn" type="button" onclick="closeModal()">×</button>
-      </div>
-
-      <form id="recordForm" onsubmit="saveRecord(event)">
-        <input type="hidden" id="rowNumber" />
-
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="clientId">Client ID</label>
-            <input id="clientId" placeholder="Auto-generated if blank" />
-          </div>
-
-          <div class="form-group">
-            <label for="companyName">Company Name *</label>
-            <input id="companyName" required />
-          </div>
-
-          <div class="form-group">
-            <label for="contactPerson">Contact Person</label>
-            <input id="contactPerson" />
-          </div>
-
-          <div class="form-group">
-            <label for="position">Position</label>
-            <input id="position" />
-          </div>
-
-          <div class="form-group">
-            <label for="phoneNumber">Phone Number</label>
-            <input id="phoneNumber" type="tel" />
-          </div>
-
-          <div class="form-group">
-            <label for="emailAddress">Email Address</label>
-            <input id="emailAddress" type="email" />
-          </div>
-
-          <div class="form-group">
-            <label for="industryProjectType">Industry / Project Type</label>
-            <input id="industryProjectType" placeholder="Roadworks, civil, buildings…" />
-          </div>
-
-          <div class="form-group">
-            <label for="provinceLocation">Province / Location</label>
-            <input id="provinceLocation" placeholder="Gauteng, Pretoria…" />
-          </div>
-
-          <div class="form-group">
-            <label for="servicesRequired">Services Required</label>
-            <input id="servicesRequired" placeholder="Earthworks, electrical, concrete…" />
-          </div>
-
-          <div class="form-group">
-            <label for="lastContactDate">Last Contact Date</label>
-            <input id="lastContactDate" type="date" />
-          </div>
-
-          <div class="form-group">
-            <label for="nextFollowUpDate">Next Follow-Up Date</label>
-            <input id="nextFollowUpDate" type="date" />
-          </div>
-
-          <div class="form-group">
-            <label for="quotationSent">Quotation Sent</label>
-            <select id="quotationSent">
-              <option value="">Select</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-              <option value="Pending">Pending</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="estimatedProjectValue">Estimated Project Value (R)</label>
-            <input id="estimatedProjectValue" inputmode="decimal" placeholder="0.00" />
-          </div>
-
-          <div class="form-group">
-            <label for="status">Status</label>
-            <select id="status">
-              <option value="Lead">Lead</option>
-              <option value="Contacted">Contacted</option>
-              <option value="Qualified">Qualified</option>
-              <option value="Quotation Sent">Quotation Sent</option>
-              <option value="Negotiation">Negotiation</option>
-              <option value="Won">Won</option>
-              <option value="Lost">Lost</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-              <option value="On Hold">On Hold</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="assignedTo">Assigned To</label>
-            <input id="assignedTo" />
-          </div>
-
-          <div class="form-group span-3">
-            <label for="notes">Notes</label>
-            <textarea id="notes" rows="4"></textarea>
+    <main class="content-grid">
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2 id="formTitle">New Incident Entry</h2>
+            <p>Complete all required incident information.</p>
           </div>
         </div>
 
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-          <button id="saveBtn" type="submit" class="btn btn-primary">Save Record</button>
+        <form id="incidentForm" class="form-body">
+          <input type="hidden" id="incidentId">
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="date">Date <span class="required">*</span></label>
+              <input id="date" type="date" required>
+            </div>
+
+            <div class="field">
+              <label for="staffName">Staff Name <span class="required">*</span></label>
+              <input id="staffName" type="text" placeholder="Enter staff name" required>
+            </div>
+
+            <div class="field">
+              <label for="costCenter">Cost Center <span class="required">*</span></label>
+              <input id="costCenter" type="text" placeholder="Enter cost center" required>
+            </div>
+
+            <div class="field">
+              <label for="vehicleMake">Vehicle Make <span class="required">*</span></label>
+              <input id="vehicleMake" type="text" placeholder="e.g. Toyota Hilux" required>
+            </div>
+
+            <div class="field">
+              <label for="regNo">Reg No <span class="required">*</span></label>
+              <input id="regNo" type="text" placeholder="Vehicle registration" required>
+            </div>
+
+            <div class="field">
+              <label for="status">Status <span class="required">*</span></label>
+              <select id="status" required>
+                <option value="">Select status</option>
+                <option>Reported</option>
+                <option>Under Assessment</option>
+                <option>Repair in Progress</option>
+                <option>Pending Insurance</option>
+                <option>Completed</option>
+                <option>Closed</option>
+              </select>
+            </div>
+
+            <div class="field full">
+              <label for="location">Location of Accident <span class="required">*</span></label>
+              <input id="location" type="text" placeholder="Enter accident location" required>
+            </div>
+
+            <div class="field">
+              <label for="totalRepairCost">Total Repair Cost</label>
+              <div class="money-wrap">
+                <span>R</span>
+                <input id="totalRepairCost" type="text" inputmode="decimal" value="0.00">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="staffPayment">Staff Payment</label>
+              <div class="money-wrap">
+                <span>R</span>
+                <input id="staffPayment" type="text" inputmode="decimal" value="0.00">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="companyPayment">Company Payment</label>
+              <div class="money-wrap">
+                <span>R</span>
+                <input id="companyPayment" type="text" inputmode="decimal" value="0.00">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="insurance">Insurance Payment</label>
+              <div class="money-wrap">
+                <span>R</span>
+                <input id="insurance" type="text" inputmode="decimal" value="0.00">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button id="saveButton" class="btn btn-primary" type="submit">Save Incident</button>
+            <button id="cancelEditButton" class="btn btn-secondary" type="button" hidden>Cancel Edit</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2>Incident Register</h2>
+            <p>All records fetched directly from Google Sheets.</p>
+          </div>
+
+          <div class="toolbar">
+            <input id="searchInput" class="search" type="search" placeholder="Search staff, vehicle, reg, cost center...">
+            <button id="refreshButton" class="btn btn-secondary" type="button">Refresh</button>
+          </div>
         </div>
-      </form>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Staff Name</th>
+                <th>Cost Center</th>
+                <th>Vehicle Make</th>
+                <th>Reg No</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Total Repair Cost</th>
+                <th>Staff Payment</th>
+                <th>Company Payment</th>
+                <th>Insurance</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="incidentTableBody"></tbody>
+          </table>
+
+          <div id="emptyState" class="empty" hidden>No incident records found.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="loader" class="loader-overlay">
+    <div class="loader-card">
+      <div class="spinner"></div>
+      <div id="loaderText">Synchronising...</div>
     </div>
   </div>
 
-  <div id="loadingOverlay" class="loading-overlay">
-    <div class="loader-card">Synchronising with Google Sheets…</div>
-  </div>
-
-  <div id="toast" class="toast"></div>
+  <div id="toastContainer" class="toast-container"></div>
 
   <script>
-    /*
-      IMPORTANT:
-      After deploying the Apps Script as a Web App, paste its /exec URL below.
-      Example:
-      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxp-MfPp6SMUDHfDpnikf47l-bxM50GjvlTPEQAmGthORnJuQpT_jDFVN0nl9qp2lpo/exec';
-    */
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxp-MfPp6SMUDHfDpnikf47l-bxM50GjvlTPEQAmGthORnJuQpT_jDFVN0nl9qp2lpo/exec';
+    const state = {
+      records: [],
+      filteredRecords: [],
+      editingId: ''
+    };
 
-    let allRecords = [];
-    let filteredRecords = [];
-
-    document.addEventListener('DOMContentLoaded', () => {
-      checkConnection();
-      loadData();
+    const currencyFormatter = new Intl.NumberFormat('en-ZA', {
+      style: 'currency',
+      currency: 'ZAR',
+      minimumFractionDigits: 2
     });
 
-    async function apiRequest(action, payload = null) {
-      if (!SCRIPT_URL || SCRIPT_URL.includes('PASTE_YOUR')) {
-        throw new Error('Please paste your deployed Apps Script Web App URL into SCRIPT_URL in the HTML file.');
-      }
+    document.addEventListener('DOMContentLoaded', () => {
+      setToday();
+      bindEvents();
+      checkConnection();
+      loadRecords();
+    });
 
-      const options = payload
-        ? {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action, ...payload })
-          }
-        : { method: 'GET' };
+    function bindEvents() {
+      document.getElementById('incidentForm').addEventListener('submit', handleSubmit);
+      document.getElementById('cancelEditButton').addEventListener('click', resetForm);
+      document.getElementById('refreshButton').addEventListener('click', loadRecords);
+      document.getElementById('searchInput').addEventListener('input', applySearch);
 
-      const url = payload
-        ? SCRIPT_URL
-        : `${SCRIPT_URL}?action=${encodeURIComponent(action)}&_=${Date.now()}`;
-
-      const response = await fetch(url, options);
-      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-
-      const result = await response.json();
-      if (!result.success) throw new Error(result.message || 'Request failed.');
-      return result;
+      ['totalRepairCost', 'staffPayment', 'companyPayment', 'insurance'].forEach(id => {
+        const input = document.getElementById(id);
+        input.addEventListener('blur', () => {
+          input.value = parseMoney(input.value).toFixed(2);
+        });
+      });
     }
 
-    async function checkConnection() {
-      const dot = document.getElementById('connectionDot');
+    function checkConnection() {
+      google.script.run
+        .withSuccessHandler(result => {
+          setConnection(Boolean(result && result.success), result && result.message);
+        })
+        .withFailureHandler(error => {
+          setConnection(false, getErrorMessage(error));
+        })
+        .healthCheck();
+    }
+
+    function setConnection(connected, message) {
+      const status = document.getElementById('connectionStatus');
       const text = document.getElementById('connectionText');
 
-      try {
-        await apiRequest('ping');
-        dot.className = 'dot connected';
-        text.textContent = 'Live connection';
-      } catch (error) {
-        dot.className = 'dot disconnected';
-        text.textContent = 'Not connected';
-      }
+      status.classList.remove('connected', 'disconnected');
+      status.classList.add(connected ? 'connected' : 'disconnected');
+      text.textContent = connected ? 'Live connection' : (message || 'Connection failed');
     }
 
-    async function loadData() {
-      setLoading(true);
-      try {
-        const result = await apiRequest('list');
-        allRecords = Array.isArray(result.data) ? result.data : [];
-        populateFilters();
-        applyFilters();
-        updateDashboard();
-        await checkConnection();
-      } catch (error) {
-        showToast(error.message, true);
-        allRecords = [];
-        applyFilters();
-        updateDashboard();
-      } finally {
-        setLoading(false);
-      }
+    function loadRecords() {
+      showLoader('Fetching incident records...');
+
+      google.script.run
+        .withSuccessHandler(result => {
+          hideLoader();
+
+          if (!result || !result.success) {
+            showToast(result && result.message ? result.message : 'Unable to load records.', 'error');
+            return;
+          }
+
+          state.records = Array.isArray(result.records) ? result.records : [];
+          updateDashboard(result.summary || {});
+          applySearch();
+          setConnection(true, 'Connected');
+        })
+        .withFailureHandler(error => {
+          hideLoader();
+          setConnection(false, getErrorMessage(error));
+          showToast(getErrorMessage(error), 'error');
+        })
+        .getVehicleIncidents();
     }
 
-    function applyFilters() {
-      const search = document.getElementById('searchInput').value.trim().toLowerCase();
-      const status = document.getElementById('statusFilter').value;
-      const province = document.getElementById('provinceFilter').value;
-      const industry = document.getElementById('industryFilter').value;
-      const assigned = document.getElementById('assignedFilter').value;
+    function handleSubmit(event) {
+      event.preventDefault();
 
-      filteredRecords = allRecords.filter(record => {
-        const haystack = Object.values(record).join(' ').toLowerCase();
-        return (!search || haystack.includes(search))
-          && (!status || record.status === status)
-          && (!province || record.provinceLocation === province)
-          && (!industry || record.industryProjectType === industry)
-          && (!assigned || record.assignedTo === assigned);
-      });
+      const payload = {
+        incidentId: document.getElementById('incidentId').value.trim(),
+        date: document.getElementById('date').value,
+        staffName: document.getElementById('staffName').value.trim(),
+        costCenter: document.getElementById('costCenter').value.trim(),
+        vehicleMake: document.getElementById('vehicleMake').value.trim(),
+        regNo: document.getElementById('regNo').value.trim(),
+        location: document.getElementById('location').value.trim(),
+        status: document.getElementById('status').value,
+        totalRepairCost: parseMoney(document.getElementById('totalRepairCost').value),
+        staffPayment: parseMoney(document.getElementById('staffPayment').value),
+        companyPayment: parseMoney(document.getElementById('companyPayment').value),
+        insurance: parseMoney(document.getElementById('insurance').value)
+      };
+
+      const validationError = validateClientPayload(payload);
+      if (validationError) {
+        showToast(validationError, 'error');
+        return;
+      }
+
+      setSaveState(true);
+      showLoader(payload.incidentId ? 'Updating incident...' : 'Saving incident...');
+
+      google.script.run
+        .withSuccessHandler(result => {
+          hideLoader();
+          setSaveState(false);
+
+          if (!result || !result.success) {
+            showToast(result && result.message ? result.message : 'Unable to save incident.', 'error');
+            return;
+          }
+
+          showToast(result.message, 'success');
+          resetForm();
+          loadRecords();
+        })
+        .withFailureHandler(error => {
+          hideLoader();
+          setSaveState(false);
+          showToast(getErrorMessage(error), 'error');
+        })
+        .saveVehicleIncident(payload);
+    }
+
+    function editRecord(incidentId) {
+      const record = state.records.find(item => item.incidentId === incidentId);
+      if (!record) return;
+
+      state.editingId = incidentId;
+      document.getElementById('incidentId').value = record.incidentId;
+      document.getElementById('date').value = record.date || '';
+      document.getElementById('staffName').value = record.staffName || '';
+      document.getElementById('costCenter').value = record.costCenter || '';
+      document.getElementById('vehicleMake').value = record.vehicleMake || '';
+      document.getElementById('regNo').value = record.regNo || '';
+      document.getElementById('location').value = record.location || '';
+      document.getElementById('status').value = record.status || '';
+      document.getElementById('totalRepairCost').value = Number(record.totalRepairCost || 0).toFixed(2);
+      document.getElementById('staffPayment').value = Number(record.staffPayment || 0).toFixed(2);
+      document.getElementById('companyPayment').value = Number(record.companyPayment || 0).toFixed(2);
+      document.getElementById('insurance').value = Number(record.insurance || 0).toFixed(2);
+
+      document.getElementById('formTitle').textContent = 'Edit Incident Entry';
+      document.getElementById('saveButton').textContent = 'Update Incident';
+      document.getElementById('cancelEditButton').hidden = false;
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function deleteRecord(incidentId) {
+      const record = state.records.find(item => item.incidentId === incidentId);
+      const description = record ? `${record.regNo} - ${record.staffName}` : 'this incident';
+
+      if (!confirm(`Delete ${description}? This action cannot be undone.`)) return;
+
+      showLoader('Deleting incident...');
+
+      google.script.run
+        .withSuccessHandler(result => {
+          hideLoader();
+
+          if (!result || !result.success) {
+            showToast(result && result.message ? result.message : 'Unable to delete incident.', 'error');
+            return;
+          }
+
+          showToast(result.message, 'success');
+
+          if (state.editingId === incidentId) {
+            resetForm();
+          }
+
+          loadRecords();
+        })
+        .withFailureHandler(error => {
+          hideLoader();
+          showToast(getErrorMessage(error), 'error');
+        })
+        .deleteVehicleIncident(incidentId);
+    }
+
+    function applySearch() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+
+      state.filteredRecords = !query
+        ? [...state.records]
+        : state.records.filter(record => {
+            const searchable = [
+              record.date,
+              record.staffName,
+              record.costCenter,
+              record.vehicleMake,
+              record.regNo,
+              record.location,
+              record.status
+            ].join(' ').toLowerCase();
+
+            return searchable.includes(query);
+          });
 
       renderTable();
     }
 
-    function populateFilters() {
-      fillSelect('provinceFilter', uniqueValues('provinceLocation'), 'All Provinces / Locations');
-      fillSelect('industryFilter', uniqueValues('industryProjectType'), 'All Project Types');
-      fillSelect('assignedFilter', uniqueValues('assignedTo'), 'All Assigned Staff');
-    }
-
-    function uniqueValues(field) {
-      return [...new Set(allRecords.map(r => (r[field] || '').trim()).filter(Boolean))]
-        .sort((a, b) => a.localeCompare(b));
-    }
-
-    function fillSelect(id, values, firstLabel) {
-      const select = document.getElementById(id);
-      const current = select.value;
-      select.innerHTML = `<option value="">${escapeHtml(firstLabel)}</option>` +
-        values.map(v => `<option value="${escapeAttr(v)}">${escapeHtml(v)}</option>`).join('');
-      if (values.includes(current)) select.value = current;
-    }
-
     function renderTable() {
-      const body = document.getElementById('recordsBody');
+      const body = document.getElementById('incidentTableBody');
       const empty = document.getElementById('emptyState');
 
-      if (!filteredRecords.length) {
+      if (!state.filteredRecords.length) {
         body.innerHTML = '';
-        empty.style.display = 'block';
+        empty.hidden = false;
         return;
       }
 
-      empty.style.display = 'none';
-      body.innerHTML = filteredRecords.map(record => `
+      empty.hidden = true;
+      body.innerHTML = state.filteredRecords.map(record => `
         <tr>
-          <td><strong>${escapeHtml(record.clientId || '')}</strong></td>
-          <td>${escapeHtml(record.companyName || '')}</td>
-          <td>${escapeHtml(record.contactPerson || '')}</td>
-          <td>${escapeHtml(record.position || '')}</td>
-          <td>${escapeHtml(record.phoneNumber || '')}</td>
-          <td>${record.emailAddress ? `<a href="mailto:${escapeAttr(record.emailAddress)}">${escapeHtml(record.emailAddress)}</a>` : ''}</td>
-          <td>${escapeHtml(record.industryProjectType || '')}</td>
-          <td>${escapeHtml(record.provinceLocation || '')}</td>
-          <td>${escapeHtml(record.servicesRequired || '')}</td>
-          <td>${formatDateDisplay(record.lastContactDate)}</td>
-          <td>${formatDateDisplay(record.nextFollowUpDate)}</td>
-          <td>${escapeHtml(record.quotationSent || '')}</td>
-          <td>${formatCurrency(record.estimatedProjectValue)}</td>
-          <td><span class="badge ${statusClass(record.status)}">${escapeHtml(record.status || '')}</span></td>
-          <td>${escapeHtml(record.assignedTo || '')}</td>
-          <td title="${escapeAttr(record.notes || '')}">${escapeHtml(shorten(record.notes || '', 80))}</td>
+          <td>${escapeHtml(formatDisplayDate(record.date))}</td>
+          <td>${escapeHtml(record.staffName)}</td>
+          <td>${escapeHtml(record.costCenter)}</td>
+          <td>${escapeHtml(record.vehicleMake)}</td>
+          <td><strong>${escapeHtml(record.regNo)}</strong></td>
+          <td>${escapeHtml(record.location)}</td>
+          <td><span class="status-badge ${statusClass(record.status)}">${escapeHtml(record.status)}</span></td>
+          <td>${formatCurrency(record.totalRepairCost)}</td>
+          <td>${formatCurrency(record.staffPayment)}</td>
+          <td>${formatCurrency(record.companyPayment)}</td>
+          <td>${formatCurrency(record.insurance)}</td>
           <td>
-            <div class="actions">
-              <button class="btn btn-warning btn-small" onclick="editRecord(${record.rowNumber})">Edit</button>
-              <button class="btn btn-danger btn-small" onclick="deleteRecord(${record.rowNumber}, '${escapeJs(record.companyName || '')}')">Delete</button>
+            <div class="row-actions">
+              <button class="icon-btn edit-btn" type="button" onclick="editRecord('${escapeJs(record.incidentId)}')">Edit</button>
+              <button class="icon-btn delete-btn" type="button" onclick="deleteRecord('${escapeJs(record.incidentId)}')">Delete</button>
             </div>
           </td>
         </tr>
       `).join('');
     }
 
-    function updateDashboard() {
-      const activeStatuses = ['Lead', 'Contacted', 'Qualified', 'Quotation Sent', 'Negotiation', 'In Progress', 'On Hold'];
-      const today = new Date();
-      today.setHours(0,0,0,0);
+    function updateDashboard(summary) {
+      document.getElementById('totalInsurancePayment').textContent =
+        formatCurrency(summary.totalInsurancePayment || 0);
 
-      const active = allRecords.filter(r => activeStatuses.includes(r.status)).length;
-      const quotes = allRecords.filter(r => String(r.quotationSent).toLowerCase() === 'yes').length;
-      const due = allRecords.filter(r => {
-        if (!r.nextFollowUpDate) return false;
-        const d = parseDate(r.nextFollowUpDate);
-        return d && d <= today && !['Won', 'Lost', 'Completed'].includes(r.status);
-      }).length;
-      const pipeline = allRecords
-        .filter(r => !['Lost', 'Completed'].includes(r.status))
-        .reduce((sum, r) => sum + parseMoney(r.estimatedProjectValue), 0);
+      document.getElementById('totalIncidents').textContent =
+        Number(summary.totalIncidents || 0).toLocaleString('en-ZA');
 
-      document.getElementById('totalClients').textContent = allRecords.length;
-      document.getElementById('activeOpportunities').textContent = active;
-      document.getElementById('quotesSent').textContent = quotes;
-      document.getElementById('followUpsDue').textContent = due;
-      document.getElementById('pipelineValue').textContent = formatCurrency(pipeline);
+      document.getElementById('totalStaffPayments').textContent =
+        formatCurrency(summary.totalStaffPayments || 0);
+
+      document.getElementById('totalCompanyPayments').textContent =
+        formatCurrency(summary.totalCompanyPayments || 0);
     }
 
-    function openAddModal() {
-      document.getElementById('recordForm').reset();
-      document.getElementById('rowNumber').value = '';
-      document.getElementById('modalTitle').textContent = 'Add New Client';
-      document.getElementById('status').value = 'Lead';
-      document.getElementById('recordModal').classList.add('show');
+    function resetForm() {
+      state.editingId = '';
+      document.getElementById('incidentForm').reset();
+      document.getElementById('incidentId').value = '';
+      document.getElementById('formTitle').textContent = 'New Incident Entry';
+      document.getElementById('saveButton').textContent = 'Save Incident';
+      document.getElementById('cancelEditButton').hidden = true;
+
+      setToday();
+      ['totalRepairCost', 'staffPayment', 'companyPayment', 'insurance'].forEach(id => {
+        document.getElementById(id).value = '0.00';
+      });
     }
 
-    function editRecord(rowNumber) {
-      const record = allRecords.find(r => Number(r.rowNumber) === Number(rowNumber));
-      if (!record) return showToast('Record not found.', true);
-
-      document.getElementById('rowNumber').value = record.rowNumber || '';
-      document.getElementById('clientId').value = record.clientId || '';
-      document.getElementById('companyName').value = record.companyName || '';
-      document.getElementById('contactPerson').value = record.contactPerson || '';
-      document.getElementById('position').value = record.position || '';
-      document.getElementById('phoneNumber').value = record.phoneNumber || '';
-      document.getElementById('emailAddress').value = record.emailAddress || '';
-      document.getElementById('industryProjectType').value = record.industryProjectType || '';
-      document.getElementById('provinceLocation').value = record.provinceLocation || '';
-      document.getElementById('servicesRequired').value = record.servicesRequired || '';
-      document.getElementById('lastContactDate').value = formatDateInput(record.lastContactDate);
-      document.getElementById('nextFollowUpDate').value = formatDateInput(record.nextFollowUpDate);
-      document.getElementById('quotationSent').value = record.quotationSent || '';
-      document.getElementById('estimatedProjectValue').value = record.estimatedProjectValue || '';
-      document.getElementById('status').value = record.status || 'Lead';
-      document.getElementById('assignedTo').value = record.assignedTo || '';
-      document.getElementById('notes').value = record.notes || '';
-
-      document.getElementById('modalTitle').textContent = 'Edit Client Record';
-      document.getElementById('recordModal').classList.add('show');
-    }
-
-    async function saveRecord(event) {
-      event.preventDefault();
-      const saveBtn = document.getElementById('saveBtn');
-      saveBtn.disabled = true;
-
-      const rowNumber = document.getElementById('rowNumber').value;
-      const record = {
-        clientId: document.getElementById('clientId').value.trim(),
-        companyName: document.getElementById('companyName').value.trim(),
-        contactPerson: document.getElementById('contactPerson').value.trim(),
-        position: document.getElementById('position').value.trim(),
-        phoneNumber: document.getElementById('phoneNumber').value.trim(),
-        emailAddress: document.getElementById('emailAddress').value.trim(),
-        industryProjectType: document.getElementById('industryProjectType').value.trim(),
-        provinceLocation: document.getElementById('provinceLocation').value.trim(),
-        servicesRequired: document.getElementById('servicesRequired').value.trim(),
-        lastContactDate: document.getElementById('lastContactDate').value,
-        nextFollowUpDate: document.getElementById('nextFollowUpDate').value,
-        quotationSent: document.getElementById('quotationSent').value,
-        estimatedProjectValue: normalizeMoneyInput(document.getElementById('estimatedProjectValue').value),
-        status: document.getElementById('status').value,
-        assignedTo: document.getElementById('assignedTo').value.trim(),
-        notes: document.getElementById('notes').value.trim()
-      };
-
-      try {
-        setLoading(true);
-        const action = rowNumber ? 'update' : 'create';
-        await apiRequest(action, { rowNumber: rowNumber ? Number(rowNumber) : null, record });
-        showToast(rowNumber ? 'Record updated successfully.' : 'Client added successfully.');
-        closeModal();
-        await loadData();
-      } catch (error) {
-        showToast(error.message, true);
-      } finally {
-        setLoading(false);
-        saveBtn.disabled = false;
+    function setToday() {
+      const dateInput = document.getElementById('date');
+      if (!dateInput.value) {
+        const today = new Date();
+        const local = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+        dateInput.value = local.toISOString().slice(0, 10);
       }
     }
 
-    async function deleteRecord(rowNumber, companyName) {
-      const confirmed = confirm(`Delete the record for "${companyName}"? This cannot be undone.`);
-      if (!confirmed) return;
+    function validateClientPayload(payload) {
+      const required = [
+        ['date', 'Date'],
+        ['staffName', 'Staff Name'],
+        ['costCenter', 'Cost Center'],
+        ['vehicleMake', 'Vehicle Make'],
+        ['regNo', 'Reg No'],
+        ['location', 'Location of accident'],
+        ['status', 'Status']
+      ];
 
-      try {
-        setLoading(true);
-        await apiRequest('delete', { rowNumber: Number(rowNumber) });
-        showToast('Record deleted successfully.');
-        await loadData();
-      } catch (error) {
-        showToast(error.message, true);
-      } finally {
-        setLoading(false);
+      for (const [key, label] of required) {
+        if (!String(payload[key] || '').trim()) {
+          return `${label} is required.`;
+        }
       }
-    }
 
-    function closeModal() {
-      document.getElementById('recordModal').classList.remove('show');
-    }
-
-    function backdropClose(event) {
-      if (event.target.id === 'recordModal') closeModal();
-    }
-
-    function setLoading(show) {
-      document.getElementById('loadingOverlay').classList.toggle('show', show);
-    }
-
-    function showToast(message, isError = false) {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.className = `toast show${isError ? ' error' : ''}`;
-      clearTimeout(window.__toastTimer);
-      window.__toastTimer = setTimeout(() => toast.classList.remove('show'), 3800);
+      return '';
     }
 
     function parseMoney(value) {
-      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-      const cleaned = String(value || '')
+      const raw = String(value ?? '')
+        .trim()
         .replace(/\s/g, '')
-        .replace(/[R$]/g, '')
-        .replace(/,/g, '');
-      const n = Number(cleaned);
-      return Number.isFinite(n) ? n : 0;
-    }
+        .replace(/R/gi, '');
 
-    function normalizeMoneyInput(value) {
-      let cleaned = String(value || '').trim().replace(/\s/g, '').replace(/[R$]/g, '');
-      if (cleaned.includes(',') && !cleaned.includes('.')) cleaned = cleaned.replace(',', '.');
-      else cleaned = cleaned.replace(/,/g, '');
-      const number = Number(cleaned);
+      if (!raw) return 0;
+
+      let normalized = raw;
+      const hasComma = normalized.includes(',');
+      const hasDot = normalized.includes('.');
+
+      if (hasComma && hasDot) {
+        if (normalized.lastIndexOf(',') > normalized.lastIndexOf('.')) {
+          normalized = normalized.replace(/\./g, '').replace(',', '.');
+        } else {
+          normalized = normalized.replace(/,/g, '');
+        }
+      } else if (hasComma) {
+        normalized = normalized.replace(',', '.');
+      }
+
+      normalized = normalized.replace(/[^\d.-]/g, '');
+      const number = Number(normalized);
       return Number.isFinite(number) ? number : 0;
     }
 
     function formatCurrency(value) {
-      return new Intl.NumberFormat('en-ZA', {
-        style: 'currency',
-        currency: 'ZAR',
-        minimumFractionDigits: 2
-      }).format(parseMoney(value));
+      return currencyFormatter.format(Number(value || 0));
     }
 
-    function parseDate(value) {
-      if (!value) return null;
-      const raw = String(value).trim();
-      const iso = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null;
-      if (iso) {
-        const [y,m,d] = raw.split('-').map(Number);
-        return new Date(y, m - 1, d);
-      }
-      const d = new Date(raw);
-      return isNaN(d.getTime()) ? null : d;
+    function formatDisplayDate(value) {
+      if (!value) return '';
+      const parts = String(value).split('-');
+      if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      return value;
     }
 
-    function formatDateDisplay(value) {
-      const d = parseDate(value);
-      if (!d) return '';
-      return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+    function statusClass(value) {
+      return String(value || '').trim().toLowerCase().replace(/\s+/g, '-');
     }
 
-    function formatDateInput(value) {
-      const d = parseDate(value);
-      if (!d) return '';
-      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    function showLoader(message) {
+      document.getElementById('loaderText').textContent = message || 'Synchronising...';
+      document.getElementById('loader').classList.add('show');
     }
 
-    function statusClass(status) {
-      const s = String(status || '').toLowerCase();
-      if (s === 'lead') return 'lead';
-      if (s === 'contacted' || s === 'qualified') return 'contacted';
-      if (s === 'quotation sent' || s === 'negotiation') return 'quoted';
-      if (s === 'won' || s === 'completed') return 'won';
-      if (s === 'lost') return 'lost';
-      if (s === 'in progress') return 'in-progress';
-      return '';
+    function hideLoader() {
+      document.getElementById('loader').classList.remove('show');
     }
 
-    function shorten(text, max) {
-      const s = String(text || '');
-      return s.length > max ? s.slice(0, max - 1) + '…' : s;
+    function setSaveState(isSaving) {
+      const button = document.getElementById('saveButton');
+      button.disabled = isSaving;
+      if (isSaving) button.textContent = state.editingId ? 'Updating...' : 'Saving...';
+    }
+
+    function showToast(message, type = '') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 4200);
+    }
+
+    function getErrorMessage(error) {
+      if (!error) return 'An unexpected error occurred.';
+      return error.message || String(error);
     }
 
     function escapeHtml(value) {
@@ -978,16 +1025,27 @@
         .replace(/'/g, '&#039;');
     }
 
-    function escapeAttr(value) {
-      return escapeHtml(value);
-    }
-
     function escapeJs(value) {
       return String(value ?? '')
         .replace(/\\/g, '\\\\')
         .replace(/'/g, "\\'")
-        .replace(/\r?\n/g, ' ');
+        .replace(/\r/g, '')
+        .replace(/\n/g, '\\n');
     }
   </script>
+
+<script>
+function apiGet(action){
+  return fetch(SCRIPT_URL + "?action=" + encodeURIComponent(action)).then(r=>r.json());
+}
+function apiPost(action,payload){
+  return fetch(SCRIPT_URL + "?action=" + encodeURIComponent(action), {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(payload||{})
+  }).then(r=>r.json());
+}
+</script>
+
 </body>
 </html>
