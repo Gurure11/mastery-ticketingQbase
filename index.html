@@ -1,1746 +1,1324 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Distinct Infrastructure · Dashboard</title>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"/>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" rel="stylesheet"/>
-<style>
-    :root {
-      --primary-blue: #0b2f6b;
-      --deep-blue: #071f47;
-      --bright-blue: #1464d2;
-      --soft-blue: #eaf3ff;
-      --gold: #d4af37;
-      --gold-light: #ffe7a3;
-      --gold-deep: #9a7416;
-      --white: #ffffff;
-      --text: #12304f;
-      --muted: #6b7a90;
-      --line: rgba(20,68,126,0.16);
-      --shadow: 0 20px 60px rgba(7,31,71,0.18);
-      --card-radius: 22px;
-      --transition: 0.2s ease;
-    }
-    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Roboto, Arial, sans-serif; }
-    body {
-      min-height:100vh;
-      background: radial-gradient(circle at top left, rgba(212,175,55,0.32), transparent 30%),
-                  linear-gradient(135deg, var(--deep-blue) 0%, var(--primary-blue) 45%, var(--bright-blue) 100%);
-      padding:24px;
-      color:var(--text);
-      overflow-x:hidden;
-    }
-    body::before {
-      content:"";
-      position:fixed;
-      inset:-30%;
-      background:linear-gradient(120deg, transparent, rgba(255,255,255,0.12), transparent);
-      animation:shine 8s linear infinite;
-      pointer-events:none;
-    }
-    @keyframes shine {
-      0%{transform:translateX(-40%) rotate(10deg)}
-      100%{transform:translateX(40%) rotate(10deg)}
-    }
-    .container {
-      max-width:1400px;
-      margin:auto;
-      background:rgba(255,255,255,0.96);
-      padding:28px;
-      border-radius:26px;
-      box-shadow:var(--shadow);
-      border:1px solid rgba(255,255,255,0.5);
-      animation:pageIn 0.75s ease both;
-    }
-    @keyframes pageIn {
-      from{opacity:0; transform:translateY(18px)}
-      to{opacity:1; transform:translateY(0)}
-    }
-    .header {
-      text-align:center;
-      margin-bottom:28px;
-      padding:28px 20px;
-      border-radius:22px;
-      background:linear-gradient(135deg, var(--primary-blue), var(--bright-blue));
-      color:white;
-      box-shadow:0 14px 35px rgba(11,47,107,0.28);
-      position:relative;
-      overflow:hidden;
-    }
-    .header::after {
-      content:"";
-      position:absolute;
-      width:180px;
-      height:180px;
-      border-radius:50%;
-      background:rgba(212,175,55,0.25);
-      right:-50px;
-      top:-70px;
-      animation:floatOrb 5s ease-in-out infinite alternate;
-    }
-    @keyframes floatOrb {
-      from{transform:translateY(0) scale(1)}
-      to{transform:translateY(22px) scale(1.08)}
-    }
-    .header h1 { color:white; margin-bottom:8px; font-size:clamp(26px, 4vw, 42px); letter-spacing:0.5px; }
-    .header p { color:#eef6ff; font-size:14px; line-height:1.5; position:relative; z-index:1; }
-    .header strong { color:var(--gold-light); }
-    .header-logo {
-      display:block;
-      width:min(384px, 88%);
-      height:auto;
-      margin:0 auto 14px;
-      position:relative;
-      z-index:1;
-      filter:drop-shadow(0 8px 18px rgba(0,0,0,0.2));
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>OnPoint Fleet · accident report + cost center</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
 
-    /* Keep the three long executive-summary headings and values inside their cards. */
-    .stat-card.summary-compact .count {
-      font-size: clamp(20px, 2.2vw, 26px);
-      white-space: nowrap;
-    }
-    .stat-card.summary-compact .label {
-      font-size: 11px;
-      line-height: 1.25;
-      letter-spacing: 0.15px;
-    }
+        body {
+            background: #f0f4fc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            position: relative;
+        }
 
-    /* ----- DASHBOARD CARDS (clickable) ----- */
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 18px;
-      margin: 28px 0 24px 0;
-    }
-    .stat-card {
-      background: white;
-      padding: 18px 12px;
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      box-shadow: 0 8px 18px rgba(11,47,107,0.06);
-      text-align: center;
-      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
-      backdrop-filter: blur(2px);
-      background: rgba(255,255,255,0.85);
-      cursor: pointer;
-      position: relative;
-    }
-    .stat-card:hover {
-      transform: translateY(-6px) scale(1.02);
-      box-shadow: 0 18px 30px rgba(11,47,107,0.18);
-      border-color: var(--gold);
-    }
-    .stat-card:active {
-      transform: scale(0.96);
-    }
-    .stat-card i {
-      font-size: 28px;
-      color: var(--bright-blue);
-      background: var(--soft-blue);
-      padding: 10px;
-      border-radius: 50%;
-      margin-bottom: 10px;
-      display: inline-block;
-    }
-    .stat-card .count {
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--primary-blue);
-      line-height: 1.2;
-    }
-    .stat-card .label {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--muted);
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
-      margin-top: 4px;
-    }
-    .stat-card .sub {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-    .stat-card .filter-badge {
-      position: absolute;
-      top: 6px;
-      right: 8px;
-      font-size: 10px;
-      background: var(--gold);
-      color: #071f47;
-      padding: 2px 8px;
-      border-radius: 10px;
-      opacity: 0.7;
-    }
+        /* floating WA – royal blue */
+        .floating-wa {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1100;
+            background: #25D366;
+            color: white;
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+            border: 2px solid white;
+            text-decoration: none;
+            transition: 0.15s ease;
+        }
+        .floating-wa:hover {
+            transform: scale(1.04);
+            box-shadow: 0 16px 36px rgba(37, 211, 102, 0.3);
+        }
+        .floating-wa svg {
+            width: 38px;
+            height: 38px;
+            fill: white;
+        }
 
-    .action-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      margin: 12px 0 22px 0;
-      gap: 12px;
-    }
-    .action-row .btn-group {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .btn-gold {
-      background: linear-gradient(135deg, var(--gold), var(--gold-deep));
-      color: #071f47;
-      border: none;
-      padding: 14px 32px;
-      border-radius: 999px;
-      font-weight: 800;
-      font-size: 15px;
-      box-shadow: 0 10px 24px rgba(154,116,22,0.28);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .btn-gold:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 16px 32px rgba(154,116,22,0.36);
-      filter: saturate(1.1);
-    }
-    .btn-outline {
-      background: transparent;
-      border: 2px solid var(--primary-blue);
-      color: var(--primary-blue);
-      padding: 12px 24px;
-      border-radius: 999px;
-      font-weight: 700;
-      font-size: 14px;
-      transition: 0.2s ease;
-      cursor: pointer;
-    }
-    .btn-outline:hover {
-      background: var(--primary-blue);
-      color: white;
-    }
-    .btn-back {
-      background: linear-gradient(135deg, #6c7a8a, #4a5568);
-      color: white;
-      border: none;
-      padding: 10px 24px;
-      border-radius: 999px;
-      font-weight: 700;
-      font-size: 14px;
-      cursor: pointer;
-      transition: 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .btn-back:hover {
-      transform: translateY(-2px);
-      filter: brightness(1.1);
-    }
+        /* counter pill – white/royal */
+        .counter-pill {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 1100;
+            background: white;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-radius: 80px;
+            padding: 14px 26px;
+            border: 1px solid #d0ddee;
+            box-shadow: 0 12px 28px rgba(0, 40, 100, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .counter-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #0a2540;
+        }
+        .counter-badge {
+            background: #1a4b8c;
+            color: white;
+            font-weight: 800;
+            font-size: 1.3rem;
+            padding: 2px 18px;
+            border-radius: 40px;
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 12px rgba(26, 75, 140, 0.2);
+        }
+        .incident-label {
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #1a4b8c;
+            background: rgba(26, 75, 140, 0.06);
+            padding: 4px 18px;
+            border-radius: 40px;
+            border: 1px solid rgba(26, 75, 140, 0.1);
+        }
+        .incident-label i {
+            margin-right: 6px;
+            color: #1a4b8c;
+        }
 
-    /* form section */
-    #entrySection {
-      margin-top: 28px;
-      border-top: 2px dashed var(--line);
-      padding-top: 20px;
-    }
-    #entrySection h2 {
-      color: var(--primary-blue);
-      margin-bottom: 16px;
-      font-size: 22px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
+        /* main card – white / royal */
+        .report-card {
+            max-width: 820px;
+            width: 100%;
+            background: white;
+            border-radius: 48px;
+            padding: 2.2rem 2.2rem 2rem;
+            box-shadow: 0 30px 60px -20px rgba(0, 40, 80, 0.15), 0 8px 24px rgba(0, 40, 80, 0.04);
+            border: 1px solid #e9eff6;
+            position: relative;
+            z-index: 5;
+            transition: all 0.15s;
+        }
 
-    .form-grid {
-      display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap:16px;
-      margin-bottom:22px;
-    }
-    .form-group {
-      display:flex;
-      flex-direction:column;
-      padding:14px;
-      background:linear-gradient(180deg, #ffffff, var(--soft-blue));
-      border:1px solid var(--line);
-      border-radius:18px;
-      transition:transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
-      animation:cardIn 0.45s ease both;
-    }
-    .form-group:hover {
-      transform:translateY(-3px);
-      box-shadow:0 14px 28px rgba(11,47,107,0.12);
-      border-color:rgba(212,175,55,0.7);
-    }
-    @keyframes cardIn {
-      from{opacity:0; transform:translateY(10px)}
-      to{opacity:1; transform:translateY(0)}
-    }
-    label {
-      margin-bottom:7px;
-      font-weight:bold;
-      color:var(--primary-blue);
-      font-size:13px;
-    }
-    input, select, textarea {
-      width:100%;
-      padding:12px 13px;
-      border:1px solid rgba(11,47,107,0.22);
-      border-radius:12px;
-      font-size:14px;
-      background:white;
-      color:var(--text);
-      transition:border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-    }
-    input:focus, select:focus, textarea:focus {
-      outline:none;
-      border-color:var(--gold);
-      box-shadow:0 0 0 4px rgba(212,175,55,0.2);
-      transform:translateY(-1px);
-    }
-    textarea { min-height:44px; resize:vertical; }
-    .form-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
-      margin-top: 10px;
-    }
-    button {
-      background:linear-gradient(135deg, var(--gold), var(--gold-deep));
-      color:#071f47;
-      border:none;
-      padding:14px 30px;
-      border-radius:999px;
-      cursor:pointer;
-      font-size:15px;
-      font-weight:800;
-      box-shadow:0 12px 26px rgba(154,116,22,0.28);
-      transition:transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-    }
-    button:hover {
-      transform:translateY(-3px);
-      box-shadow:0 18px 34px rgba(154,116,22,0.36);
-      filter:saturate(1.1);
-    }
-    .btn-blue {
-      background:linear-gradient(135deg, var(--bright-blue), var(--primary-blue));
-      color:white;
-    }
-    .btn-danger {
-      background:linear-gradient(135deg, #ef4444, #991b1b);
-      color:white;
-    }
-    .status {
-      margin-top:16px;
-      font-weight:bold;
-      color:var(--primary-blue);
-      background:rgba(212,175,55,0.16);
-      border-left:5px solid var(--gold);
-      padding:12px 14px;
-      border-radius:12px;
-      min-height:20px;
-    }
-    .table-wrap {
-      width:100%;
-      overflow:auto;
-      border-radius:18px;
-      border:1px solid var(--line);
-      margin-top:20px;
-      box-shadow:0 10px 24px rgba(11,47,107,0.08);
-      max-height:72vh;
-    }
-    table {
-      width:100%;
-      min-width:700px;
-      border-collapse:collapse;
-      background:white;
-      table-layout:auto;
-    }
-    th {
-      background:linear-gradient(135deg, var(--primary-blue), var(--bright-blue));
-      color:white;
-      padding:9px;
-      text-align:left;
-      font-size:11px;
-      line-height:1.15;
-      white-space:nowrap;
-      border-bottom:2px solid var(--gold);
-      position:sticky;
-      top:0;
-      z-index:2;
-    }
-    td {
-      padding:8px 9px;
-      border-bottom:1px solid var(--line);
-      font-size:11px;
-      line-height:1.15;
-      color:var(--text);
-      white-space:nowrap;
-      max-width:170px;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    tr:hover { background:#f4f8ff; }
-    .hidden { display:none !important; }
-    
-    /* Actions column - moved to right */
-    .action-col {
-      min-width: 110px;
-      text-align: right;
-      position:sticky;
-      right:0;
-      background:#fff;
-      z-index:1;
-    }
-    .action-col .row-actions {
-      display: flex;
-      gap: 4px;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-    }
-    .row-actions button {
-      padding: 4px 8px;
-      font-size: 10px;
-      margin: 0;
-      border-radius: 14px;
-    }
-    .row-actions .btn-sm-edit { background: var(--bright-blue); color: white; }
-    .row-actions .btn-sm-edit:hover { filter: brightness(1.1); }
-    .row-actions .btn-sm-upload { background: var(--gold); color: #071f47; }
-    .row-actions .btn-sm-upload:hover { filter: brightness(1.1); }
-    .row-actions .btn-sm-delete { background: #ef4444; color: white; }
-    .row-actions .btn-sm-stolen { background: #f97316; color: white; }
-    .row-actions .btn-sm-sold { background: #16a34a; color: white; }
-    .row-actions .btn-sm-staff { background: #7c3aed; color: white; }
-    .row-actions .btn-sm-restore { background: #0f766e; color: white; }
+        .logo-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .logo-image {
+            width: 64px;
+            height: 64px;
+            background: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(0, 40, 80, 0.08);
+            border: 2px solid #1a4b8c;
+            overflow: hidden;
+        }
+        .logo-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        .logo-text {
+            font-weight: 800;
+            font-size: 2rem;
+            letter-spacing: -0.02em;
+            color: #0a2540;
+            line-height: 1.1;
+        }
+        .logo-text small {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #4a6f9e;
+            display: block;
+            letter-spacing: 0.3px;
+        }
+        .address-badge {
+            background: #f0f4fc;
+            border-radius: 60px;
+            padding: 10px 22px;
+            font-weight: 600;
+            color: #0a2540;
+            border: 1px solid #d0ddee;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .address-badge i {
+            color: #1a4b8c;
+        }
 
-    .regbook-link {
-      font-size: 10px;
-      white-space: nowrap;
-    }
-    .regbook-link a {
-      color: var(--bright-blue);
-      text-decoration: none;
-      border-bottom: 1px dotted var(--bright-blue);
-    }
-    .regbook-link a:hover { color: var(--gold-deep); }
+        .subhead {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 0 0 1.8rem 0;
+            padding: 12px 20px;
+            background: #f8faff;
+            border-radius: 60px;
+            border-left: 4px solid #1a4b8c;
+            color: #1a3a5c;
+            font-weight: 500;
+        }
+        .subhead i {
+            color: #1a4b8c;
+            margin-right: 6px;
+        }
+        .map-mini-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            border-radius: 40px;
+            padding: 6px 16px 6px 12px;
+            margin-left: auto;
+            border: 1px solid #d0ddee;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .map-mini-container a {
+            color: #1a4b8c;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .map-mini-container i {
+            color: #1a4b8c;
+        }
 
+        /* no animations */
+        .live-characters {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-bottom: 16px;
+            height: 50px;
+        }
+        .character {
+            width: 50px;
+            height: 50px;
+            background: #d0ddee;
+            border-radius: 50% 50% 20px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            box-shadow: 0 6px 0 #8aa3c4, 0 8px 16px rgba(0,0,0,0.04);
+            border: 2px solid white;
+            color: #0a2540;
+        }
+        .character:nth-child(2) { background: #b8cce6; box-shadow: 0 6px 0 #6f8db0; }
+        .character:nth-child(3) { background: #a7c957; box-shadow: 0 6px 0 #6b8e4c; color: white; }
 
-    th.action-col {
-      z-index:3;
-      background:linear-gradient(135deg, var(--primary-blue), var(--bright-blue));
-    }
-    #assetTable td:nth-child(6),
-    #assetTable td:nth-child(11),
-    #assetTable td:nth-child(12),
-    #assetTable td:nth-child(17),
-    #assetTable td:nth-child(18),
-    #assetTable td:nth-child(19),
-    #assetTable td:nth-child(25) {
-      max-width:130px;
-    }
+        /* app download row – royal */
+        .app-download-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            background: #f8faff;
+            border-radius: 60px;
+            padding: 12px 24px;
+            margin: 1rem 0 1.2rem;
+            border: 1px solid #d0ddee;
+        }
+        .qr-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        #qrCanvas {
+            width: 68px;
+            height: 68px;
+            border-radius: 20px;
+            background: white;
+            padding: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            border: 2px solid #1a4b8c;
+        }
+        .app-link {
+            background: #1a4b8c;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            transition: 0.15s;
+            border: 1px solid #2a5f9e;
+            box-shadow: 0 6px 16px rgba(26, 75, 140, 0.15);
+        }
+        .app-link:hover {
+            background: #0f3a6e;
+            transform: scale(1.01);
+        }
+        .scan-note {
+            color: #4a6f9e;
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
 
-    .filter-active {
-      border-color: var(--gold) !important;
-      box-shadow: 0 0 0 3px rgba(212,175,55,0.3) !important;
-    }
+        /* action links – royal */
+        .action-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .action-card {
+            background: white;
+            border-radius: 40px;
+            padding: 14px 28px;
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+            text-decoration: none;
+            color: #0a2540;
+            font-weight: 700;
+            border: 1px solid #d0ddee;
+            backdrop-filter: blur(4px);
+            transition: 0.15s;
+            flex: 1 1 auto;
+            box-shadow: 0 4px 12px rgba(0, 40, 80, 0.02);
+        }
+        .action-card i {
+            font-size: 1.8rem;
+            color: #1a4b8c;
+        }
+        .action-card:hover {
+            background: #f0f6ff;
+            border-color: #1a4b8c;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(26, 75, 140, 0.08);
+        }
+        .action-text small {
+            font-weight: 400;
+            font-size: 0.7rem;
+            color: #4a6f9e;
+        }
 
+        /* form */
+        .form-grid { display: flex; flex-direction: column; gap: 1.5rem; }
+        .two-cols { display: flex; flex-wrap: wrap; gap: 1rem; }
+        .two-cols > div { flex: 1 1 200px; }
+        .input-field { display: flex; flex-direction: column; gap: 6px; }
+        .input-field label {
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #1a3a5c;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .input-field label i { color: #1a4b8c; width: 20px; }
+        .input-field input, .input-field select, .input-field textarea {
+            background: white;
+            border: 1.5px solid #d0ddee;
+            border-radius: 30px;
+            padding: 16px 22px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #0a2540;
+            outline: none;
+            transition: 0.15s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.01);
+        }
+        .input-field input:focus, .input-field select:focus, .input-field textarea:focus {
+            border-color: #1a4b8c;
+            box-shadow: 0 0 0 4px rgba(26, 75, 140, 0.06);
+        }
+        .input-field input::placeholder, .input-field textarea::placeholder {
+            color: #8aa3c4;
+        }
+        .input-field select option { background: white; color: #0a2540; }
 
-    .transaction-toolbar {
-      display: grid;
-      grid-template-columns: 1.3fr repeat(4, minmax(145px, 1fr)) auto auto;
-      gap: 10px;
-      align-items: end;
-      padding: 12px;
-      margin: 8px 0 14px 0;
-      background: linear-gradient(180deg, #ffffff, var(--soft-blue));
-      border: 1px solid var(--line);
-      border-radius: 16px;
-    }
-    .transaction-toolbar .filter-box {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    .transaction-toolbar label {
-      margin-bottom: 0;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.25px;
-    }
-    .transaction-toolbar input,
-    .transaction-toolbar select {
-      padding: 9px 10px;
-      font-size: 12px;
-      border-radius: 10px;
-    }
-    .transaction-toolbar button {
-      padding: 10px 16px;
-      font-size: 12px;
-      white-space: nowrap;
-    }
+        .yes-no-group {
+            display: flex;
+            gap: 28px;
+            align-items: center;
+            background: #f8faff;
+            border-radius: 40px;
+            padding: 10px 24px;
+            border: 1px solid #d0ddee;
+        }
+        .yes-no-group label {
+            color: #0a2540;
+            font-weight: 500;
+            text-transform: none;
+            font-size: 0.95rem;
+            gap: 6px;
+        }
+        .yes-no-group input[type="radio"] { accent-color: #1a4b8c; width: 18px; height: 18px; margin-right: 6px; }
 
-    @media (max-width: 768px) {
-      body { padding:12px; }
-      .container { padding:16px; border-radius:20px; }
-      .dashboard-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-      .action-row { flex-direction: column; align-items: stretch; }
-      .btn-gold, .btn-outline { justify-content: center; }
-      .form-actions { flex-direction: column; }
-      .form-actions button { width: 100%; justify-content: center; }
-      .action-col .row-actions { justify-content: center; }
-      .transaction-toolbar { grid-template-columns: 1fr; }
-      .transaction-toolbar button { width: 100%; justify-content: center; }
-    }
-    /* Image cropping modal */
-    .crop-modal {
-      position: fixed;
-      inset: 0;
-      z-index: 99999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 18px;
-      background: rgba(7,31,71,0.84);
-      backdrop-filter: blur(5px);
-    }
-    .crop-modal.hidden { display: none !important; }
-    .crop-dialog {
-      width: min(960px, 100%);
-      max-height: 94vh;
-      overflow: auto;
-      background: white;
-      border-radius: 22px;
-      box-shadow: 0 26px 80px rgba(0,0,0,0.4);
-      border: 1px solid rgba(255,255,255,0.7);
-    }
-    .crop-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 16px 18px;
-      color: white;
-      background: linear-gradient(135deg, var(--primary-blue), var(--bright-blue));
-      border-radius: 22px 22px 0 0;
-    }
-    .crop-header h3 { margin: 0; font-size: 18px; }
-    .crop-close {
-      width: 38px;
-      height: 38px;
-      padding: 0;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.16);
-      color: white;
-      box-shadow: none;
-    }
-    .crop-stage {
-      height: min(62vh, 560px);
-      background: #eef4fb;
-      padding: 12px;
-    }
-    .crop-stage img {
-      display: block;
-      max-width: 100%;
-      max-height: 100%;
-    }
-    .crop-controls {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 9px;
-      padding: 14px 18px;
-      border-top: 1px solid var(--line);
-    }
-    .crop-controls button { padding: 10px 16px; font-size: 13px; }
-    .crop-controls .crop-primary { margin-left: auto; }
-    .crop-help {
-      width: 100%;
-      margin: 0;
-      color: var(--muted);
-      font-size: 12px;
-    }
+        .photo-upload-area {
+            background: #f8faff;
+            border-radius: 40px;
+            padding: 2rem 1.5rem;
+            border: 2px dashed #b8cce6;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.15s;
+            position: relative;
+        }
+        .photo-upload-area:hover { background: #f0f6ff; border-color: #1a4b8c; }
+        .photo-upload-area i { font-size: 3rem; color: #1a4b8c; opacity: 0.6; margin-bottom: 0.5rem; }
+        .photo-upload-area .upload-text { font-weight: 700; font-size: 1.1rem; color: #0a2540; }
+        .photo-upload-area .upload-hint { font-size: 0.8rem; color: #4a6f9e; margin-top: 6px; }
+        #fileInput { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 
-    @media print {
-      body { background:white; }
-      .header, .action-row, #entrySection, .toolbar, .connection-panel, .status, .btn-gold, .btn-outline { display:none !important; }
-      .container { box-shadow:none; border:none; max-width:none; padding:0; }
-    }
-  </style>
+        .image-preview-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 16px;
+            align-items: center;
+        }
+        .preview-thumb { width: 80px; height: 80px; border-radius: 24px; object-fit: cover; border: 3px solid #1a4b8c; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .file-name-badge {
+            background: #f0f4fc;
+            border-radius: 40px;
+            padding: 8px 20px;
+            font-weight: 500;
+            color: #0a2540;
+            border: 1px solid #d0ddee;
+        }
+        .attachment-badge {
+            background: #f0f6ff;
+            border-radius: 40px;
+            padding: 8px 18px;
+            font-size: 0.8rem;
+            color: #1a4b8c;
+            border: 1px solid #b8cce6;
+        }
+
+        .add-save-btn {
+            margin-top: 6px;
+            border: 0;
+            border-radius: 40px;
+            background: #1a4b8c;
+            color: white;
+            font-weight: 700;
+            padding: 10px 18px;
+            cursor: pointer;
+            transition: 0.15s;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 12px rgba(26, 75, 140, 0.08);
+        }
+        .add-save-btn:hover { background: #0f3a6e; transform: translateY(-2px); }
+
+        .submit-btn {
+            background: #1a4b8c;
+            border: none;
+            border-radius: 60px;
+            padding: 1.3rem 1.8rem;
+            color: white;
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: 0.15s;
+            margin: 2rem 0 1rem;
+            border: 1px solid #2a5f9e;
+            box-shadow: 0 12px 32px rgba(26, 75, 140, 0.15);
+        }
+        .submit-btn:hover {
+            background: #0f3a6e;
+            transform: scale(1.01);
+            box-shadow: 0 16px 40px rgba(26, 75, 140, 0.2);
+        }
+        .submit-btn i { font-size: 1.6rem; }
+
+        .info-note {
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8faff;
+            border-radius: 40px;
+            padding: 14px 22px;
+            color: #1a3a5c;
+            border: 1px solid #d0ddee;
+        }
+        .info-note i { color: #1a4b8c; }
+
+        hr { border: 1px solid #d0ddee; margin: 0.5rem 0 1rem; }
+
+        footer {
+            text-align: center;
+            margin-top: 24px;
+            color: #4a6f9e;
+            font-weight: 400;
+            font-size: 0.85rem;
+        }
+
+        .datetime-row { display: flex; flex-wrap: wrap; gap: 1rem; }
+        .datetime-row .input-field { flex: 1 1 160px; }
+
+        @media (max-width: 520px) {
+            .report-card { padding: 1.5rem 1.2rem; border-radius: 32px; }
+            .logo-text { font-size: 1.4rem; }
+            .counter-pill { top: 12px; right: 12px; padding: 10px 16px; }
+            .floating-wa { width: 56px; height: 56px; bottom: 20px; right: 20px; }
+            .app-download-row { flex-direction: column; align-items: flex-start; }
+            .action-links { flex-direction: column; }
+            .action-card { justify-content: center; }
+            .subhead { flex-direction: column; align-items: flex-start; }
+            .map-mini-container { margin-left: 0; width: 100%; justify-content: center; }
+        }
+    </style>
 </head>
 <body>
-<div class="container" id="appContainer">
-<div class="header">
-<img class="header-logo" src="data:image/png;base64,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" alt="Distinct Infrastructure logo"/>
-<h1>Distinct Infrastructure</h1>
-<p>Vehicle &amp; Asset Register · Dashboard</p>
-<p><strong>Google Storage:</strong> Asset Register O/a Distinct Infrastructure</p>
-</div>
-<!-- DASHBOARD CARDS (clickable) - Focus on Drilling, Yellow, and Small Plant -->
-<div class="dashboard-grid" id="dashboardCards">
-<div class="stat-card" data-filter="Drilling"><i class="fas fa-oil-can"></i><div class="count" id="cntDrilling">0</div><div class="label">Drilling Plant</div><span class="filter-badge">click</span></div>
-<div class="stat-card" data-filter="Yellow Plant"><i class="fas fa-digging"></i><div class="count" id="cntYellow">0</div><div class="label">Yellow Plant</div><span class="filter-badge">click</span></div>
-<div class="stat-card" data-filter="Small Plant"><i class="fas fa-th-list"></i><div class="count" id="cntSmallPlant">0</div><div class="label">Small Plant</div><span class="filter-badge">click</span></div>
-<div class="stat-card" data-filter="Trucks"><i class="fas fa-truck"></i><div class="count" id="cntTrucks">0</div><div class="label">Trucks</div><span class="filter-badge">click</span></div>
-<div class="stat-card" data-filter="Trailers"><i class="fas fa-trailer"></i><div class="count" id="cntTrailers">0</div><div class="label">Trailers</div><span class="filter-badge">click</span></div>
-<div class="stat-card" data-filter="Executive"><i class="fas fa-car"></i><div class="count" id="cntExecutive">0</div><div class="label">Executive Cars</div><span class="filter-badge">click</span></div>
-<div class="stat-card" data-filter="Bowser"><i class="fas fa-gas-pump"></i><div class="count" id="cntBowser">0</div><div class="label">Bowsers</div><span class="filter-badge">click</span></div>
-<div class="stat-card" data-filter="Admin"><i class="fas fa-building"></i><div class="count" id="cntAdmin">0</div><div class="label">Admin</div><span class="filter-badge">click</span></div>
-<div class="stat-card" data-filter="Projects &amp; Tender"><i class="fas fa-briefcase"></i><div class="count" id="cntProjects">0</div><div class="label">Projects &amp; Tender</div><span class="filter-badge">click</span></div>
-</div>
-<div class="dashboard-grid" id="executiveSummaryCards">
-<div class="stat-card summary-compact" data-special-filter="all-active"><i class="fas fa-coins"></i><div class="count" id="totalAssetValue">R 0.00</div><div class="label">Total Vehicle &amp; Equipment Value</div><div class="sub">Active NBV / Value</div></div>
-<div class="stat-card summary-compact" data-special-filter="all-active"><i class="fas fa-chart-line"></i><div class="count" id="totalDepreciation">R 0.00</div><div class="label">Total Depreciation To Date</div><div class="sub">Accumulated DPN</div></div>
-<div class="stat-card summary-compact"><i class="fas fa-money-check-alt"></i><div class="count" id="totalInstallmentsPaid">R 0.00</div><div class="label">Total Installments Paid</div><div class="sub">Cumulative VAF payments</div></div>
-<div class="stat-card" data-special-filter="Stolen"><i class="fas fa-exclamation-triangle"></i><div class="count" id="cntStolen">0</div><div class="label">Stolen Vehicles / Equipment</div><div class="sub" id="valStolen">R 0.00</div><span class="filter-badge">click</span></div>
-<div class="stat-card" data-special-filter="Sold"><i class="fas fa-hand-holding-usd"></i><div class="count" id="cntSold">0</div><div class="label">Sold Vehicles / Equipment</div><div class="sub" id="valSold">R 0.00</div><span class="filter-badge">click</span></div>
-<div class="stat-card" data-special-filter="Staff Vehicle Finance"><i class="fas fa-user-tag"></i><div class="count" id="cntStaffFinance">0</div><div class="label">Staff Vehicle Finance</div><div class="sub" id="valStaffFinance">R 0.00</div><span class="filter-badge">click</span></div>
-</div>
-<!-- ACTION ROW -->
-<div class="action-row">
-<div class="btn-group">
-<button class="btn-gold" id="newEntryBtn"><i class="fas fa-plus-circle"></i> New Entry</button>
-<button class="btn-outline" id="refreshDashBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
-<button class="btn-outline" id="clearFilterBtn"><i class="fas fa-times-circle"></i> Clear Filter</button>
-</div>
-<div class="btn-group">
-<button class="btn-outline" id="printBtn"><i class="fas fa-print"></i> Print</button>
-<button class="btn-outline" id="excelBtn"><i class="fas fa-file-excel"></i> CSV</button>
-<button class="btn-outline" id="vehicleLicenceBtn" onclick="window.location.href='vehicle1.html'"><i class="fas fa-id-card"></i> Vehicle Licence</button><button class="btn-outline" id="insuranceBtnMain" onclick="window.location.href='insurance.html'"><i class="fas fa-shield-alt"></i> Insurance</button></div>
-</div>
-<!-- ENTRY SECTION -->
-<div class="hidden" id="entrySection">
-<h2>
-<span><i class="fas fa-pen-alt" style="color:var(--gold);"></i> New Asset Entry</span>
-<button class="btn-back" id="backToDashboardBtn"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
-</h2>
-<button class="btn-outline" onclick="window.location.href='insurance.html'" type="button"><i class="fas fa-shield-alt"></i> Insurance Report</button>
-<form id="assetForm">
-<div class="form-grid">
-<div class="form-group"><label>Code</label><select id="code"><option value="">Select Code</option><option>73803</option><option>73802</option><option>82130</option><option>73801</option><option>73800</option></select></div>
-<div class="form-group"><label>Asset Class</label><select id="assetClass"><option value="">Select Asset Class</option><option>Admin</option><option>Bowser</option><option>Drilling</option><option>Executive</option><option>Projects &amp; Tender</option><option>Small Plant</option><option>Trailers</option><option>Trucks</option><option>Yellow Plant</option></select></div>
-<div class="form-group"><label>Purchase Date</label><input id="purchaseDate" type="date"/></div>
-<div class="form-group"><label>Purchased by</label><select id="purchasedBy"><option value="">Select Purchased By</option><option>Onpoint</option><option>Aqua Telecoms</option><option>Nkanyezi</option><option>Distinct</option></select></div>
-<div class="form-group"><label>Financing</label><input id="financing" type="text"/></div>
-<div class="form-group"><label>Description</label><input id="description" type="text"/></div>
-<input id="model" type="hidden"/>
-<div class="form-group"><label>Make of Vehicle</label><select id="makeOfVehicle"><option value="">Select Make</option><option>Toyota</option><option>Faw</option><option>Ford</option><option>Foton</option><option>Mahindra</option><option>Isuzu</option><option>Mercedes Benz</option><option>VW</option><option>Nissan</option></select></div>
-<div class="form-group"><label>Body Type</label><select id="bodyType"><option value="">Select Body Type</option><option>Sedan</option><option>Hatchback</option><option>Truck</option><option>Minibus</option><option>SUV</option><option>Bakkie</option><option>Lorry</option></select></div>
-<div class="form-group"><label>Registration no</label><input id="registrationNo" type="text"/></div>
-<div class="form-group"><label>Engine no</label><input id="engineNo" type="text"/></div>
-<div class="form-group"><label>Vin no</label><input id="vinNo" type="text"/></div>
-<div class="form-group"><label>Cost</label><input id="cost" inputmode="decimal" type="text"/></div>
-<div class="form-group"><label>Market Value</label><input id="marketValue" inputmode="decimal" type="text"/></div>
-<div class="form-group"><label>ZOHO</label><select id="zoho"><option value="">Select ZOHO</option><option>Yes</option><option>No</option></select></div>
-<div class="form-group"><label>Location</label><input id="location" type="text"/></div>
-<div class="form-group"><label>Driver/Operator</label><input id="driverOperator" type="text"/></div>
-<div class="form-group"><label>Allocation/Dept</label><input id="allocationDept" type="text"/></div>
-<div class="form-group"><label>Registered Entity</label><input id="registeredEntity" type="text"/></div>
-<div class="form-group"><label>Covered by</label><select id="coveredBy"><option value="">Select Insurance</option><option>Outsurance</option><option>Auto General</option><option>Standard Bank</option><option>Other</option></select></div>
-<div class="form-group"><label>TRACKING COMPANY</label><select id="trackingCompany"><option value="">Select Tracking</option><option>Netstar</option><option>Car Tracker</option><option>The Both(Car Tracker &amp; Netstar)</option></select></div>
-<div class="form-group"><label>Installment Amount</label><input id="installmentAmount" inputmode="decimal" type="text"/></div>
-<div class="form-group"><label>Last Installment date</label><input id="lastInstallmentDate" type="date"/></div>
-<div class="form-group"><label>eTag Toll</label><select id="eTagToll"><option value="">Select eTag</option><option>Yes</option><option>No</option></select></div>
-<div class="form-group"><label>NOTES</label><textarea id="notes"></textarea></div>
-<div class="form-group"><label>Reg. Boo</label><input id="regBoo" type="text"/></div>
-<div class="form-group"><label>Useful life</label><input id="usefulLife" inputmode="decimal" type="text"/></div>
-<div class="form-group"><label>Recharge</label><input id="recharge" inputmode="decimal" type="text"/></div>
-<div class="form-group"><label>Monthly dpn</label><input id="monthlyDpn" inputmode="decimal" type="text"/></div>
-<div class="form-group"><label>Year</label><select id="year"><option value="">Select Year</option><option value="2000">2000</option><option value="2001">2001</option><option value="2002">2002</option><option value="2003">2003</option><option value="2004">2004</option><option value="2005">2005</option><option value="2006">2006</option><option value="2007">2007</option><option value="2008">2008</option><option value="2009">2009</option><option value="2010">2010</option><option value="2011">2011</option><option value="2012">2012</option><option value="2013">2013</option><option value="2014">2014</option><option value="2015">2015</option><option value="2016">2016</option><option value="2017">2017</option><option value="2018">2018</option><option value="2019">2019</option><option value="2020">2020</option><option value="2021">2021</option><option value="2022">2022</option><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option><option value="2033">2033</option><option value="2034">2034</option><option value="2035">2035</option><option value="2036">2036</option><option value="2037">2037</option><option value="2038">2038</option><option value="2039">2039</option><option value="2040">2040</option><option value="2041">2041</option><option value="2042">2042</option><option value="2043">2043</option><option value="2044">2044</option><option value="2045">2045</option></select></div>
-<div class="form-group"><label>Months Dpn</label><input id="monthsDpn" inputmode="decimal" type="text"/></div>
-<div class="form-group"><label>Accum dpn</label><input id="accumDpn" inputmode="decimal" type="text"/></div>
-<div class="form-group"><label>Residual Value (5% - 10%)</label><input id="residualValue" inputmode="decimal" placeholder="Auto 10% of Cost if blank" type="text"/></div>
-<div class="form-group"><label>NBV</label><input id="nbv" inputmode="decimal" type="text"/></div>
-<div class="form-group"><label>Outstanding VAF</label><input id="oustandingVaf" inputmode="decimal" type="text"/></div>
-<div class="form-group"><label>Value</label><input id="value" inputmode="decimal" type="text"/></div>
-<div class="form-group"><label>Vehicle Reg Book Upload</label><input accept="image/*,application/pdf,.doc,.docx" id="vehicleRegBookFile" type="file"/></div>
-<div class="form-group"><label>Tracking Certificate Upload</label><input accept="image/*,application/pdf,.doc,.docx" id="trackingCertificateFile" type="file"/></div>
-<div class="form-group"><label>Vehicle Invoice Upload</label><input accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" id="vehicleInvoiceFile" type="file"/></div>
-<div class="form-group"><label>Upload or Take up to 5 Images</label><input accept="image/*" id="imageFiles" multiple="" type="file"/><input accept="image/*" capture="environment" id="cameraImageFiles" multiple="" type="file" style="margin-top:8px;"/><small style="color:var(--muted);margin-top:6px;">Choose existing images or use the camera to take photos. Maximum 5 images in total. Links post to Google Sheet.</small></div>
-<input id="rowNumber" type="hidden"/>
-<input id="vehicleRegBookLink" type="hidden"/>
-<input id="trackingCertificateLink" type="hidden"/>
-<input id="vehicleInvoiceLink" type="hidden"/>
-<input id="assetTotalInstallmentsPaid" type="hidden"/>
-<input id="regBookLink" type="hidden"/>
-<input id="imageLinks" type="hidden"/>
-<input id="assetStatus" type="hidden"/>
-<input id="statusDate" type="hidden"/>
-<input id="soldValue" type="hidden"/>
-</div>
-<div class="form-actions">
-<button id="saveBtn" type="submit">Save Asset</button>
-<button class="btn-blue" id="clearBtn" type="button">Clear Form</button>
-<button class="btn-outline" id="cancelEntryBtn" type="button">Cancel</button>
-</div>
-</form>
-<div class="status" id="status"></div>
-</div>
-<!-- transaction journal -->
-<div class="table-wrap">
-<h2 style="color:var(--primary-blue);margin-top:28px;margin-bottom:10px;">
-      Transaction Journal
-      <span id="filterIndicator" style="font-size:14px;font-weight:normal;color:var(--muted);margin-left:12px;"></span>
-</h2>
-<div class="transaction-toolbar" id="transactionToolbar">
-<div class="filter-box"><label>Search</label><input id="transactionSearch" placeholder="Search registration, description, make..." type="search"/></div>
-<div class="filter-box"><label>Sort</label><select id="transactionSort"><option value="">Default</option><option value="alphaAsc">Alphabet A-Z</option><option value="alphaDesc">Alphabet Z-A</option><option value="dateNewest">Date Newest</option><option value="dateOldest">Date Oldest</option></select></div>
-<div class="filter-box"><label>Class</label><select id="transactionClassFilter"><option value="">All Classes</option></select></div>
-<div class="filter-box"><label>Car Model</label><select id="transactionModelFilter"><option value="">All Models</option></select></div>
-<div class="filter-box"><label>Cost Center</label><select id="transactionCostCenterFilter"><option value="">All Cost Centers</option></select></div>
-<button class="btn-blue" id="transactionSearchBtn" type="button"><i class="fas fa-search"></i> Search</button>
-<button class="btn-outline" id="transactionClearBtn" type="button"><i class="fas fa-eraser"></i> Reset</button>
-</div>
-<table id="assetTable">
-<thead><tr>
-<th>Code</th><th>Asset Class</th><th>Purchase Date</th><th>Purchased by</th><th>Financing</th><th>Description</th><th>Model</th><th>Make of Vehicle</th><th>Body Type</th><th>Registration no</th><th>Engine no</th><th>Vin no</th><th>Cost</th><th>Market Value</th><th>ZOHO</th><th>Location</th><th>Driver/Operator</th>
-<th>Allocation/Dept</th><th>Registered Entity</th><th>Covered by</th><th>TRACKING COMPANY</th><th>Installment Amount</th><th>Last Installment date</th><th>eTag Toll</th><th>NOTES</th><th>Reg. Boo</th><th>Useful life</th><th>Recharge</th><th>Monthly dpn</th><th>Year</th><th>Months Dpn</th><th>Accum dpn</th><th>Residual Value</th><th>NBV</th><th>Outstanding VAF</th><th>Value</th><th>Vehicle Reg Book</th><th>Tracking Certificate</th><th>Vehicle Invoice</th><th>Images</th><th>Status</th><th>Status Date</th><th>Sold Value</th>
-<th class="action-col">Actions</th>
-</tr></thead>
-<tbody></tbody>
-</table>
-</div>
-</div>
-<div class="crop-modal hidden" id="imageCropModal" role="dialog" aria-modal="true" aria-labelledby="cropModalTitle">
-  <div class="crop-dialog">
-    <div class="crop-header">
-      <h3 id="cropModalTitle"><i class="fas fa-crop-alt"></i> Crop Image Before Upload</h3>
-      <button class="crop-close" id="cropCloseBtn" type="button" title="Cancel"><i class="fas fa-times"></i></button>
+
+    <!-- Floating WhatsApp -->
+    <a href="https://wa.me/27672557297" class="floating-wa" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 32 32"><path d="M16.04 3.2c-7.05 0-12.78 5.7-12.78 12.72 0 2.24.59 4.43 1.71 6.36L3.2 28.8l6.69-1.75a12.8 12.8 0 0 0 6.15 1.56h.01c7.04 0 12.77-5.7 12.77-12.72S23.09 3.2 16.04 3.2Zm0 23.25h-.01a10.6 10.6 0 0 1-5.39-1.47l-.39-.23-3.97 1.04 1.06-3.86-.25-.4a10.48 10.48 0 0 1-1.62-5.61c0-5.83 4.74-10.56 10.57-10.56 2.82 0 5.48 1.1 7.47 3.09a10.47 10.47 0 0 1 3.1 7.44c0 5.83-4.74 10.56-10.57 10.56Zm5.8-7.9c-.32-.16-1.88-.92-2.17-1.03-.29-.11-.5-.16-.72.16-.21.32-.82 1.03-1.01 1.24-.19.21-.37.24-.69.08-.32-.16-1.34-.49-2.55-1.56-.94-.84-1.58-1.88-1.76-2.2-.19-.32-.02-.49.14-.65.14-.14.32-.37.48-.56.16-.19.21-.32.32-.53.11-.21.05-.4-.03-.56-.08-.16-.72-1.73-.98-2.37-.26-.62-.52-.54-.72-.55h-.61c-.21 0-.56.08-.85.4-.29.32-1.12 1.09-1.12 2.66s1.15 3.09 1.31 3.3c.16.21 2.26 3.45 5.48 4.84.77.33 1.37.53 1.84.68.77.24 1.47.21 2.03.13.62-.09 1.88-.77 2.14-1.51.27-.75.27-1.39.19-1.52-.08-.13-.29-.21-.61-.37Z"/></svg>
+    </a>
+
+    <!-- Counter -->
+    <div class="counter-pill">
+        <div class="counter-item">
+            <span class="counter-badge" id="localVisitCounter">0</span>
+        </div>
+        <div class="incident-label"><i class="fas fa-car-crash"></i> App Visit 2026</div>
     </div>
-    <div class="crop-stage"><img alt="Image selected for cropping" id="cropImagePreview"/></div>
-    <div class="crop-controls">
-      <button class="btn-blue" id="cropRotateLeftBtn" type="button"><i class="fas fa-undo"></i> Rotate Left</button>
-      <button class="btn-blue" id="cropRotateRightBtn" type="button"><i class="fas fa-redo"></i> Rotate Right</button>
-      <button class="btn-outline" id="cropResetBtn" type="button"><i class="fas fa-sync"></i> Reset</button>
-      <button class="btn-outline" id="cropOriginalBtn" type="button"><i class="fas fa-image"></i> Use Original</button>
-      <button class="crop-primary" id="cropApplyBtn" type="button"><i class="fas fa-crop-alt"></i> Crop &amp; Continue</button>
-      <p class="crop-help">Drag the image, resize the crop box, zoom with the mouse wheel or touch gestures, then continue.</p>
+
+    <div class="report-card">
+
+        <!-- header -->
+        <div class="logo-header">
+            <div class="logo-area">
+                <div class="logo-image">
+                    <img src="images/logo.png" alt="OnPoint logo" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fas fa-truck\' style=\'font-size:2.5rem; color:#1a4b8c;\'></i>';">
+                </div>
+                <div class="logo-text">
+                    OnPoint onTime <small>fleet & logistics</small>
+                </div>
+            </div>
+            <div class="address-badge">
+                <i class="fas fa-map-marker-alt"></i> 71 Pretorius Rd, President Park, Midrand
+            </div>
+        </div>
+
+        <div class="live-characters">
+            <div class="character"><i class="fas fa-smile"></i></div>
+            <div class="character"><i class="fas fa-truck"></i></div>
+            <div class="character"><i class="fas fa-shield-alt"></i></div>
+        </div>
+
+        <div class="subhead">
+            <span><i class="fas fa-clipboard-list"></i> complete accident report (auto‑location + stamped photo)</span>
+            <div class="map-mini-container" id="liveMapLink">
+                <i class="fas fa-map-marked-alt"></i>
+                <a href="#" id="dynamicMapLink" target="_blank" title="open live map – auto updates">obtaining location...</a>
+                <i class="fas fa-external-link-alt" style="font-size:0.7rem; opacity:0.6;"></i>
+            </div>
+        </div>
+
+        <!-- app download -->
+        <div class="app-download-row" id="appQrRow">
+            <div class="qr-container">
+                <img id="qrCanvas" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcgAAAHIAQAAAADi2kdHAAAEWklEQVR4nO1ca4/bMAwjh/z/v8x9ECm7wLC73R61Z6f3aJoQjSBIpinZFL54fPsq8CIv8iI/eTwA650AEBAoioAogBCBegPUJ757LztPQT4oT4Kg2D4VQRBS+S+OpPruzew8Ckk66vofBShhCYASlPd194Z2HoZkHCradxQdms63/NPfeZF/Fvm8nCkBSbES7LggKtH6m995kX8P+QCIl8T6E79VRNYAWvQI09172XkKEhpu+twrsL3sPAXJKYOOwbMDksnBFEbg/uZ3XuTfQ0KSOkgr/uRP67J/65UA1Y3PhZECUQ6UfwgUxyUF0tS2RlUJuvPPRZFs7QdQKwrWDMxqZanBuZnA1YcWRlIiKEzyULQgVijGh2P2og3tPAUplsAX17EcWk6mR1RVBiai7O5n5xFIjtQ68u0suyOpGDO55c23ayIf1OBIiJbzBvXpVKsI8Ryywl52noTsuaUnoOU5p1uOU4ewxfv97DwGSapYLGpuAohy0n0RhTAl4w3tPABZ+m0VyDxCjjpoaipyidt8V2972ov86HBYZkKSJgQN185T0tAnXT60KDJ6QusKzXVLTYjUAKfhlNN2s/MgZNU5SaoL156flLRAZN7Zo+rV+5ZHplWoB9OQIEZQUISGuripnQcgJUqkUNI7IhNVGnbdLHNSELd/aF1kie1zNDqdJlwBpGkBL9L8XnaegmS0WkxsZ1KHMCjRJDi862kv8qOj+m/LZ/EcUD7NWY+gcGs1eOtlKyPTWeIusCpvoyPUp2mUt4M3tPMMpAadZXtwEKBSb5so1WzmfU97kT89st5hhOIYI9O+2W25bsq9+u3SyApKZQKqYrKEO8FMmVLcVj7fzs5jkHJRJYpBSQehuhk+mwN7XcR+dp6AzHqHKZ3O05V0gdEiIHtI3czOg5CpoDCNttbiXQ2Nl3tBodX77ew8AvlYEnJ9E3gpuYywtCdzw9WHFkXC7fFqnd3d8nK0pkM+Z3Vy16+si6SXM0TDDbctZlS+7S6wZrn72XkKssqeXQ7j+ASWAYEuans+c/ntosiRTqepJeY2sE65ybnOyXvZeRySvQC7F3pSTXZ7rYNYzHdbO/9/ZPeXyMqtKLbb8s+F7Orwu/OVVZGPlaGXrvgsVtHoA5tW9fJ9T3uRn0DKOdTdJk11rSJAobfpFrvrP9dFPo5Hz02mHoRBdWW5yPVuve9pL/LDQyavM43NJSjXB+GN6nD57ZLINLy7Fd5k9mXJoPu/RnvY7R9aFzntb9Krr13HdnZNW/xYGlrX9rLzFOS8v6Zl9yzJ7rWCvoPZJoOXDy2LnPbXHMXPSH5jIA1hGqshNrPzFOQDRJvNipWarEgc/k0TGNNT9KanvchfQfYGGOzmhGkHXJoHpxDz7qe9yA+QtJLA5rw9QxlR2U3z737ai/zhMe2vKS/FVkqiDJ+dnOxIvePnoshpf80k0t6mT5h6FEbN7NbLFkbO+2v+q++8yIu8yM8d3wFbfscIg4d5dQAAAABJRU5ErkJggg==" alt="QR code to download OnPoint driver app">
+                <div>
+                    <div style="font-weight:700; color:#1a4b8c;">📲 OnPoint driver app</div>
+                    <span class="scan-note"><i class="fas fa-camera"></i> scan QR to download APK</span>
+                </div>
+            </div>
+            <a href="https://drive.google.com/uc?export=download&id=1MFtAipEl84SXRxqWK6E-tXX1MWSLucW5" class="btn btn-primary" target="_blank" rel="noopener"><i class="fas fa-gas-pump"></i> Download Fuel App</a>
+        </div>
+
+        <!-- action links -->
+        <div class="action-links">
+            <a href="details.html" class="action-card">
+                <i class="fas fa-gas-pump"></i>
+                <span class="action-text">
+                    <span>Fuel Log</span>
+                    <small>record fuel fill-ups</small>
+                </span>
+            </a>
+            <a href="contacts.html" class="action-card">
+                <i class="fas fa-truck-moving"></i>
+                <span class="action-text">
+                    <span>Vehicle Handover</span>
+                    <small>swap vehicles</small>
+                </span>
+            </a>
+           
+        </div>
+
+        <!-- form -->
+        <form id="accidentForm" class="form-grid">
+            <div class="datetime-row">
+                <div class="input-field">
+                    <label><i class="fas fa-calendar-alt"></i> Date</label>
+                    <input type="date" id="accidentDate" name="accidentDate" required>
+                </div>
+                <div class="input-field">
+                    <label><i class="fas fa-clock"></i> Time</label>
+                    <input type="time" id="accidentTime" name="accidentTime" value="14:30" required>
+                </div>
+            </div>
+
+            <div class="two-cols">
+                <div class="input-field">
+                    <label><i class="fas fa-car"></i> Vehicle reg.</label>
+                    <select id="vehicleReg" name="vehicleReg" required>
+                        <option value="" disabled selected>– select vehicle registration –</option>
+                        <option value="">Select Vehicle...</option>
+                        <option value="LH83NTGP">LH83NTGP</option>
+                        <option value="HZ00XWGP">HZ00XWGP</option>
+                        <option value="HK60TXGP">HK60TXGP</option>
+                        <option value="HK60TRGP">HK60TRGP</option>
+                        <option value="HN03JZGP">HN03JZGP</option>
+                        <option value="LD72VRGP">LD72VRGP</option>
+                        <option value="LD72VKGP">LD72VKGP</option>
+                        <option value="KZ14DYGP">KZ14DYGP</option>
+                        <option value="MJ53VVGP">MJ53VVGP</option>
+                        <option value="MF72JPGP">MF72JPGP</option>
+                        <option value="MH18HLGP">MH18HLGP</option>
+                        <option value="MH18HPGP">MH18HPGP</option>
+                        <option value="MJ22MJGP">MJ22MJGP</option>
+                        <option value="JD12LMGP">JD12LMGP</option>
+                        <option value="JV09TWGP">JV09TWGP</option>
+                        <option value="LD45TFGP">LD45TFGP</option>
+                        <option value="MG47YRGP">MG47YRGP</option>
+                        <option value="CW15XZGP">CW15XZGP</option>
+                        <option value="YBR245GP">YBR245GP</option>
+                        <option value="LN30PNGP">LN30PNGP</option>
+                        <option value="LX67YSGP">LX67YSGP</option>
+                        <option value="LD27RXGP">LD27RXGP</option>
+                        <option value="JN01DGGP">JN01DGGP</option>
+                        <option value="LW46XCGP">LW46XCGP</option>
+                        <option value="LP17TVGP">LP17TVGP</option>
+                        <option value="BZ89VHGP">BZ89VHGP</option>
+                        <option value="DZ53XBGP">DZ53XBGP</option>
+                        <option value="KP98PDGP">KP98PDGP</option>
+                        <option value="KL60NJGP">KL60NJGP</option>
+                        <option value="JP41CHGP">JP41CHGP</option>
+                        <option value="JB41MPGP">JB41MPGP</option>
+                        <option value="LS77SJGP">LS77SJGP</option>
+                        <option value="MH47SRGP">MH47SRGP</option>
+                        <option value="HX96RVGP">HX96RVGP</option>
+                        <option value="KK19DDGP">KK19DDGP</option>
+                        <option value="KR76PYGP">KR76PYGP</option>
+                        <option value="KT74WDGP">KT74WDGP</option>
+                        <option value="KP56BVGP">KP56BVGP</option>
+                        <option value="RTH651GP">RTH651GP</option>
+                        <option value="JX95DNGP">JX95DNGP</option>
+                        <option value="HN23FWGP">HN23FWGP</option>
+                        <option value="LP28LYGP">LP28LYGP</option>
+                        <option value="KJ96FZGP">KJ96FZGP</option>
+                        <option value="HV09VKGP">HV09VKGP</option>
+                        <option value="JD95XGGP">JD95XGGP</option>
+                        <option value="JT31YRGP">JT31YRGP</option>
+                        <option value="KP33HDGP">KP33HDGP</option>
+                        <option value="JF10CSGP">JF10CSGP</option>
+                        <option value="HP34WKGP">HP34WKGP</option>
+                        <option value="KN47CFGP">KN47CFGP</option>
+                        <option value="LS85RVGP">LS85RVGP</option>
+                        <option value="LP00HKGP">LP00HKGP</option>
+                        <option value="FY37DDGP">FY37DDGP</option>
+                        <option value="FW95WXGP">FW95WXGP</option>
+                        <option value="LM52NWGP">LM52NWGP</option>
+                        <option value="HM80WZGP">HM80WZGP</option>
+                        <option value="KK57HSGP">KK57HSGP</option>
+                        <option value="HG00HPGP">HG00HPGP</option>
+                        <option value="JJ42MZGP">JJ42MZGP</option>
+                        <option value="LN12MTGP">LN12MTGP</option>
+                        <option value="HG00JMGP">HG00JMGP</option>
+                        <option value="HM68TLGP">HM68TLGP</option>
+                        <option value="KP18GMGP">KP18GMGP</option>
+                        <option value="LF33HXGP">LF33HXGP</option>
+                        <option value="FN34BVGP">FN34BVGP</option>
+                        <option value="HK67KZGP">HK67KZGP</option>
+                        <option value="HK67LDGP">HK67LDGP</option>
+                        <option value="KK68RFGP">KK68RFGP</option>
+                        <option value="HH32LSGP">HH32LSGP</option>
+                        <option value="KD94SSGP">KD94SSGP</option>
+                        <option value="KF60VWGP">KF60VWGP</option>
+                        <option value="KT41KTGP">KT41KTGP</option>
+                        <option value="KT53WZGP">KT53WZGP</option>
+                        <option value="HG75GMGP">HG75GMGP</option>
+                        <option value="LK76BGGP">LK76BGGP</option>
+                        <option value="MK85PWGP">MK85PWGP</option>
+                        <option value="MY81TYGP">MY81TYGP</option>
+                        <option value="MV12KLGP">MV12KLGP</option>
+                        <option value="MV12KGGP">MV12KGGP</option>
+                        <option value="MS43DXGP">MS43DXGP</option>
+                        <option value="MS41ZHGP">MS41ZHGP</option>
+                        <option value="MY73KHGP">MY73KHGP</option>
+                        <option value="MY73JWGP">MY73JWGP</option>
+                        <option value="MY73JYGP">MY73JYGP</option>
+                        <option value="MT69BXGP">MT69BXGP</option>
+                        <option value="D20Sub">D20 Sub</option>
+                    </select>
+                    <button type="button" class="add-save-btn" onclick="addAndSaveOption('vehicleReg', 'Enter new vehicle registration:', false)">Select</button>
+                </div>
+                <div class="input-field">
+                    <label><i class="fas fa-map-pin"></i> Location / street</label>
+                    <input type="text" id="location" name="location" placeholder="Enter address or use GPS detect" value="" required>
+                    <button type="button" id="useLocationBtn" style="margin-top:8px;border:0;border-radius:40px;background:#1a4b8c;color:white;padding:12px 20px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(26,75,140,0.15);">Use current location</button>
+                </div>
+            </div>
+
+            <div class="two-cols">
+                <div class="input-field">
+                    <label><i class="fas fa-tag"></i> Accident type</label>
+                    <select id="accidentType" name="accidentType" required>
+                        <option value="" disabled>– select –</option>
+                        <option value="Rear-end" selected>Rear-end collision</option>
+                        <option value="Side-impact">Side-impact / T-bone</option>
+                        <option value="Rollover">Rollover / jackknife</option>
+                        <option value="Single-vehicle">Single vehicle</option>
+                        <option value="Other">Other / pedestrian</option>
+                    </select>
+                </div>
+                <div class="input-field">
+                    <label><i class="fas fa-users"></i> Department</label>
+                    <select id="department" name="department" required>
+                        <option value="" disabled>– select department –</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Business Development">Business Development</option>
+                        <option value="Finance & IT">Finance & IT</option>
+                        <option value="Fleet" selected>Fleet</option>
+                        <option value="Human Resource">Human Resource</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Procurements">Procurements</option>
+                        <option value="Sales">Sales</option>
+                        <option value="SHEQ">SHEQ</option>
+                        <option value="Tendering">Tendering</option>
+                        <option value="Warehouse">Warehouse</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="input-field">
+                <label><i class="fas fa-building"></i> Cost Center</label>
+                <select id="costCenter" name="costCenter" required>
+                    <option value="" disabled selected>– select cost center –</option>
+                    <option value="Onpoint Group HQ">Onpoint Group HQ</option>
+                    <option value="DI Solutions">DI Solutions</option>
+                    <option value="Aqua Telecoms">Aqua Telecoms</option>
+                    <option value="Nkanyezi Projects">Nkanyezi Projects</option>
+                    <option value="Onpoint Ontime Solutions">Onpoint Ontime Solutions</option>
+                </select>
+            </div>
+
+            <div class="input-field">
+                <label><i class="fas fa-hard-hat"></i> Project</label>
+                <select id="project" name="project" required>
+                    <option value="" disabled selected>– select project –</option>
+                    <option value="Emfuleni VO">Emfuleni VO</option>
+                    <option value="COE Street Light">COE Street Light</option>
+                    <option value="COT Metering">COT Metering</option>
+                    <option value="Midvaal Substation">Midvaal Substation</option>
+                    <option value="DBSA GENERATORS">DBSA GENERATORS</option>
+                    <option value="ESKOM LOU GB">ESKOM LOU GB</option>
+                    <option value="MSUNDUZI STREET LIGHTS">MSUNDUZI STREET LIGHTS</option>
+                    <option value="ESKOM SPU KZN">ESKOM SPU KZN</option>
+                    <option value="COT mv/lv">COT mv/lv</option>
+                    <option value="MIDVAAL MECHANICAL">MIDVAAL MECHANICAL</option>
+                    <option value="CENTLEC CD11">CENTLEC CD11</option>
+                    <option value="CENTLEC CD78">CENTLEC CD78</option>
+                    <option value="CENTLEC CD45">CENTLEC CD45</option>
+                    <option value="CENTLEC CD32">CENTLEC CD32</option>
+                    <option value="TRANSNET PE HIGH MAST">TRANSNET PE HIGH MAST</option>
+                    <option value="MOQHAKA STREET LIGHTS">MOQHAKA STREET LIGHTS</option>
+                    <option value="MOQHAKA METERING">MOQHAKA METERING</option>
+                    <option value="ROOOIWAL">ROOOIWAL</option>
+                    <option value="KZN Chivelstone">KZN Chivelstone</option>
+                    <option value="KZN BUILDING INGULA">KZN BUILDING INGULA</option>
+                    <option value="KZN BUILDING WESTVILLE">KZN BUILDING WESTVILLE</option>
+                    <option value="KZN BUILDING ATHENE">KZN BUILDING ATHENE</option>
+                    <option value="KZN BUILDING PLUMBING EMERGENCY">KZN BUILDING PLUMBING EMERGENCY</option>
+                    <option value="MBONWA">MBONWA</option>
+                    <option value="ZAMAFUTHI">ZAMAFUTHI</option>
+                    <option value="JOE GQABI">JOE GQABI</option>
+                    <option value="Avon Emergency">Avon Emergency</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="input-field" id="otherProjectField" style="display:none;">
+                <label><i class="fas fa-pen"></i> Other Project Name</label>
+                <input type="text" id="otherProject" name="otherProject" placeholder="Enter project name">
+            </div>
+
+            <div class="two-cols">
+                <div class="input-field">
+                    <label><i class="fas fa-user"></i> Driver's name *</label>
+                    <select id="driverName" name="driverName" required>
+                        <option value="" disabled selected>– select driver –</option>
+                        <option value="Retselisitsoe Mohapi">Retselisitsoe Mohapi</option>
+                        <option value="George Rusere">George Rusere</option>
+                        <option value="Nyasha Marira">Nyasha Marira</option>
+                        <option value="Trymore Mtizwa">Trymore Mtizwa</option>
+                        <option value="Brian Mugiya">Brian Mugiya</option>
+                        <option value="Peter Nong">Peter Nong</option>
+                        <option value="Nicholas Dambiranwa">Nicholas Dambiranwa</option>
+                        <option value="Curious Sixpense">Curious Sixpense</option>
+                        <option value="Clifonce Matewe">Clifonce Matewe</option>
+                        <option value="Moeketsi Tshabalala">Moeketsi Tshabalala</option>
+                        <option value="Elias Mashiane">Elias Mashiane</option>
+                        <option value="Leah Phiri">Leah Phiri</option>
+                        <option value="Lungile Soni">Lungile Soni</option>
+                        <option value="Washington Musiiwa">Washington Musiiwa</option>
+                        <option value="Donald Tawengwa">Donald Tawengwa</option>
+                        <option value="Washington Madauka">Washington Madauka</option>
+                        <option value="Before Simonne">Before Simonne</option>
+                        <option value="Happison Mupanedengu">Happison Mupanedengu</option>
+                        <option value="William Mahlo">William Mahlo</option>
+                        <option value="Pride Nyoni">Pride Nyoni</option>
+                        <option value="Petros Mosekidi">Petros Mosekidi</option>
+                        <option value="Tonderai Matsikire">Tonderai Matsikire</option>
+                        <option value="Adelaide Dimingo">Adelaide Dimingo</option>
+                        <option value="Tumelo Mhlongo">Tumelo Mhlongo</option>
+                        <option value="Sabelo Zulu">Sabelo Zulu</option>
+                        <option value="Tsitsi Dube">Tsitsi Dube</option>
+                        <option value="Starnley Vaningwa">Starnley Vaningwa</option>
+                        <option value="Philip Shambare">Philip Shambare</option>
+                        <option value="Graham Tsuro">Graham Tsuro</option>
+                        <option value="Meshellum Mugabe">Meshellum Mugabe</option>
+                        <option value="Tafadzwa Magejo">Tafadzwa Magejo</option>
+                        <option value="Trust Bhila">Trust Bhila</option>
+                        <option value="Moses Magutse">Moses Magutse</option>
+                        <option value="Kudakwashe Madzikangava">Kudakwashe Madzikangava</option>
+                        <option value="Andrew Moloisane">Andrew Moloisane</option>
+                        <option value="Zivai Magwaza">Zivai Magwaza</option>
+                        <option value="Brian Nkomo">Brian Nkomo</option>
+                        <option value="Joshuwa Paradzai">Joshuwa Paradzai</option>
+                        <option value="Goodwill Rakgoko">Goodwill Rakgoko</option>
+                        <option value="Johanne Hendriks">Johanne Hendriks</option>
+                        <option value="Claudius Gomo">Claudius Gomo</option>
+                        <option value="Patience Chipundo">Patience Chipundo</option>
+                        <option value="Siyanda Dlamini">Siyanda Dlamini</option>
+                        <option value="Vusi Mabena">Vusi Mabena</option>
+                        <option value="Ronald Musengwa">Ronald Musengwa</option>
+                        <option value="Neo Mogatusi">Neo Mogatusi</option>
+                        <option value="Mqondisi Ndlovu">Mqondisi Ndlovu</option>
+                        <option value="Govern Paradzai">Govern Paradzai</option>
+                        <option value="Dickens Magwaza">Dickens Magwaza</option>
+                        <option value="Kgomotso Letsoalo">Kgomotso Letsoalo</option>
+                        <option value="Nametso Bokoane">Nametso Bokoane</option>
+                        <option value="Phumzile Cindi">Phumzile Cindi</option>
+                        <option value="Sydney Ngwenya">Sydney Ngwenya</option>
+                        <option value="Bheki Makhwanazi">Bheki Makhwanazi</option>
+                        <option value="Ntsako Mathe">Ntsako Mathe</option>
+                        <option value="Bongile Cuba">Bongile Cuba</option>
+                        <option value="Moses Mashatola">Moses Mashatola</option>
+                        <option value="Tony Takabvakure">Tony Takabvakure</option>
+                        <option value="Timothy Wadzema">Timothy Wadzema</option>
+                        <option value="Yvette van Rooyen">Yvette van Rooyen</option>
+                        <option value="Brighton Mhande">Brighton Mhande</option>
+                        <option value="Tafadzwa Magejo">Tafadzwa Magejo</option>
+                        <option value="Lameck Chindove">Lameck Chindove</option>
+                        <option value="Rayman Mugaramanja">Rayman Mugaramanja</option>
+                    </select>
+                    <button type="button" class="add-save-btn" onclick="addAndSaveOption('driverName', 'Enter new driver name:', false)">Select your name/button>
+                </div>
+                <div class="input-field">
+                    <label><i class="fas fa-phone-alt"></i> Driver phone</label>
+                    <input type="tel" id="driverPhone" name="driverPhone" placeholder="+27 72 555 7890" required>
+                </div>
+            </div>
+
+            <div class="input-field">
+                <label><i class="fas fa-file-signature"></i> Description</label>
+                <textarea id="description" name="description" required placeholder="Front bumper crushed, airbags deployed. Slight rain. Other driver exchanged info."></textarea>
+            </div>
+
+            <div class="input-field">
+                <label><i class="fas fa-car-crash"></i> Other parties involved</label>
+                <input type="text" id="otherParties" name="otherParties" placeholder="Honda CR-V, plate 7GHJ432">
+            </div>
+
+            <hr>
+            <div style="font-weight: 600; color: #1a4b8c; margin-bottom: 8px;"><i class="fas fa-gavel" style="margin-right: 8px;"></i>OFFICIAL / POLICE INFORMATION</div>
+
+            <div class="input-field">
+                <label><i class="fas fa-building"></i> Reported to Metro</label>
+                <div class="yes-no-group">
+                    <label><input type="radio" name="reportedMetro" value="Yes" checked> Yes</label>
+                    <label><input type="radio" name="reportedMetro" value="No"> No</label>
+                </div>
+            </div>
+
+            <div class="two-cols">
+                <div class="input-field">
+                    <label><i class="fas fa-user-shield"></i> Officer name</label>
+                    <input type="text" id="officerName" name="officerName" placeholder="Officer M. Davis">
+                </div>
+                <div class="input-field">
+                    <label><i class="fas fa-mobile-alt"></i> Officer cell</label>
+                    <input type="tel" id="officerPhone" name="officerPhone" placeholder="082 555 9876">
+                </div>
+            </div>
+
+            <div class="input-field">
+                <label><i class="fas fa-wine-bottle"></i> Drunken driving involved</label>
+                <div class="yes-no-group">
+                    <label><input type="radio" name="drunkenDriving" value="Yes"> Yes</label>
+                    <label><input type="radio" name="drunkenDriving" value="No" checked> No</label>
+                </div>
+            </div>
+
+            <div class="input-field">
+                <label><i class="fas fa-hashtag"></i> Incident police report #</label>
+                <input type="text" id="policeReportNo" name="policeReportNo" placeholder="PD-2309-452">
+            </div>
+
+            <div class="input-field">
+                <label><i class="fas fa-balance-scale"></i> Officer's judgement (are you at fault?)</label>
+                <div class="yes-no-group">
+                    <label><input type="radio" name="atFault" value="Yes"> Yes, at fault</label>
+                    <label><input type="radio" name="atFault" value="No" checked> No, not at fault</label>
+                </div>
+            </div>
+
+            <hr>
+            <div class="photo-upload-area" id="dropZone">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <div class="upload-text">attach accident image with GPS & date stamp</div>
+                <div class="upload-hint">tap to browse — overlay will be added automatically</div>
+                <input type="file" id="fileInput" accept="image/*" capture="environment">
+            </div>
+
+            <div id="previewContainer" class="image-preview-row" style="display: none;">
+                <img id="imagePreview" class="preview-thumb" src="#" alt="stamped preview">
+                <span id="fileNameDisplay" class="file-name-badge"><i class="far fa-image"></i> accident.jpg</span>
+                <div class="attachment-badge">
+                    <i class="fas fa-map-marker-alt"></i> <span id="stampLocation">locating…</span>
+                </div>
+                <button type="button" id="clearImageBtn" style="background: none; border:none; color:#b00; font-size:1.8rem; cursor:pointer;"><i class="fas fa-times-circle"></i></button>
+            </div>
+
+            <input type="hidden" id="imageBase64" value="">
+            <input type="hidden" id="imageFileName" value="">
+            <input type="hidden" id="imageFileType" value="">
+            <input type="hidden" id="capturedLat" value="">
+            <input type="hidden" id="capturedLon" value="">
+            <input type="hidden" id="capturedGeoUrl" value="">
+
+            <button type="button" id="submitToGAS" class="submit-btn">
+                <i class="fas fa-cloud-upload-alt"></i> Submit to Google Sheets
+            </button>
+
+            <div class="info-note" style="margin-top: 10px;" id="attachmentStatus">
+                <i class="fas fa-info-circle"></i> No image — detecting address…
+            </div>
+            <div class="info-note" style="background: #f0f6ff; border-color: #b8cce6;">
+                <i class="fas fa-lightbulb" style="color: #1a4b8c;"></i>
+                <strong>Live map + address:</strong> street address can be typed or auto‑filled. <i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp button bottom right.
+            </div>
+        </form>
+        <footer>
+            <i class="fas fa-check-circle" style="color: #a7c957;"></i> OnPoint fleet – safety first · 71 Pretorius Rd, President Park, Midrand
+        </footer>
     </div>
-  </div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-<script>
-  // ======================== CONFIG =========================
-  const SHEET_ID = "1eM_UPV9MRaEU9lDoNk-D2FHac9PXTpHzOUBBXvzEAfw";
-  const DRIVE_FOLDER_ID = "1ytF_ANAFD8NVxGXp-sALcdgwyZlBqd6e";
-  const MAIN_SHEET_NAME = "Asssert Reg";
-  const EQUIPMENT_SHEET_NAME = "Drilling_Equipment";
-  const EQUIPMENT_FILTERS = ["Drilling", "Yellow Plant", "Small Plant"];
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyj2hV5GhU_Tjhz7IHaDVlMeSgh3-tOqHTAoMpCpPf74qJYiOIA_SwbKtQLF4bPtH8/exec";
 
-  const FIELD_IDS = [
-    "code","assetClass","purchaseDate","purchasedBy","financing","description",
-    "model","makeOfVehicle","bodyType","registrationNo","engineNo","vinNo","cost","marketValue",
-    "zoho","location","driverOperator",
-    "allocationDept","registeredEntity","coveredBy","trackingCompany","installmentAmount",
-    "lastInstallmentDate","eTagToll","notes","regBoo","usefulLife","recharge",
-    "monthlyDpn","year","monthsDpn","accumDpn","residualValue","nbv","oustandingVaf","value",
-    "imageLinks","assetStatus","statusDate","soldValue","totalInstallmentsPaid"
-  ];
-
-  const FIELD_ALIASES = {
-    code: ["code","Code"],
-    assetClass: ["assetClass","Asset Class","AssetClass"],
-    purchaseDate: ["purchaseDate","Purchase Date"],
-    purchasedBy: ["purchasedBy","Purchased by","Purchased By"],
-    financing: ["financing","Financing"],
-    description: ["description","Description"],
-    model: ["model","Model"],
-    makeOfVehicle: ["makeOfVehicle","Make of Vehicle","Make Of Vehicle"],
-    bodyType: ["bodyType","Body Type"],
-    registrationNo: ["registrationNo","Registration no","Registration No"],
-    engineNo: ["engineNo","Engine no","Engine No"],
-    vinNo: ["vinNo","Vin no","Vin No"],
-    cost: ["cost","Cost","purchasePrice","Purchase Price"],
-    residualValue: ["residualValue","Residual Value","residual","Residual"],
-    marketValue: ["marketValue","Market Value"],
-    zoho: ["zoho","ZOHO"],
-    location: ["location","Location"],
-    driverOperator: ["driverOperator","Driver/Operator","Driver Operator"],
-    allocationDept: ["allocationDept","Allocation/Dept","Allocation Dept"],
-    registeredEntity: ["registeredEntity","Registered Entity"],
-    coveredBy: ["coveredBy","Covered by","Covered By"],
-    trackingCompany: ["trackingCompany","TRACKING COMPANY","Tracking Company"],
-    installmentAmount: ["installmentAmount","Installment Amount"],
-    lastInstallmentDate: ["lastInstallmentDate","Last Installment date","Last Installment Date"],
-    eTagToll: ["eTagToll","eTag Toll","ETag Toll"],
-    notes: ["notes","NOTES","Notes"],
-    regBoo: ["regBoo","Reg. Boo","Reg Book"],
-    usefulLife: ["usefulLife","Useful life","Useful Life"],
-    recharge: ["recharge","Recharge"],
-    monthlyDpn: ["monthlyDpn","Monthly dpn","Monthly Dpn"],
-    year: ["year","Year"],
-    monthsDpn: ["monthsDpn","Months Dpn"],
-    accumDpn: ["accumDpn","Accum dpn","Accum Dpn"],
-    nbv: ["nbv","NBV"],
-    oustandingVaf: ["oustandingVaf","Outstanding VAF","Outstanding Vaf"],
-    value: ["value","Value"],
-    vehicleRegBookLink: ["vehicleRegBookLink","Vehicle Reg Book","Vehicle Reg Book Link","regBookLink"],
-    trackingCertificateLink: ["trackingCertificateLink","Tracking Certificate","Tracking Certificate Link"],
-    vehicleInvoiceLink: ["vehicleInvoiceLink","Vehicle Invoice","Vehicle Invoice Link","Invoice Link"],
-    totalInstallmentsPaid: ["totalInstallmentsPaid","Total Installments Paid","Installments Paid"],
-    imageLinks: ["imageLinks", "Image Links", "Images", "Asset Images"],
-    assetStatus: ["assetStatus", "Asset Status", "Status"],
-    statusDate: ["statusDate", "Status Date"],
-    soldValue: ["soldValue", "Sold Value"],
-    costCenter: ["costCenter", "Cost Center", "Cost Centre", "CostCenter", "CostCentre", "allocationDept", "Allocation/Dept", "registeredEntity", "Registered Entity", "purchasedBy", "Purchased by", "Purchased By"]
-  };
-
-  let mainAssets = [];
-  let equipmentAssets = [];
-  let allAssets = [];
-  let currentFilter = null;
-  const transactionControls = { search: "", sort: "", assetClass: "", model: "", costCenter: "" };
-
-  function getField(row, field) {
-    const aliases = FIELD_ALIASES[field] || [field];
-    for (const key of aliases) {
-      if (row && row[key] !== undefined && row[key] !== null && row[key] !== "") return row[key];
-    }
-    return "";
-  }
-
-  function setFormValue(id, value) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const val = valueOrBlank(value);
-    if (el.tagName === "SELECT" && val && ![...el.options].some(o => o.value == val || o.textContent == val)) {
-      const opt = document.createElement("option");
-      opt.value = val;
-      opt.textContent = val;
-      el.appendChild(opt);
-    }
-    el.value = val;
-  }
-
-  function valueOrBlank(v) {
-    if (v === undefined || v === null) return "";
-    if (typeof v === "string" && v.includes("T")) {
-      const d = new Date(v);
-      if (!isNaN(d)) return d.toISOString().split('T')[0];
-    }
-    return v;
-  }
-
-
-
-  const CURRENCY_FIELDS = new Set(["cost","marketValue","installmentAmount","recharge","monthlyDpn","accumDpn","residualValue","nbv","oustandingVaf","value","soldValue","totalInstallmentsPaid"]);
-
-  function toNumber(v) {
-    if (v === undefined || v === null || v === "") return 0;
-    let s = String(v).trim().replace(/\s/g, "").replace(/R/gi, "");
-    if (s.includes(",") && s.includes(".")) {
-      s = s.lastIndexOf(",") > s.lastIndexOf(".") ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
-    } else if (s.includes(",")) {
-      s = s.replace(",", ".");
-    }
-    const n = Number(s.replace(/[^0-9.\-]/g, ""));
-    return isNaN(n) ? 0 : n;
-  }
-
-  function money(v) {
-    return "R " + toNumber(v).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-
-  function displayDate(value) {
-    const d = parseAssetDate(value);
-    if (!d) return valueOrBlank(value);
-    return String(d.getDate()).padStart(2, "0") + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + d.getFullYear();
-  }
-
-  function getAnyNumber(data, keys) {
-    for (const key of keys) {
-      const direct = data && data[key];
-      const aliasValue = getField(data, key);
-      const n = toNumber(direct !== undefined && direct !== null && direct !== "" ? direct : aliasValue);
-      if (n) return n;
-    }
-    return 0;
-  }
-
-  function parseAssetDate(value) {
-    if (!value) return null;
-    if (value instanceof Date && !isNaN(value)) return value;
-    const text = String(value).trim();
-    let d = new Date(text);
-    if (!isNaN(d)) return d;
-    const m = text.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
-    if (m) {
-      d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-      if (!isNaN(d)) return d;
-    }
-    return null;
-  }
-
-  function depreciationMonthsFromPurchase(purchaseDate, asAtDate = new Date()) {
-    const p = parseAssetDate(purchaseDate);
-    if (!p) return 0;
-    const start = new Date(p.getFullYear(), p.getMonth(), 1);
-    const asAt = new Date(asAtDate.getFullYear(), asAtDate.getMonth(), 1);
-    if (asAt < start) return 0;
-    return ((asAt.getFullYear() - start.getFullYear()) * 12) + (asAt.getMonth() - start.getMonth()) + 1;
-  }
-
-  function installmentMonthsFromPurchase(purchaseDate, asAtDate = new Date()) {
-    const purchase = parseAssetDate(purchaseDate);
-    if (!purchase || purchase > asAtDate) return 0;
-    return ((asAtDate.getFullYear() - purchase.getFullYear()) * 12)
-      + (asAtDate.getMonth() - purchase.getMonth()) + 1;
-  }
-
-  function calculateTotalInstallmentsPaid(asset, asAtDate = new Date()) {
-    const installment = toNumber(getField(asset, "installmentAmount"));
-    if (installment <= 0) return 0;
-    const months = installmentMonthsFromPurchase(getField(asset, "purchaseDate"), asAtDate);
-    return installment * months;
-  }
-
-  function applyDepreciationToData(data, options = {}) {
-    const purchasePrice = getAnyNumber(data, ["purchasePrice", "Purchase Price", "cost", "Cost"]);
-    let residualValue = getAnyNumber(data, ["residualValue", "Residual Value", "residual", "Residual"]);
-    const usefulLifeYears = getAnyNumber(data, ["usefulLife", "Useful life", "Useful Life"]);
-    const purchaseDate = getField(data, "purchaseDate") || data.purchaseDate || data["Purchase Date"];
-    const manualMonthlyText = data.monthlyDpn !== undefined && data.monthlyDpn !== null ? String(data.monthlyDpn).trim() : "";
-    const manualMonthlyDpn = manualMonthlyText === "" ? null : toNumber(manualMonthlyText);
-
-    // Residual Value formula: if blank, use 10% of Cost. User may still edit/save any value.
-    if (!residualValue && purchasePrice > 0) {
-      residualValue = purchasePrice * 0.10;
-      data.residualValue = residualValue;
-    }
-
-    if (purchasePrice <= 0 || usefulLifeYears <= 0) {
-      if (manualMonthlyDpn === null) data.monthlyDpn = "";
-      data.monthsDpn = data.monthsDpn || 0;
-      data.accumDpn = data.accumDpn || 0;
-      data.nbv = data.nbv || purchasePrice;
-      data.value = data.value || purchasePrice;
-      return data;
-    }
-
-    const depreciableAmount = Math.max(0, purchasePrice - residualValue);
-    const calculatedMonthlyDpn = depreciableAmount / usefulLifeYears / 12;
-    const monthlyDpn = manualMonthlyDpn === null ? calculatedMonthlyDpn : manualMonthlyDpn;
-    const usefulLifeMonths = Math.max(1, Math.round(usefulLifeYears * 12));
-    const monthsDpn = data.monthsDpn !== undefined && String(data.monthsDpn).trim() !== "" ? toNumber(data.monthsDpn) : Math.min(depreciationMonthsFromPurchase(purchaseDate), usefulLifeMonths);
-    const accumDpn = data.accumDpn !== undefined && String(data.accumDpn).trim() !== "" ? toNumber(data.accumDpn) : Math.min(depreciableAmount, monthlyDpn * monthsDpn);
-    const nbv = data.nbv !== undefined && String(data.nbv).trim() !== "" ? toNumber(data.nbv) : Math.max(residualValue, purchasePrice - accumDpn);
-
-    data.monthsDpn = monthsDpn;
-    data.monthlyDpn = manualMonthlyDpn === null ? calculatedMonthlyDpn : data.monthlyDpn;
-    data.accumDpn = accumDpn;
-    data.nbv = nbv;
-    data.value = data.value !== undefined && String(data.value).trim() !== "" ? data.value : nbv;
-    return data;
-  }
-
-  function driveImagePreviewUrl(link) {
-    const match = String(link || "").match(/\/d\/([a-zA-Z0-9_-]+)/) || String(link || "").match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    return match ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w240` : link;
-  }
-
-  function linkListCell(links, label) {
-    const parts = String(links || "").split(/\s*\|\s*/).filter(Boolean).slice(0, 5);
-    if (!parts.length) return `<span style="color:#aaa;">—</span>`;
-    return `<div style="display:flex;gap:6px;flex-wrap:wrap;max-width:190px;">` + parts.map((link, i) => {
-      const safeLink = String(link).replace(/"/g, "&quot;");
-      const preview = driveImagePreviewUrl(link).replace(/"/g, "&quot;");
-      return `<a href="${safeLink}" target="_blank" title="View ${(label || 'Image')} ${i + 1}"><img src="${preview}" alt="${label || 'Image'} ${i + 1}" loading="lazy" style="width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:#eef4fb;" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block';"><span class="regbook-link" style="display:none;"><i class="fas fa-image"></i> ${i + 1}</span></a>`;
-    }).join("") + `</div>`;
-  }
-
-  function calcAssetValue(row) {
-    return toNumber(getField(row, "value")) || toNumber(getField(row, "nbv")) || toNumber(getField(row, "marketValue")) || toNumber(getField(row, "cost"));
-  }
-
-  function isEquipmentFilter(filter) {
-    return EQUIPMENT_FILTERS.some(f => f.toLowerCase() === String(filter || "").toLowerCase());
-  }
-
-  function sheetForAsset(asset) {
-    const cls = String(getField(asset, "assetClass") || "").toLowerCase();
-    return EQUIPMENT_FILTERS.some(f => cls.includes(f.toLowerCase())) ? EQUIPMENT_SHEET_NAME : MAIN_SHEET_NAME;
-  }
-
-  function apiPost(payload) {
-    return fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
-    }).then(res => res.json());
-  }
-
-  let cropperInstance = null;
-  let cropQueue = Promise.resolve();
-
-  function isImageFile(file) {
-    return !!file && String(file.type || "").toLowerCase().startsWith("image/");
-  }
-
-  function cropImageFile(file) {
-    if (!isImageFile(file)) return Promise.resolve(file);
-
-    // Serialise crop dialogs so multi-image selections are cropped one at a time.
-    const task = () => new Promise((resolve, reject) => {
-      const modal = document.getElementById("imageCropModal");
-      const preview = document.getElementById("cropImagePreview");
-      const objectUrl = URL.createObjectURL(file);
-      let finished = false;
-
-      const cleanup = () => {
-        if (cropperInstance) {
-          cropperInstance.destroy();
-          cropperInstance = null;
-        }
-        URL.revokeObjectURL(objectUrl);
-        modal.classList.add("hidden");
-        preview.removeAttribute("src");
-      };
-
-      const complete = (result, error) => {
-        if (finished) return;
-        finished = true;
-        cleanup();
-        error ? reject(error) : resolve(result);
-      };
-
-      preview.onload = () => {
-        if (typeof Cropper === "undefined") {
-          complete(file, null); // Graceful fallback if the crop library cannot load.
-          return;
-        }
-        cropperInstance = new Cropper(preview, {
-          viewMode: 1,
-          dragMode: "move",
-          autoCropArea: 0.9,
-          responsive: true,
-          restore: false,
-          background: false,
-          movable: true,
-          zoomable: true,
-          rotatable: true,
-          scalable: true
-        });
-      };
-
-      document.getElementById("cropRotateLeftBtn").onclick = () => cropperInstance && cropperInstance.rotate(-90);
-      document.getElementById("cropRotateRightBtn").onclick = () => cropperInstance && cropperInstance.rotate(90);
-      document.getElementById("cropResetBtn").onclick = () => cropperInstance && cropperInstance.reset();
-      document.getElementById("cropOriginalBtn").onclick = () => complete(file, null);
-      document.getElementById("cropCloseBtn").onclick = () => complete(null, new Error("Image cropping cancelled"));
-      document.getElementById("cropApplyBtn").onclick = () => {
-        if (!cropperInstance) return complete(file, null);
-        const canvas = cropperInstance.getCroppedCanvas({
-          maxWidth: 2400,
-          maxHeight: 2400,
-          imageSmoothingEnabled: true,
-          imageSmoothingQuality: "high",
-          fillColor: "#ffffff"
-        });
-        if (!canvas) return complete(null, new Error("Could not crop image"));
-        const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
-        const quality = outputType === "image/jpeg" ? 0.92 : undefined;
-        canvas.toBlob(blob => {
-          if (!blob) return complete(null, new Error("Could not prepare cropped image"));
-          const baseName = String(file.name || "image").replace(/\.[^.]+$/, "");
-          const extension = outputType === "image/png" ? ".png" : ".jpg";
-          complete(new File([blob], baseName + "_cropped" + extension, {
-            type: outputType,
-            lastModified: Date.now()
-          }), null);
-        }, outputType, quality);
-      };
-
-      modal.classList.remove("hidden");
-      preview.src = objectUrl;
-    });
-
-    const queued = cropQueue.then(task, task);
-    cropQueue = queued.catch(() => {});
-    return queued;
-  }
-
-  async function fileToPayload(file) {
-    if (!file) return null;
-    const preparedFile = await cropImageFile(file);
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = ev => resolve({
-        fileName: preparedFile.name,
-        mimeType: preparedFile.type || "application/octet-stream",
-        fileData: String(ev.target.result).split(',')[1]
-      });
-      reader.onerror = () => reject(new Error("Could not read file: " + preparedFile.name));
-      reader.readAsDataURL(preparedFile);
-    });
-  }
-
-  async function filesToPayloads(fileList, maxFiles = 5) {
-    const files = Array.from(fileList || []).slice(0, maxFiles);
-    const payloads = [];
-    for (const file of files) payloads.push(await fileToPayload(file));
-    return payloads;
-  }
-
-  function linkCell(link, label) {
-    return link ? `<div class="regbook-link"><a href="${link}" target="_blank"><i class="fas fa-file-alt"></i> ${label || 'View'}</a></div>` : `<span style="color:#aaa;">—</span>`;
-  }
-
-  function normaliseRows(response, sheetName) {
-    let rows = [];
-    if (Array.isArray(response)) rows = response;
-    else if (response && Array.isArray(response.data)) rows = response.data;
-    else if (response && Array.isArray(response.rows)) rows = response.rows;
-    else if (response && Array.isArray(response.assets)) rows = response.assets;
-    return rows.map(r => ({ ...r, _sheetName: r._sheetName || sheetName }));
-  }
-
-  function showStatus(msg, isError = false) {
-    const statusEl = document.getElementById("status");
-    statusEl.innerHTML = msg || "";
-    statusEl.style.borderLeftColor = isError ? "#ef4444" : "var(--gold)";
-    statusEl.style.background = isError ? "rgba(239,68,68,0.1)" : "rgba(212,175,55,0.16)";
-  }
-
-  function isActiveAsset(asset) {
-    const status = String(getField(asset, "assetStatus") || "Active").trim().toLowerCase();
-    return status !== "sold" && status !== "stolen" && status !== "staff vehicle finance";
-  }
-
-  function updateDashboard() {
-    const classMap = {
-      'Drilling': ['drilling', 'drilling plant'],
-      'Yellow Plant': ['yellow plant', 'yellow', 'yellowplant'],
-      'Small Plant': ['small plant', 'smallplant', 'small'],
-      'Trucks': ['truck', 'trucks'],
-      'Trailers': ['trailer', 'trailers'],
-      'Executive': ['executive', 'executive cars', 'exec'],
-      'Bowser': ['bowser', 'bowsers'],
-      'Admin': ['admin', 'administration'],
-      'Projects & Tender': ['projects', 'projects & tender', 'projects and tender', 'project & tender', 'project and tender', 'tender']
-    };
-    const counts = {};
-    Object.keys(classMap).forEach(key => counts[key] = 0);
-
-    Object.keys(classMap).forEach(key => {
-      // Do not count Sold or Stolen assets in dashboard class totals.
-      // They must only appear in the Sold/Stolen windows below.
-      const source = (isEquipmentFilter(key) ? equipmentAssets : mainAssets).filter(isActiveAsset);
-      source.forEach(a => {
-        const cls = String(getField(a, "assetClass")).trim().toLowerCase();
-        if (classMap[key].some(kw => cls.includes(kw) || cls === kw)) counts[key]++;
-      });
-    });
-
-    document.getElementById("cntDrilling").textContent = counts['Drilling'];
-    document.getElementById("cntYellow").textContent = counts['Yellow Plant'];
-    document.getElementById("cntSmallPlant").textContent = counts['Small Plant'];
-    document.getElementById("cntTrucks").textContent = counts['Trucks'];
-    document.getElementById("cntTrailers").textContent = counts['Trailers'];
-    document.getElementById("cntExecutive").textContent = counts['Executive'];
-    document.getElementById("cntBowser").textContent = counts['Bowser'];
-    document.getElementById("cntAdmin").textContent = counts['Admin'];
-    document.getElementById("cntProjects").textContent = counts['Projects & Tender'];
-
-    const activeRows = allAssets.filter(isActiveAsset);
-    const stolenRows = allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === "stolen");
-    const soldRows = allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === "sold");
-    const staffFinanceRows = allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === "staff vehicle finance");
-    document.getElementById("totalAssetValue").textContent = money(activeRows.reduce((sum, a) => sum + calcAssetValue(a), 0));
-    document.getElementById("totalDepreciation").textContent = money(activeRows.reduce((sum, a) => sum + toNumber(getField(a, "accumDpn")), 0));
-    document.getElementById("totalInstallmentsPaid").textContent = money(
-      allAssets.reduce((sum, asset) => sum + calculateTotalInstallmentsPaid(asset), 0)
-    );
-    document.getElementById("cntStolen").textContent = stolenRows.length;
-    document.getElementById("valStolen").textContent = money(stolenRows.reduce((sum, a) => sum + calcAssetValue(a), 0));
-    document.getElementById("cntSold").textContent = soldRows.length;
-    document.getElementById("valSold").textContent = money(soldRows.reduce((sum, a) => sum + (toNumber(getField(a, "soldValue")) || calcAssetValue(a)), 0));
-    document.getElementById("cntStaffFinance").textContent = staffFinanceRows.length;
-    document.getElementById("valStaffFinance").textContent = money(staffFinanceRows.reduce((sum, a) => sum + calcAssetValue(a), 0));
-
-    document.querySelectorAll('.stat-card[data-filter]').forEach(card => {
-      const filter = card.dataset.filter;
-      card.onclick = () => applyFilter(filter);
-    });
-    document.querySelectorAll('.stat-card[data-special-filter]').forEach(card => {
-      const status = card.dataset.specialFilter;
-      card.onclick = () => applyStatusFilter(status);
-    });
-  }
-
-  function getTransactionCostCenter(row) {
-    return getField(row, "costCenter") || getField(row, "registeredEntity") || getField(row, "purchasedBy") || getField(row, "allocationDept");
-  }
-
-  function getAlphabetValue(row) {
-    return String(getField(row, "description") || getField(row, "registrationNo") || getField(row, "makeOfVehicle") || getField(row, "model") || "").toLowerCase();
-  }
-
-  function getCurrentBaseRows() {
-    if (!currentFilter) return allAssets;
-    if (currentFilter === "all-active") {
-      return allAssets.filter(a => !["sold","stolen"].includes(String(getField(a, "assetStatus") || "Active").toLowerCase()));
-    }
-    if (["Sold", "Stolen"].includes(currentFilter)) {
-      return allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === currentFilter.toLowerCase());
-    }
-    return isEquipmentFilter(currentFilter) ? equipmentAssets : mainAssets;
-  }
-
-  function applyTransactionControls(rows) {
-    let filtered = (rows || []).slice();
-    const search = transactionControls.search.toLowerCase();
-
-    if (search) {
-      filtered = filtered.filter(row => {
-        const searchable = [
-          getField(row, "registrationNo"), getField(row, "description"), getField(row, "makeOfVehicle"),
-          getField(row, "model"), getField(row, "assetClass"), getTransactionCostCenter(row),
-          getField(row, "driverOperator"), getField(row, "location")
-        ].join(" ").toLowerCase();
-        return searchable.includes(search);
-      });
-    }
-
-    if (transactionControls.assetClass) {
-      filtered = filtered.filter(row => String(getField(row, "assetClass")).trim().toLowerCase() === transactionControls.assetClass.toLowerCase());
-    }
-    if (transactionControls.model) {
-      filtered = filtered.filter(row => String(getField(row, "model")).trim().toLowerCase() === transactionControls.model.toLowerCase());
-    }
-    if (transactionControls.costCenter) {
-      filtered = filtered.filter(row => String(getTransactionCostCenter(row)).trim().toLowerCase() === transactionControls.costCenter.toLowerCase());
-    }
-
-    if (transactionControls.sort === "alphaAsc") filtered.sort((a,b) => getAlphabetValue(a).localeCompare(getAlphabetValue(b)));
-    if (transactionControls.sort === "alphaDesc") filtered.sort((a,b) => getAlphabetValue(b).localeCompare(getAlphabetValue(a)));
-    if (transactionControls.sort === "dateNewest") filtered.sort((a,b) => (parseAssetDate(getField(b, "purchaseDate")) || 0) - (parseAssetDate(getField(a, "purchaseDate")) || 0));
-    if (transactionControls.sort === "dateOldest") filtered.sort((a,b) => (parseAssetDate(getField(a, "purchaseDate")) || 0) - (parseAssetDate(getField(b, "purchaseDate")) || 0));
-
-    return filtered;
-  }
-
-  function refreshTransactionOptions() {
-    const optionMap = [
-      ["transactionClassFilter", row => getField(row, "assetClass"), transactionControls.assetClass],
-      ["transactionModelFilter", row => getField(row, "model"), transactionControls.model],
-      ["transactionCostCenterFilter", row => getTransactionCostCenter(row), transactionControls.costCenter]
-    ];
-    optionMap.forEach(([id, getter, selected]) => {
-      const select = document.getElementById(id);
-      if (!select) return;
-      const first = select.options[0] ? select.options[0].outerHTML : '<option value="">All</option>';
-      const values = [...new Set(allAssets.map(getter).map(v => String(v || "").trim()).filter(Boolean))]
-        .sort((a,b) => a.localeCompare(b));
-      select.innerHTML = first + values.map(v => `<option value="${String(v).replace(/"/g, '&quot;')}">${v}</option>`).join("");
-      select.value = selected || "";
-    });
-  }
-
-  function readTransactionControls() {
-    transactionControls.search = (document.getElementById("transactionSearch")?.value || "").trim();
-    transactionControls.sort = document.getElementById("transactionSort")?.value || "";
-    transactionControls.assetClass = document.getElementById("transactionClassFilter")?.value || "";
-    transactionControls.model = document.getElementById("transactionModelFilter")?.value || "";
-    transactionControls.costCenter = document.getElementById("transactionCostCenterFilter")?.value || "";
-  }
-
-  function renderCurrentTransactionTable() {
-    readTransactionControls();
-    renderTable(getCurrentBaseRows(), currentFilter && !["all-active", "Sold", "Stolen", "Staff Vehicle Finance"].includes(currentFilter) ? currentFilter : null);
-  }
-
-  function resetTransactionControls() {
-    ["transactionSearch", "transactionSort", "transactionClassFilter", "transactionModelFilter", "transactionCostCenterFilter"].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = "";
-    });
-    transactionControls.search = transactionControls.sort = transactionControls.assetClass = transactionControls.model = transactionControls.costCenter = "";
-    renderTable(getCurrentBaseRows(), currentFilter && !["all-active", "Sold", "Stolen", "Staff Vehicle Finance"].includes(currentFilter) ? currentFilter : null);
-  }
-
-  function applyFilter(filter) {
-    currentFilter = filter;
-    document.querySelectorAll('.stat-card').forEach(c => c.classList.toggle('filter-active', c.dataset.filter === filter));
-    document.getElementById('filterIndicator').textContent = `Filter: ${filter}`;
-
-    const source = isEquipmentFilter(filter) ? equipmentAssets : mainAssets;
-    renderTable(source, filter);
-  }
-
-  function applyStatusFilter(status) {
-    currentFilter = status;
-    document.querySelectorAll('.stat-card').forEach(c => c.classList.toggle('filter-active', c.dataset.specialFilter === status));
-    document.getElementById('filterIndicator').textContent = status === 'all-active' ? 'Filter: Active Assets' : `Filter: ${status}`;
-    const rows = status === 'all-active'
-      ? allAssets.filter(a => !['sold','stolen','staff vehicle finance'].includes(String(getField(a, "assetStatus") || "Active").toLowerCase()))
-      : allAssets.filter(a => String(getField(a, "assetStatus")).toLowerCase() === status.toLowerCase());
-    renderTable(rows);
-  }
-
-  function clearFilter() {
-    currentFilter = null;
-    document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('filter-active'));
-    document.getElementById('filterIndicator').textContent = '';
-    renderTable(allAssets);
-  }
-
-  function renderTable(assets, filter) {
-    const tbody = document.querySelector("#assetTable tbody");
-    let rows = assets || allAssets;
-    if (filter) {
-      const filterLower = filter.toLowerCase();
-      rows = rows.filter(a => String(getField(a, "assetClass")).trim().toLowerCase().includes(filterLower));
-    }
-    rows = applyTransactionControls(rows);
-    const activeParts = [];
-    if (filter) activeParts.push("Filter: " + filter);
-    if (transactionControls.search) activeParts.push("Search: " + transactionControls.search);
-    if (transactionControls.assetClass) activeParts.push("Class: " + transactionControls.assetClass);
-    if (transactionControls.model) activeParts.push("Model: " + transactionControls.model);
-    if (transactionControls.costCenter) activeParts.push("Cost Center: " + transactionControls.costCenter);
-    if (transactionControls.sort) activeParts.push("Sort applied");
-    if (activeParts.length) document.getElementById('filterIndicator').textContent = activeParts.join(" · ");
-    tbody.innerHTML = "";
-    if (!rows.length) {
-      const colCount = document.querySelector("#assetTable thead tr").children.length;
-      tbody.innerHTML = `<tr><td colspan="${colCount}">No entries found${filter ? ' for filter: '+filter : ''}.</td></tr>`;
-      return;
-    }
-
-    rows.forEach(function(data){
-      const row = document.createElement("tr");
-      const displayFields = FIELD_IDS.filter(id => !["licenced","typeOfLicence","validityOfLicence","imageLinks","assetStatus","statusDate","soldValue","totalInstallmentsPaid"].includes(id));
-      displayFields.forEach(field => {
-        const td = document.createElement("td");
-        td.textContent = CURRENCY_FIELDS.has(field) ? money(getField(data, field)) : (["purchaseDate","lastInstallmentDate"].includes(field) ? displayDate(getField(data, field)) : valueOrBlank(getField(data, field)));
-        row.appendChild(td);
-      });
-
-      const regTd = document.createElement("td");
-      regTd.innerHTML = linkCell(getField(data, "vehicleRegBookLink"), "View Reg Book");
-      row.appendChild(regTd);
-
-      const trackingTd = document.createElement("td");
-      trackingTd.innerHTML = linkCell(getField(data, "trackingCertificateLink"), "View Tracking");
-      row.appendChild(trackingTd);
-
-      const invoiceTd = document.createElement("td");
-      invoiceTd.innerHTML = linkCell(getField(data, "vehicleInvoiceLink"), "View Invoice");
-      row.appendChild(invoiceTd);
-
-      const imagesTd = document.createElement("td");
-      imagesTd.innerHTML = linkListCell(getField(data, "imageLinks"), "Image");
-      row.appendChild(imagesTd);
-
-      ["assetStatus", "statusDate", "soldValue"].forEach(field => {
-        const td = document.createElement("td");
-        td.textContent = field === "soldValue" ? money(getField(data, field)) : (field === "statusDate" ? displayDate(getField(data, field)) : valueOrBlank(getField(data, field) || (field === "assetStatus" ? "Active" : "")));
-        row.appendChild(td);
-      });
-
-      const actionCell = document.createElement("td");
-      actionCell.className = "action-col";
-      const actionDiv = document.createElement("div");
-      actionDiv.className = "row-actions";
-
-      const editBtn = document.createElement("button");
-      editBtn.className = "btn-sm-edit";
-      editBtn.innerHTML = '<i class="fas fa-edit"></i>';
-      editBtn.title = "Edit row";
-      editBtn.addEventListener("click", function(e) {
-        e.stopPropagation();
-        FIELD_IDS.forEach(id => setFormValue(id, getField(data, id)));
-        document.getElementById("rowNumber").value = data.rowNumber || "";
-        document.getElementById("vehicleRegBookLink").value = getField(data, "vehicleRegBookLink") || "";
-        document.getElementById("trackingCertificateLink").value = getField(data, "trackingCertificateLink") || "";
-        document.getElementById("vehicleInvoiceLink").value = getField(data, "vehicleInvoiceLink") || "";
-        document.getElementById("assetTotalInstallmentsPaid").value = calculateTotalInstallmentsPaid(data);
-        document.getElementById("regBookLink").value = data.regBookLink || "";
-        document.getElementById("imageLinks").value = getField(data, "imageLinks") || "";
-        document.getElementById("assetStatus").value = getField(data, "assetStatus") || "Active";
-        document.getElementById("statusDate").value = getField(data, "statusDate") || "";
-        document.getElementById("soldValue").value = getField(data, "soldValue") || "";
-        document.getElementById("saveBtn").textContent = "Update Asset";
-        document.getElementById("entrySection").classList.remove("hidden");
-        window.scrollTo({ top: document.getElementById("entrySection").offsetTop - 20, behavior: "smooth" });
-      });
-
-      function makeUploadButton(docType, title, fieldName) {
-        const btn = document.createElement("button");
-        btn.className = "btn-sm-upload";
-        btn.innerHTML = '<i class="fas fa-upload"></i>';
-        btn.title = "Upload " + title;
-        btn.addEventListener("click", function(e) {
-          e.stopPropagation();
-          const fileInput = document.createElement("input");
-          fileInput.type = "file";
-          fileInput.accept = "image/*,application/pdf,.doc,.docx";
-          fileInput.onchange = function(ev) {
-            const file = ev.target.files[0];
-            if (!file) return showStatus("No file selected", true);
-            showStatus("Uploading " + file.name + "...");
-            fileToPayload(file).then(filePayload => {
-              return apiPost({
-                action: "uploadDocument",
-                rowNumber: data.rowNumber,
-                docType,
-                sheetField: fieldName,
-                sheetId: SHEET_ID,
-                sheetName: data._sheetName || sheetForAsset(data),
-                folderId: DRIVE_FOLDER_ID,
-                ...filePayload
-              });
-            }).then(res => {
-              if (res.status === "success") {
-                showStatus("✅ " + title + " uploaded and link posted to Google Sheet");
-                data[fieldName] = res.fileLink;
-                loadAssets();
-              } else {
-                showStatus("❌ Upload failed: " + (res.message || "unknown error"), true);
-              }
-            }).catch(err => {
-              console.error(err);
-              showStatus("❌ Upload error: " + err.message, true);
+    <script>
+        (function() {
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbzzOKbryXRGV-4uOtxnEXSQYst8t8H5HcM9Nb7rhP-d9ENAiLYfcVcxTcT43BSzrxO2Qg/exec';
+            const SHEET_ID = '1vhtaNNmY-YsyDiaA2IFodoBYdQsEcL09F7BgMJo4utI';
+            const DRIVE_FOLDER_ID = '1al8guXtgk-PJWwdNvd2umUXYv4AvwXSM';
+
+            function getCurrentCounts() {
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+                let monthly = parseInt(localStorage.getItem('onpoint_monthly') || '0');
+                let yearly = parseInt(localStorage.getItem('onpoint_yearly') || '0');
+                let storedMonth = parseInt(localStorage.getItem('onpoint_month') || currentMonth);
+                let storedYear = parseInt(localStorage.getItem('onpoint_year') || currentYear);
+                if (storedYear !== currentYear) return { monthly: 0, yearly: 0, shouldResetMonthly: true, shouldResetYearly: true, currentMonth, currentYear };
+                if (storedMonth !== currentMonth) return { monthly: 0, yearly, shouldResetMonthly: true, shouldResetYearly: false, currentMonth, currentYear };
+                return { monthly, yearly, shouldResetMonthly: false, shouldResetYearly: false, currentMonth, currentYear };
+            }
+            function incrementCounters() {
+                const counts = getCurrentCounts();
+                const now = new Date();
+                let monthly = counts.shouldResetMonthly ? 1 : counts.monthly + 1;
+                let yearly = counts.shouldResetYearly ? 1 : counts.yearly + 1;
+                localStorage.setItem('onpoint_monthly', monthly);
+                localStorage.setItem('onpoint_yearly', yearly);
+                localStorage.setItem('onpoint_month', now.getMonth());
+                localStorage.setItem('onpoint_year', now.getFullYear());
+            }
+
+            const fileInput = document.getElementById('fileInput');
+            const dropZone = document.getElementById('dropZone');
+            const previewContainer = document.getElementById('previewContainer');
+            const imagePreview = document.getElementById('imagePreview');
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const stampLocationSpan = document.getElementById('stampLocation');
+            const clearImageBtn = document.getElementById('clearImageBtn');
+            const imageBase64Hidden = document.getElementById('imageBase64');
+            const imageFileNameHidden = document.getElementById('imageFileName');
+            const imageFileTypeHidden = document.getElementById('imageFileType');
+            const capturedLat = document.getElementById('capturedLat');
+            const capturedLon = document.getElementById('capturedLon');
+            const capturedGeoUrl = document.getElementById('capturedGeoUrl');
+            const attachmentStatus = document.getElementById('attachmentStatus');
+            const dynamicMapLink = document.getElementById('dynamicMapLink');
+            const locationInput = document.getElementById('location');
+            const submitBtn = document.getElementById('submitToGAS');
+            const projectSelect = document.getElementById('project');
+            const otherProjectField = document.getElementById('otherProjectField');
+            const otherProjectInput = document.getElementById('otherProject');
+
+            function toggleOtherProject() {
+                const isOther = projectSelect && projectSelect.value === 'Other';
+                if (otherProjectField) otherProjectField.style.display = isOther ? 'flex' : 'none';
+                if (otherProjectInput) {
+                    otherProjectInput.required = isOther;
+                    if (!isOther) otherProjectInput.value = '';
+                }
+            }
+            if (projectSelect) projectSelect.addEventListener('change', toggleOtherProject);
+
+            let selectedFile = null;
+            let currentBase64 = '';
+            let gpsCoords = { lat: null, lon: null, accuracy: null };
+
+            function getSavedOptions(key) {
+                try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
+            }
+            function saveOptionValue(key, value) {
+                const clean = String(value || '').trim();
+                if (!clean) return;
+                const values = getSavedOptions(key);
+                if (!values.some(item => item.toUpperCase() === clean.toUpperCase())) {
+                    values.push(clean);
+                    localStorage.setItem(key, JSON.stringify(values));
+                }
+            }
+            function loadSavedOptions(selectId, storageKey) {
+                const select = document.getElementById(selectId);
+                if (!select) return;
+                getSavedOptions(storageKey).forEach(value => {
+                    if (!Array.from(select.options).some(o => o.value.toUpperCase() === value.toUpperCase())) {
+                        const opt = document.createElement('option');
+                        opt.value = value;
+                        opt.text = value;
+                        select.appendChild(opt);
+                    }
+                });
+            }
+            window.addAndSaveOption = function(selectId, promptText, uppercase) {
+                const select = document.getElementById(selectId);
+                if (!select) return;
+                const newValue = prompt(promptText);
+                if (!newValue || !newValue.trim()) return;
+                const cleanValue = uppercase ? newValue.trim().toUpperCase() : newValue.trim();
+                const storageKey = selectId === 'vehicleReg' ? 'onpoint_saved_vehicle_regs' : 'onpoint_saved_driver_names';
+                if (!Array.from(select.options).some(o => o.value.toUpperCase() === cleanValue.toUpperCase())) {
+                    const opt = document.createElement('option');
+                    opt.value = cleanValue;
+                    opt.text = cleanValue;
+                    select.appendChild(opt);
+                }
+                select.value = cleanValue;
+                saveOptionValue(storageKey, cleanValue);
+                alert('Saved: ' + cleanValue);
+            };
+
+            function applyFaintDefaults() {
+                const fields = [
+                    document.getElementById('location'),
+                    document.getElementById('driverPhone'),
+                    document.getElementById('description'),
+                    document.getElementById('otherParties'),
+                    document.getElementById('officerName'),
+                    document.getElementById('officerPhone'),
+                    document.getElementById('policeReportNo')
+                ].filter(Boolean);
+                fields.forEach(f => {
+                    if (f.value) f.classList.add('faint-default');
+                    f.addEventListener('focus', function() { this.classList.remove('faint-default'); });
+                    f.addEventListener('input', function() { this.classList.remove('faint-default'); });
+                });
+            }
+
+            function clearDataEntryFields() {
+                const form = document.getElementById('accidentForm');
+                if (!form) return;
+                form.reset();
+                document.getElementById('accidentDate').value = new Date().toISOString().split('T')[0];
+                loadSavedOptions('vehicleReg', 'onpoint_saved_vehicle_regs');
+                loadSavedOptions('driverName', 'onpoint_saved_driver_names');
+                applyFaintDefaults();
+                const now = new Date();
+                document.getElementById('accidentTime').value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                currentBase64 = '';
+                selectedFile = null;
+                if (fileInput) fileInput.value = '';
+                imageBase64Hidden.value = '';
+                imageFileNameHidden.value = '';
+                imageFileTypeHidden.value = '';
+                if (previewContainer) previewContainer.style.display = 'none';
+                if (imagePreview) imagePreview.src = '#';
+                if (stampLocationSpan) stampLocationSpan.innerText = 'locating…';
+                if (attachmentStatus) attachmentStatus.innerHTML = '<i class="fas fa-info-circle"></i> No image — detecting address…';
+                applyFaintDefaults();
+                toggleOtherProject();
+                requestDriverLocation();
+            }
+
+            document.getElementById('accidentDate').value = new Date().toISOString().split('T')[0];
+
+            function updateMapLink() {
+                if (gpsCoords.lat && gpsCoords.lon) {
+                    const lat = gpsCoords.lat.toFixed(6);
+                    const lon = gpsCoords.lon.toFixed(6);
+                    const localGeoText = `${lat}, ${lon}`;
+                    capturedLat.value = lat;
+                    capturedLon.value = lon;
+                    capturedGeoUrl.value = localGeoText;
+                    dynamicMapLink.href = '#';
+                    dynamicMapLink.removeAttribute('target');
+                    dynamicMapLink.innerHTML = `${localGeoText} · GPS captured`;
+                    locationInput.value = `GPS ${localGeoText}`;
+                    attachmentStatus.innerHTML = `<i class="fas fa-check-circle"></i> Location captured: ${localGeoText}`;
+                } else {
+                    dynamicMapLink.href = '#';
+                    dynamicMapLink.innerHTML = 'waiting for GPS …';
+                }
+            }
+
+            function requestDriverLocation() {
+                if (!navigator.geolocation) {
+                    gpsCoords.lat = -25.9989;
+                    gpsCoords.lon = 28.1213;
+                    updateMapLink();
+                    locationInput.value = 'GPS not supported - default Midrand location';
+                    attachmentStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> GPS not supported – using default';
+                    return;
+                }
+                attachmentStatus.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> requesting driver location...';
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        gpsCoords.lat = pos.coords.latitude;
+                        gpsCoords.lon = pos.coords.longitude;
+                        gpsCoords.accuracy = pos.coords.accuracy;
+                        updateMapLink();
+                    },
+                    () => {
+                        gpsCoords.lat = -25.9989;
+                        gpsCoords.lon = 28.1213;
+                        updateMapLink();
+                        locationInput.value = '71 Pretorius Rd, President Park, Midrand (default)';
+                        attachmentStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> GPS denied – using default Midrand address';
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+                );
+            }
+
+            document.getElementById('useLocationBtn').addEventListener('click', requestDriverLocation);
+            requestDriverLocation();
+
+            function stampImageWithOverlay(file) {
+                return new Promise((resolve, reject) => {
+                    if (!file) return reject('no file');
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                            const barHeight = 60;
+                            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                            ctx.fillRect(0, canvas.height - barHeight, canvas.width, barHeight);
+                            ctx.font = 'bold 22px "Inter", Arial, sans-serif';
+                            ctx.fillStyle = '#ffffff';
+                            ctx.shadowColor = '#000';
+                            ctx.shadowBlur = 8;
+                            const now = new Date();
+                            const dateStr = now.toLocaleDateString('en-ZA') + ' ' + now.toLocaleTimeString('en-ZA', {hour12: false});
+                            const locationStr = (gpsCoords.lat && gpsCoords.lon) ? `${gpsCoords.lat.toFixed(5)}, ${gpsCoords.lon.toFixed(5)}` : 'location pending';
+                            ctx.fillText(`📅 ${dateStr}`, 20, canvas.height - 32);
+                            ctx.fillText(`📍 ${locationStr}`, 20, canvas.height - 8);
+                            const stampedBase64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+                            const previewUrl = canvas.toDataURL('image/jpeg', 0.8);
+                            resolve({ stampedBase64, previewUrl, fileName: `stamped_${file.name.replace(/\.[^/.]+$/, '')}.jpg`, locationText: locationStr });
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            async function handleFileSelect(file) {
+                if (!file) return;
+                requestDriverLocation();
+                if (!file.type.startsWith('image/')) { alert('Please select an image'); return; }
+                try {
+                    attachmentStatus.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> stamping image with location & time...';
+                    const stamped = await stampImageWithOverlay(file);
+                    currentBase64 = stamped.stampedBase64;
+                    imageBase64Hidden.value = currentBase64;
+                    imageFileNameHidden.value = stamped.fileName;
+                    imageFileTypeHidden.value = 'image/jpeg';
+                    imagePreview.src = stamped.previewUrl;
+                    fileNameDisplay.innerHTML = `<i class="far fa-file-image"></i> ${stamped.fileName}`;
+                    stampLocationSpan.innerText = stamped.locationText;
+                    previewContainer.style.display = 'flex';
+                    attachmentStatus.innerHTML = `<i class="fas fa-check-circle" style="color:#1a4b8c;"></i> stamped ready – ${stamped.fileName}`;
+                } catch (err) {
+                    alert('Error processing image');
+                    console.error(err);
+                }
+            }
+
+            fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) handleFileSelect(e.target.files[0]); });
+            dropZone.addEventListener('dragover', (e) => e.preventDefault());
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files[0]);
             });
-          };
-          fileInput.click();
-        });
-        return btn;
-      }
+            clearImageBtn.addEventListener('click', () => {
+                selectedFile = null;
+                fileInput.value = '';
+                imageBase64Hidden.value = '';
+                imageFileNameHidden.value = '';
+                imageFileTypeHidden.value = '';
+                currentBase64 = '';
+                previewContainer.style.display = 'none';
+                attachmentStatus.innerHTML = 'No image — GPS will be fetched live';
+                stampLocationSpan.innerText = 'locating…';
+            });
 
-      const uploadRegBtn = makeUploadButton("Vehicle Reg Book", "Vehicle Reg Book", "vehicleRegBookLink");
-      const uploadTrackingBtn = makeUploadButton("Tracking Certificate", "Tracking Certificate", "trackingCertificateLink");
-      const uploadInvoiceBtn = makeUploadButton("Vehicle Invoice", "Vehicle Invoice", "vehicleInvoiceLink");
+            function getFormData() {
+                const reported = document.querySelector('input[name="reportedMetro"]:checked');
+                const drunken = document.querySelector('input[name="drunkenDriving"]:checked');
+                const atFault = document.querySelector('input[name="atFault"]:checked');
+                return {
+                    timestamp: new Date().toISOString(),
+                    date: document.getElementById('accidentDate').value,
+                    time: document.getElementById('accidentTime').value,
+                    vehicleReg: document.getElementById('vehicleReg').value,
+                    location: document.getElementById('location').value,
+                    accidentType: document.getElementById('accidentType').value,
+                    department: document.getElementById('department').value,
+                    costCenter: document.getElementById('costCenter').value,
+                    project: document.getElementById('project').value === 'Other'
+                        ? document.getElementById('otherProject').value.trim()
+                        : document.getElementById('project').value,
+                    projectSelection: document.getElementById('project').value,
+                    driverName: document.getElementById('driverName').value,
+                    driverPhone: document.getElementById('driverPhone').value,
+                    description: document.getElementById('description').value,
+                    otherParties: document.getElementById('otherParties').value,
+                    reportedMetro: reported ? reported.value : 'Not specified',
+                    officerName: document.getElementById('officerName').value || 'N/A',
+                    officerPhone: document.getElementById('officerPhone').value || 'N/A',
+                    drunkenDriving: drunken ? drunken.value : 'Not specified',
+                    policeReportNo: document.getElementById('policeReportNo').value || 'N/A',
+                    atFault: atFault ? atFault.value : 'Not specified',
+                    lat: capturedLat.value || 'unknown',
+                    lon: capturedLon.value || 'unknown',
+                    geoUrl: capturedGeoUrl.value || '',
+                    imageFileName: imageFileNameHidden.value || '',
+                    imageBase64: currentBase64 || '',
+                    sheetId: SHEET_ID,
+                    driveFolderId: DRIVE_FOLDER_ID
+                };
+            }
 
-      function makeStatusButton(status) {
-        const btn = document.createElement("button");
-        const isActiveRestore = status === "Active";
-        btn.className = status === "Sold" ? "btn-sm-sold"
-          : status === "Stolen" ? "btn-sm-stolen"
-          : status === "Staff Vehicle Finance" ? "btn-sm-staff"
-          : "btn-sm-restore";
-        btn.innerHTML = status === "Sold" ? '<span style="font-weight:900;">R</span>'
-          : status === "Stolen" ? '<i class="fas fa-exclamation-triangle"></i>'
-          : status === "Staff Vehicle Finance" ? '<i class="fas fa-user-tag"></i>'
-          : '<i class="fas fa-undo"></i>';
-        btn.title = isActiveRestore ? "Move back to Main Pool" : "Move to " + status + " window";
-        btn.addEventListener("click", function(e) {
-          e.stopPropagation();
-          let soldValue = "";
-          if (status === "Sold") soldValue = prompt("Enter sold value", calcAssetValue(data));
-          if (status === "Sold" && soldValue === null) return;
-          const question = isActiveRestore ? "Move this asset back to the Main Pool?" : "Move this asset to " + status + " window?";
-          if (!confirm(question)) return;
-          apiPost({
-            action: "moveAssetStatus",
-            rowNumber: data.rowNumber,
-            assetStatus: status,
-            soldValue,
-            sheetId: SHEET_ID,
-            sheetName: data._sheetName || sheetForAsset(data)
-          }).then(res => {
-            if (res.status === "success") { showStatus("✅ " + res.message); loadAssets(); }
-            else showStatus("❌ Status update failed: " + res.message, true);
-          }).catch(err => showStatus("❌ Status update error: " + err.message, true));
-        });
-        return btn;
-      }
+            function validateForm(data) {
+                const required = [
+                    data.date, data.time, data.vehicleReg, data.location,
+                    data.accidentType, data.department, data.costCenter, data.project,
+                    data.driverName, data.driverPhone, data.description
+                ];
+                if (required.some(f => !f)) {
+                    alert('Please fill all required fields including Cost Center, Project and Driver Name');
+                    return false;
+                }
+                return true;
+            }
 
-      const currentStatus = String(getField(data, "assetStatus") || "Active").trim().toLowerCase();
-      const stolenBtn = makeStatusButton("Stolen");
-      const soldBtn = makeStatusButton("Sold");
-      const staffFinanceBtn = makeStatusButton("Staff Vehicle Finance");
-      const restoreBtn = makeStatusButton("Active");
+            async function submitToGoogleAppsScript() {
+                const data = getFormData();
+                if (!validateForm(data)) return;
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Submitting...';
+                submitBtn.disabled = true;
+                attachmentStatus.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Sending to Google Sheets...';
+                try {
+                    await fetch(GAS_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams(data)
+                    });
+                    incrementCounters();
+                    attachmentStatus.innerHTML = '<i class="fas fa-check-circle" style="color:#1a4b8c;"></i> Report submitted successfully to Google Sheets!';
+                    alert('✅ Accident report submitted successfully!\n\nData saved to Google Sheets.\nImage uploaded to Google Drive (if attached).');
+                    clearDataEntryFields();
+                } catch (error) {
+                    console.error('Submission error:', error);
+                    attachmentStatus.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#b00;"></i> Error submitting report. Please try again.';
+                    alert('❌ Error submitting report. Please check your connection and try again.');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            }
 
-      const delBtn = document.createElement("button");
-      delBtn.className = "btn-sm-delete";
-      delBtn.innerHTML = '<i class="fas fa-trash"></i>';
-      delBtn.title = "Delete row";
-      delBtn.addEventListener("click", function(e) {
-        e.stopPropagation();
-        if (!confirm("Delete this asset entry?")) return;
-        apiPost({
-          action: "deleteAsset",
-          rowNumber: data.rowNumber,
-          sheetId: SHEET_ID,
-          sheetName: data._sheetName || sheetForAsset(data)
-        }).then(res => {
-          if (res.status === "success") {
-            showStatus("✅ Deleted successfully");
-            loadAssets();
-          } else {
-            showStatus("❌ Delete failed: " + res.message, true);
-          }
-        }).catch(err => showStatus("❌ Delete error: " + err.message, true));
-      });
+            submitBtn.addEventListener('click', submitToGoogleAppsScript);
 
-      actionDiv.appendChild(editBtn);
-      actionDiv.appendChild(uploadRegBtn);
-      actionDiv.appendChild(uploadTrackingBtn);
-      actionDiv.appendChild(uploadInvoiceBtn);
-      if (currentStatus === "active" || currentStatus === "") {
-        actionDiv.appendChild(stolenBtn);
-        actionDiv.appendChild(soldBtn);
-        actionDiv.appendChild(staffFinanceBtn);
-      } else {
-        actionDiv.appendChild(restoreBtn);
-      }
-      actionDiv.appendChild(delBtn);
-      actionCell.appendChild(actionDiv);
-      row.appendChild(actionCell);
-      tbody.appendChild(row);
-    });
-  }
+            const counterEl = document.getElementById('localVisitCounter');
+            if (counterEl) {
+                const visits = Number(localStorage.getItem('onpoint_app_visits') || '0') + 1;
+                localStorage.setItem('onpoint_app_visits', String(visits));
+                counterEl.textContent = String(visits);
+            }
 
-  function loadSheetAssets(sheetName) {
-    const url = `${SCRIPT_URL}?action=list&sheetId=${encodeURIComponent(SHEET_ID)}&sheetName=${encodeURIComponent(sheetName)}`;
-    return fetch(url)
-      .then(res => {
-        if (!res.ok) throw new Error("Network response was not ok");
-        return res.json();
-      })
-      .then(response => {
-        if (response && response.status === "error") throw new Error(response.message || "Sheet load failed");
-        return normaliseRows(response, sheetName);
-      });
-  }
-
-  async function loadAssets() {
-    showStatus("Loading dashboard from Assert Reg and Drilling_Equipment...");
-    try {
-      // Safe month-end check: Apps Script only deducts VAF installments when today is the last day of the month.
-      // On other days it returns skipped and does not alter the sheet.
-      try { await apiPost({ action: "runMonthEndInstallmentsIfDue", sheetId: SHEET_ID }); } catch(e) { console.warn("Month-end VAF check skipped", e); }
-      const results = await Promise.allSettled([
-        loadSheetAssets(MAIN_SHEET_NAME),
-        loadSheetAssets(EQUIPMENT_SHEET_NAME)
-      ]);
-      mainAssets = results[0].status === "fulfilled" ? results[0].value.map(applyDepreciationToData) : [];
-      equipmentAssets = results[1].status === "fulfilled" ? results[1].value.map(applyDepreciationToData) : [];
-      allAssets = [...mainAssets, ...equipmentAssets];
-      refreshTransactionOptions();
-
-      updateDashboard();
-      const initialRows = allAssets.slice(0, 120);
-      if (currentFilter) applyFilter(currentFilter);
-      else {
-        renderTable(initialRows);
-        if (allAssets.length > initialRows.length) {
-          const renderFull = () => renderTable(allAssets);
-          if ("requestIdleCallback" in window) requestIdleCallback(renderFull, { timeout: 1500 });
-          else setTimeout(renderFull, 250);
-        }
-      }
-
-      const failures = results.filter(r => r.status === "rejected").map(r => r.reason.message).join("; ");
-      if (failures) showStatus("⚠️ Loaded with warning: " + failures, true);
-      else showStatus(`✅ Loaded ${mainAssets.length} Assert Reg entries and ${equipmentAssets.length} Drilling_Equipment entries`);
-      return allAssets;
-    } catch (err) {
-      console.error(err);
-      showStatus("❌ Could not load data: " + err.message, true);
-      return [];
-    }
-  }
-
-  document.getElementById("assetForm").addEventListener("submit", async function(e){
-    e.preventDefault();
-    const data = {};
-    FIELD_IDS.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
-    const rowNum = document.getElementById("rowNumber").value;
-    if (rowNum) data.rowNumber = rowNum;
-    data.vehicleRegBookLink = document.getElementById("vehicleRegBookLink").value || "";
-    data.trackingCertificateLink = document.getElementById("trackingCertificateLink").value || "";
-    data.vehicleInvoiceLink = document.getElementById("vehicleInvoiceLink").value || "";
-    data.totalInstallmentsPaid = calculateTotalInstallmentsPaid(data);
-    data.regBookLink = document.getElementById("regBookLink").value || "";
-    data.action = "saveAsset";
-    data.sheetId = SHEET_ID;
-    data.sheetName = sheetForAsset(data);
-    data.folderId = DRIVE_FOLDER_ID;
-    applyDepreciationToData(data);
-
-    try {
-      showStatus("Saving asset and documents...");
-      data.vehicleRegBookFile = await fileToPayload(document.getElementById("vehicleRegBookFile").files[0]);
-      data.trackingCertificateFile = await fileToPayload(document.getElementById("trackingCertificateFile").files[0]);
-      data.vehicleInvoiceFile = await fileToPayload(document.getElementById("vehicleInvoiceFile").files[0]);
-      data.imageFiles = await filesToPayloads([
-        ...document.getElementById("imageFiles").files,
-        ...document.getElementById("cameraImageFiles").files
-      ], 5);
-      const response = await apiPost(data);
-      if (response.status !== "success") throw new Error(response.message || "Save failed");
-      showStatus(rowNum ? "✅ Asset Updated Successfully" : "✅ Asset Saved Successfully");
-      document.getElementById("assetForm").reset();
-      document.getElementById("rowNumber").value = "";
-      document.getElementById("vehicleRegBookLink").value = "";
-      document.getElementById("trackingCertificateLink").value = "";
-      document.getElementById("vehicleInvoiceLink").value = "";
-      document.getElementById("assetTotalInstallmentsPaid").value = "";
-      document.getElementById("regBookLink").value = "";
-      document.getElementById("saveBtn").textContent = "Save Asset";
-      await loadAssets();
-    } catch (err) {
-      console.error(err);
-      showStatus("❌ Error Saving Asset: " + err.message, true);
-    }
-  });
-
-  document.getElementById("clearBtn").addEventListener("click", function(){
-    document.getElementById("assetForm").reset();
-    document.getElementById("rowNumber").value = "";
-    document.getElementById("vehicleRegBookLink").value = "";
-    document.getElementById("trackingCertificateLink").value = "";
-      document.getElementById("vehicleInvoiceLink").value = "";
-      document.getElementById("assetTotalInstallmentsPaid").value = "";
-    document.getElementById("regBookLink").value = "";
-    document.getElementById("saveBtn").textContent = "Save Asset";
-    showStatus("Form cleared.");
-  });
-
-  document.getElementById("newEntryBtn").addEventListener("click", function(){
-    document.getElementById("entrySection").classList.remove("hidden");
-    document.getElementById("assetForm").reset();
-    document.getElementById("rowNumber").value = "";
-    document.getElementById("vehicleRegBookLink").value = "";
-    document.getElementById("trackingCertificateLink").value = "";
-      document.getElementById("vehicleInvoiceLink").value = "";
-      document.getElementById("assetTotalInstallmentsPaid").value = "";
-    document.getElementById("regBookLink").value = "";
-    document.getElementById("saveBtn").textContent = "Save Asset";
-    window.scrollTo({ top: document.getElementById("entrySection").offsetTop - 20, behavior: "smooth" });
-  });
-
-  document.getElementById("backToDashboardBtn").addEventListener("click", function(){
-    document.getElementById("entrySection").classList.add("hidden");
-    document.getElementById("assetForm").reset();
-    document.getElementById("rowNumber").value = "";
-    document.getElementById("vehicleRegBookLink").value = "";
-    document.getElementById("trackingCertificateLink").value = "";
-      document.getElementById("vehicleInvoiceLink").value = "";
-      document.getElementById("assetTotalInstallmentsPaid").value = "";
-    document.getElementById("regBookLink").value = "";
-    document.getElementById("saveBtn").textContent = "Save Asset";
-    showStatus("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    if (currentFilter) applyFilter(currentFilter); else renderTable(allAssets);
-  });
-
-  document.getElementById("cancelEntryBtn").addEventListener("click", function(){
-    document.getElementById("entrySection").classList.add("hidden");
-    document.getElementById("assetForm").reset();
-    document.getElementById("rowNumber").value = "";
-    document.getElementById("vehicleRegBookLink").value = "";
-    document.getElementById("trackingCertificateLink").value = "";
-      document.getElementById("vehicleInvoiceLink").value = "";
-      document.getElementById("assetTotalInstallmentsPaid").value = "";
-    document.getElementById("regBookLink").value = "";
-    document.getElementById("saveBtn").textContent = "Save Asset";
-    showStatus("");
-    if (currentFilter) applyFilter(currentFilter); else renderTable(allAssets);
-  });
-
-  document.getElementById("transactionSearchBtn").addEventListener("click", renderCurrentTransactionTable);
-  document.getElementById("transactionClearBtn").addEventListener("click", resetTransactionControls);
-  ["transactionSort", "transactionClassFilter", "transactionModelFilter", "transactionCostCenterFilter"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener("change", renderCurrentTransactionTable);
-  });
-  const searchInput = document.getElementById("transactionSearch");
-  if (searchInput) searchInput.addEventListener("keydown", e => { if (e.key === "Enter") renderCurrentTransactionTable(); });
-
-  document.getElementById("refreshDashBtn").addEventListener("click", loadAssets);
-  document.getElementById("clearFilterBtn").addEventListener("click", clearFilter);
-  document.getElementById("printBtn").addEventListener("click", () => window.print());
-
-  document.getElementById("excelBtn").addEventListener("click", function(){
-    let rows = allAssets;
-    if (currentFilter) {
-      rows = (isEquipmentFilter(currentFilter) ? equipmentAssets : mainAssets).filter(a => String(getField(a, "assetClass")).toLowerCase().includes(currentFilter.toLowerCase()));
-    }
-    const displayFields = FIELD_IDS.filter(id => !["licenced","typeOfLicence","validityOfLicence","imageLinks","assetStatus","statusDate","soldValue","totalInstallmentsPaid"].includes(id));
-    const headers = [...displayFields, "vehicleRegBookLink", "trackingCertificateLink", "imageLinks", "assetStatus", "statusDate", "soldValue"];
-    const csvRows = [headers, ...rows.map(row => {
-      const vals = displayFields.map(id => valueOrBlank(getField(row, id)));
-      vals.push(getField(row, "vehicleRegBookLink"));
-      vals.push(getField(row, "trackingCertificateLink"));
-      vals.push(getField(row, "imageLinks"));
-      vals.push(getField(row, "assetStatus"));
-      vals.push(getField(row, "statusDate"));
-      vals.push(getField(row, "soldValue"));
-      return vals;
-    })];
-    const csv = csvRows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "asset-register-report.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-  });
-
-
-
-  function setupOtherDropdowns() {
-    document.querySelectorAll('select').forEach(sel => {
-      if (![...sel.options].some(o => o.value === "Other" || o.textContent === "Other")) {
-        const opt = document.createElement("option");
-        opt.value = "Other";
-        opt.textContent = "Other";
-        sel.appendChild(opt);
-      }
-      sel.addEventListener("change", function() {
-        if (this.value !== "Other") return;
-        const custom = prompt("Enter other value");
-        if (!custom) { this.value = ""; return; }
-        const opt = document.createElement("option");
-        opt.value = custom; opt.textContent = custom; opt.selected = true;
-        this.appendChild(opt);
-      });
-    });
-  }
-
-  function setupDepreciationFields() {
-    ["cost", "usefulLife", "residualValue"].forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener("change", () => {
-        const data = {};
-        FIELD_IDS.forEach(fid => { const f = document.getElementById(fid); if (f) data[fid] = f.value; });
-        const residualWasBlank = !String(data.residualValue || "").trim();
-        applyDepreciationToData(data);
-        ["residualValue", "monthlyDpn", "accumDpn", "nbv", "value"].forEach(fid => {
-          const f = document.getElementById(fid);
-          if (!f || document.activeElement === f) return;
-          // Only auto-fill Monthly dpn if it is currently blank, so user edits are never overwritten.
-          if (fid === "monthlyDpn" && String(f.value || "").trim() !== "") return;
-          if (fid === "residualValue" && !residualWasBlank) return;
-          if (data[fid] !== undefined && data[fid] !== "") f.value = Number(toNumber(data[fid])).toFixed(2);
-        });
-      });
-    });
-  }
-
-
-  document.addEventListener("DOMContentLoaded", function(){
-    setupOtherDropdowns();
-    setupDepreciationFields();
-    loadAssets();
-  });
-</script>
+            loadSavedOptions('vehicleReg', 'onpoint_saved_vehicle_regs');
+            loadSavedOptions('driverName', 'onpoint_saved_driver_names');
+            applyFaintDefaults();
+            toggleOtherProject();
+        })();
+    </script>
 </body>
 </html>
